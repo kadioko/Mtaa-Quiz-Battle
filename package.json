@@ -8,7 +8,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "validate:data": "node scripts/validate-data.mjs",
+    "check": "npm run typecheck && npm run validate:data"
   },
   "dependencies": {
     "@expo/ngrok": "^4.1.3",

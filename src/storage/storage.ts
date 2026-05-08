@@ -40,13 +40,21 @@ const DEFAULT_SETTINGS: GameSettings = {
   notifications: true,
 };
 
+const parseStoredValue = <T>(data: string | null, fallback: T): T => {
+  if (!data) return fallback;
+  try {
+    return JSON.parse(data) as T;
+  } catch {
+    return fallback;
+  }
+};
+
 export const StorageService = {
   async getUserProfile(): Promise<UserProfile> {
     try {
       const data = await AsyncStorage.getItem(KEYS.USER_PROFILE);
-      const profile: UserProfile = data
-        ? { ...DEFAULT_PROFILE, ...JSON.parse(data) }
-        : { ...DEFAULT_PROFILE };
+      const storedProfile = parseStoredValue<Partial<UserProfile>>(data, {});
+      const profile: UserProfile = { ...DEFAULT_PROFILE, ...storedProfile };
       const today = new Date().toDateString();
       if (profile.dailyCompleted && profile.lastDailyDate !== today) {
         profile.dailyCompleted = false;
@@ -65,10 +73,10 @@ export const StorageService = {
   async getSettings(): Promise<GameSettings> {
     try {
       const data = await AsyncStorage.getItem(KEYS.SETTINGS);
-      if (data) return { ...DEFAULT_SETTINGS, ...JSON.parse(data) };
-      return DEFAULT_SETTINGS;
+      const storedSettings = parseStoredValue<Partial<GameSettings>>(data, {});
+      return { ...DEFAULT_SETTINGS, ...storedSettings };
     } catch {
-      return DEFAULT_SETTINGS;
+      return { ...DEFAULT_SETTINGS };
     }
   },
 
@@ -79,8 +87,8 @@ export const StorageService = {
   async getLeaderboard(): Promise<LeaderboardEntry[]> {
     try {
       const data = await AsyncStorage.getItem(KEYS.LEADERBOARD);
-      if (data) return JSON.parse(data);
-      return [];
+      const leaderboard = parseStoredValue<LeaderboardEntry[]>(data, []);
+      return Array.isArray(leaderboard) ? leaderboard : [];
     } catch {
       return [];
     }
@@ -97,8 +105,8 @@ export const StorageService = {
   async getQuizHistory(): Promise<QuizResult[]> {
     try {
       const data = await AsyncStorage.getItem(KEYS.QUIZ_HISTORY);
-      if (data) return JSON.parse(data);
-      return [];
+      const history = parseStoredValue<QuizResult[]>(data, []);
+      return Array.isArray(history) ? history : [];
     } catch {
       return [];
     }
@@ -113,8 +121,11 @@ export const StorageService = {
   async getDailyReward(): Promise<DailyReward> {
     try {
       const data = await AsyncStorage.getItem(KEYS.DAILY_REWARD);
-      if (data) return JSON.parse(data);
-      return { lastClaimedDate: '', consecutiveDays: 0, totalClaimed: 0 };
+      return parseStoredValue<DailyReward>(data, {
+        lastClaimedDate: '',
+        consecutiveDays: 0,
+        totalClaimed: 0,
+      });
     } catch {
       return { lastClaimedDate: '', consecutiveDays: 0, totalClaimed: 0 };
     }
@@ -127,8 +138,8 @@ export const StorageService = {
   async getCategoryStats(): Promise<Record<string, number>> {
     try {
       const data = await AsyncStorage.getItem(KEYS.CATEGORY_STATS);
-      if (data) return JSON.parse(data);
-      return {};
+      const stats = parseStoredValue<Record<string, number>>(data, {});
+      return stats && typeof stats === 'object' && !Array.isArray(stats) ? stats : {};
     } catch {
       return {};
     }

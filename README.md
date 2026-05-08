@@ -37,7 +37,7 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 
 ### Daily Challenge
 
-- New set of 10 mixed-category questions every day (date-seeded)
+- New set of 10 mixed-category questions every day (date-seeded, one from each category when possible)
 - **Daily streak** tracking across consecutive days
 - **Live countdown timer** (HH:MM:SS) to next challenge when already played
 - ✅ DONE badge on home screen banner when already played
@@ -79,6 +79,7 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 - **TypeScript** strict mode throughout
 - Result history stores per-question correctness for accurate answer breakdowns
 - Category stats track play counts and the profile favourite category
+- Data validator catches duplicate options, missing translations, bad category links, and daily challenge regressions
 - `npm run typecheck` = strict TypeScript check
 
 ---
@@ -112,9 +113,11 @@ npm run web              # Launch web preview
 
 ```bash
 npm run typecheck
+npm run validate:data
+npm run check
 ```
 
-Run this before committing gameplay, storage, or route changes.
+Run `npm run check` before committing gameplay, storage, routing, or question-data changes.
 
 ### Build APK
 
@@ -205,6 +208,12 @@ Edit `src/data/questions.ts`:
 
 Question counts on category cards update automatically.
 
+Validate the data after editing questions:
+
+```bash
+npm run validate:data
+```
+
 ---
 
 ## 🏗️ Adding Categories
@@ -252,6 +261,7 @@ Integrate with `react-native-google-mobile-ads` when ready.
 
 - All data stored locally — no internet required
 - Daily challenge questions are date-seeded (same set for all players on a given day)
+- Daily challenge selection uses a seeded Fisher-Yates shuffle and balances across categories
 - `dailyCompleted` flag auto-resets at midnight via `getUserProfile()`
 - Daily challenge results route back to the Daily screen instead of starting an invalid replay
 - Leaderboard keeps top 50 entries sorted by score

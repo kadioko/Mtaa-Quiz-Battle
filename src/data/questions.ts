@@ -1109,8 +1109,8 @@ export const questions: Question[] = [
     category: 'Wanyama na Hifadhi',
     question: 'Taifa la Tanzania lina hifadhi za taifa ngapi?',
     question_en: 'How many national parks does Tanzania have?',
-    options: ['12', '16', '22', '22'],
-    options_en: ['12', '16', '22', '22'],
+    options: ['12', '16', '20', '22'],
+    options_en: ['12', '16', '20', '22'],
     answer: '22',
     answer_en: '22',
     explanation: 'Tanzania ina hifadhi za taifa 22 zinazodhibitiwa na TANAPA.',
@@ -1461,23 +1461,57 @@ export const questions: Question[] = [
 export const getQuestionsByCategory = (category: string): Question[] =>
   questions.filter((q) => q.category === category);
 
-export const getRandomQuestions = (count: number = 10): Question[] => {
-  const shuffled = [...questions].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+const hashString = (value: string): number => {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 };
 
-export const getDailyQuestions = (count: number = 10): Question[] => {
-  const seed = new Date().toDateString();
-  const seededRandom = (i: number) => {
-    let h = 0;
-    for (let j = 0; j < seed.length + i; j++) {
-      h = (Math.imul(31, h) + seed.charCodeAt(j % seed.length)) | 0;
-    }
-    return Math.abs(h) / 2147483647;
+const createSeededRandom = (seed: string): (() => number) => {
+  let state = hashString(seed) || 1;
+  return () => {
+    state = Math.imul(1664525, state) + 1013904223;
+    return (state >>> 0) / 4294967296;
   };
-  const shuffled = [...questions]
-    .map((q, i) => ({ q, r: seededRandom(i) }))
-    .sort((a, b) => a.r - b.r)
-    .map(({ q }) => q);
-  return shuffled.slice(0, count);
+};
+
+const shuffleWithRandom = <T,>(items: T[], random = Math.random): T[] => {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+export const getRandomQuestions = (count: number = 10): Question[] => {
+  return shuffleWithRandom(questions).slice(0, count);
+};
+
+export const getDailyQuestions = (count: number = 10, date: Date = new Date()): Question[] => {
+  const seed = date.toDateString();
+  const random = createSeededRandom(seed);
+  const categoryNames = Array.from(new Set(questions.map((q) => q.category)));
+  const dailySet: Question[] = [];
+
+  shuffleWithRandom(categoryNames, random).forEach((categoryName) => {
+    if (dailySet.length >= count) return;
+    const categoryQuestions = getQuestionsByCategory(categoryName);
+    const [question] = shuffleWithRandom(categoryQuestions, random);
+    if (question) dailySet.push(question);
+  });
+
+  if (dailySet.length < count) {
+    const selectedIds = new Set(dailySet.map((q) => q.id));
+    const remaining = shuffleWithRandom(
+      questions.filter((q) => !selectedIds.has(q.id)),
+      random
+    );
+    dailySet.push(...remaining.slice(0, count - dailySet.length));
+  }
+
+  return dailySet;
 };
