@@ -5,6 +5,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,11 +26,27 @@ export default function ProfileScreen() {
   const { language } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [catStats, setCatStats] = useState<Record<string, number>>({});
+  const [editModal, setEditModal] = useState(false);
+  const [draftName, setDraftName] = useState('');
 
   useEffect(() => {
     StorageService.getUserProfile().then(setProfile);
     StorageService.getCategoryStats().then(setCatStats);
   }, [language]);
+
+  const openEdit = () => {
+    setDraftName(profile?.username ?? 'Mchezaji');
+    setEditModal(true);
+  };
+
+  const saveUsername = async () => {
+    const name = draftName.trim() || 'Mchezaji';
+    if (!profile) return;
+    const updated = { ...profile, username: name };
+    setProfile(updated);
+    await StorageService.saveUserProfile(updated);
+    setEditModal(false);
+  };
 
   const getFavoriteCategory = (): string => {
     if (!catStats || Object.keys(catStats).length === 0) return t('noFavorite');
@@ -68,7 +88,10 @@ export default function ProfileScreen() {
             <View style={styles.avatarCircle}>
               <Text style={styles.avatarEmoji}>🇹🇿</Text>
             </View>
-            <Text style={styles.username}>{profile?.username ?? 'Mchezaji'}</Text>
+            <TouchableOpacity onPress={openEdit} style={styles.usernameRow}>
+              <Text style={styles.username}>{profile?.username ?? 'Mchezaji'}</Text>
+              <Text style={styles.editIcon}>✏️</Text>
+            </TouchableOpacity>
             <View style={styles.streakBadge}>
               <Text style={styles.streakText}>🔥 {profile?.dailyStreak ?? 0} {t('days')}</Text>
             </View>
@@ -146,6 +169,48 @@ export default function ProfileScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Username edit modal */}
+      <Modal visible={editModal} transparent animationType="fade">
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              {language === 'sw' ? 'Badilisha Jina' : 'Edit Username'}
+            </Text>
+            <TextInput
+              style={styles.nameInput}
+              value={draftName}
+              onChangeText={setDraftName}
+              maxLength={20}
+              autoFocus
+              selectTextOnFocus
+              placeholder="Mchezaji"
+              placeholderTextColor={Colors.textMuted}
+            />
+            <View style={styles.modalBtns}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { borderColor: Colors.border }]}
+                onPress={() => setEditModal(false)}
+              >
+                <Text style={[styles.modalBtnText, { color: Colors.textMuted }]}>
+                  {language === 'sw' ? 'Ghairi' : 'Cancel'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
+                onPress={saveUsername}
+              >
+                <Text style={[styles.modalBtnText, { color: Colors.black }]}>
+                  {language === 'sw' ? 'Hifadhi' : 'Save'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -284,5 +349,59 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeights.bold,
     color: Colors.text,
     textAlign: 'right',
+  },
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  editIcon: { fontSize: 16 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: Colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  modalCard: {
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: Radius.xxl,
+    padding: Spacing.xxl,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    gap: Spacing.base,
+  },
+  modalTitle: {
+    fontSize: Typography.fontSizes.lg,
+    fontWeight: Typography.fontWeights.bold,
+    color: Colors.text,
+    textAlign: 'center',
+  },
+  nameInput: {
+    backgroundColor: Colors.backgroundCardLight,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    color: Colors.text,
+    fontSize: Typography.fontSizes.base,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+  },
+  modalBtns: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  modalBtn: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    alignItems: 'center',
+  },
+  modalBtnText: {
+    fontSize: Typography.fontSizes.md,
+    fontWeight: Typography.fontWeights.semiBold,
   },
 });

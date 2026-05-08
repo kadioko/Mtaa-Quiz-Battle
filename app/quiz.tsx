@@ -12,6 +12,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
 import { getCategoryById } from '../src/data/categories';
 import { getQuestionsByCategory } from '../src/data/questions';
 import { getDailyQuestions } from '../src/data/questions';
@@ -31,6 +32,23 @@ import TimerBar from '../src/components/TimerBar';
 import PrimaryButton from '../src/components/PrimaryButton';
 
 const TOTAL_QUESTIONS = 10;
+
+const playSound = async (type: 'correct' | 'wrong' | 'timeup', enabled: boolean) => {
+  if (!enabled) return;
+  try {
+    const sources: Record<string, number> = {
+      correct: require('../assets/sounds/correct.mp3'),
+      wrong: require('../assets/sounds/wrong.mp3'),
+      timeup: require('../assets/sounds/timeup.mp3'),
+    };
+    const { sound } = await Audio.Sound.createAsync(sources[type] as number, { shouldPlay: true, volume: 0.7 });
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if ('didJustFinish' in status && status.didJustFinish) sound.unloadAsync();
+    });
+  } catch {
+    // Sound files optional — silently fail if missing
+  }
+};
 
 export default function QuizScreen() {
   const router = useRouter();
@@ -107,11 +125,11 @@ export default function QuizScreen() {
         isDaily === 'true'
       );
 
-      await StorageService.updateProfileAfterGame(result);
+      const updatedProfile = await StorageService.updateProfileAfterGame(result);
       await StorageService.addQuizResult(result);
       await StorageService.addLeaderboardEntry({
         id: result.id,
-        username: 'Mchezaji',
+        username: updatedProfile.username,
         score: finalScore,
         categoryName: cat.name,
         date: result.date,
@@ -147,6 +165,7 @@ export default function QuizScreen() {
     if (settings.current.vibration) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
+    playSound('timeup', settings.current.sound);
     const newStreak = 0;
     setStreak(newStreak);
 
@@ -207,6 +226,7 @@ export default function QuizScreen() {
       if (settings.current.vibration) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
+      playSound('correct', settings.current.sound);
 
       let bonus = '';
       if (streakBonus > 0) bonus = `🔥 ${t('streakBonus')} +${streakBonus}`;
@@ -224,6 +244,7 @@ export default function QuizScreen() {
       if (settings.current.vibration) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
+      playSound('wrong', settings.current.sound);
     }
     setShowExplanation(true);
   };

@@ -43,10 +43,17 @@ export const StorageService = {
   async getUserProfile(): Promise<UserProfile> {
     try {
       const data = await AsyncStorage.getItem(KEYS.USER_PROFILE);
-      if (data) return { ...DEFAULT_PROFILE, ...JSON.parse(data) };
-      return DEFAULT_PROFILE;
+      const profile: UserProfile = data
+        ? { ...DEFAULT_PROFILE, ...JSON.parse(data) }
+        : { ...DEFAULT_PROFILE };
+      const today = new Date().toDateString();
+      if (profile.dailyCompleted && profile.lastDailyDate !== today) {
+        profile.dailyCompleted = false;
+        await AsyncStorage.setItem(KEYS.USER_PROFILE, JSON.stringify(profile));
+      }
+      return profile;
     } catch {
-      return DEFAULT_PROFILE;
+      return { ...DEFAULT_PROFILE };
     }
   },
 

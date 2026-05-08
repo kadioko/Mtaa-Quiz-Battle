@@ -28,6 +28,8 @@ export default function HomeScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [rewardModal, setRewardModal] = useState(false);
   const [todayCoins, setTodayCoins] = useState(0);
+  const [rewardStreak, setRewardStreak] = useState(1);
+  const [streakReset, setStreakReset] = useState(false);
 
   const loadProfile = useCallback(async () => {
     const p = await StorageService.getUserProfile();
@@ -36,11 +38,12 @@ export default function HomeScreen() {
     const reward = await StorageService.getDailyReward();
     const today = new Date().toDateString();
     if (reward.lastClaimedDate !== today) {
-      const newDays = isYesterday(reward.lastClaimedDate)
-        ? reward.consecutiveDays + 1
-        : 1;
+      const wasYesterday = isYesterday(reward.lastClaimedDate);
+      const newDays = wasYesterday ? reward.consecutiveDays + 1 : 1;
       const coins = Math.min(10 + newDays * 5, 50);
       setTodayCoins(coins);
+      setRewardStreak(newDays);
+      setStreakReset(!wasYesterday && reward.consecutiveDays > 0);
       setRewardModal(true);
       await StorageService.saveDailyReward({
         lastClaimedDate: today,
@@ -180,6 +183,14 @@ export default function HomeScreen() {
             <Text style={styles.modalEmoji}>🎁</Text>
             <Text style={styles.modalTitle}>{t('dailyReward')}</Text>
             <Text style={styles.modalSub}>{t('welcomeBack')}</Text>
+            <View style={styles.streakRow}>
+              <Text style={styles.streakDayText}>🔥 {language === 'sw' ? `Siku ya ${rewardStreak}` : `Day ${rewardStreak}`}</Text>
+              {streakReset && (
+                <Text style={styles.streakResetText}>
+                  {language === 'sw' ? '(Mfululizo ulianza upya)' : '(Streak restarted)'}
+                </Text>
+              )}
+            </View>
             <View style={styles.coinsBadge}>
               <Text style={styles.coinsText}>+{todayCoins} 🪙</Text>
             </View>
@@ -368,5 +379,19 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.xxl,
     fontWeight: Typography.fontWeights.black,
     color: Colors.gold,
+  },
+  streakRow: {
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  streakDayText: {
+    fontSize: Typography.fontSizes.base,
+    fontWeight: Typography.fontWeights.bold,
+    color: Colors.streak,
+  },
+  streakResetText: {
+    fontSize: Typography.fontSizes.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
   },
 });
