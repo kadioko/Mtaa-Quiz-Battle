@@ -76,6 +76,7 @@ export default function QuizScreen() {
   const [answerMap, setAnswerMap] = useState<(boolean | null)[]>(Array(TOTAL_QUESTIONS).fill(null));
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const answerMapRef = useRef<(boolean | null)[]>(Array(TOTAL_QUESTIONS).fill(null));
   const questionAnim = useRef(new Animated.Value(1)).current;
   const bonusAnim = useRef(new Animated.Value(0)).current;
   const floatY = useRef(new Animated.Value(0)).current;
@@ -83,6 +84,15 @@ export default function QuizScreen() {
   const [floatText, setFloatText] = useState('');
 
   const settings = useRef({ sound: true, vibration: true });
+
+  const markAnswer = useCallback((index: number, isCorrect: boolean) => {
+    setAnswerMap((prev) => {
+      const next = [...prev];
+      next[index] = isCorrect;
+      answerMapRef.current = next;
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     StorageService.getSettings().then((s) => {
@@ -113,7 +123,12 @@ export default function QuizScreen() {
   }, [questions, currentIndex, language]);
 
   const finishQuiz = useCallback(
-    async (finalScore: number, finalCorrect: number, finalMaxStreak: number) => {
+    async (
+      finalScore: number,
+      finalCorrect: number,
+      finalMaxStreak: number,
+      finalAnswerMap: (boolean | null)[]
+    ) => {
       const cat = isDaily === 'true'
         ? { id: 'daily', name: 'Daily Challenge' }
         : {
@@ -128,7 +143,8 @@ export default function QuizScreen() {
         finalCorrect,
         TOTAL_QUESTIONS,
         finalMaxStreak,
-        isDaily === 'true'
+        isDaily === 'true',
+        finalAnswerMap.map((answer) => answer === true)
       );
 
       const updatedProfile = await StorageService.updateProfileAfterGame(result);
@@ -168,6 +184,7 @@ export default function QuizScreen() {
     if (answered) return;
     setAnswered(true);
     setShowExplanation(true);
+    markAnswer(currentIndex, false);
     if (settings.current.vibration) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
@@ -184,7 +201,7 @@ export default function QuizScreen() {
       i === correctIdx ? 'reveal' : 'default'
     );
     setAnswerStates(newStates);
-  }, [answered, currentIndex, questions, shuffledOptions, language]);
+  }, [answered, currentIndex, questions, shuffledOptions, language, markAnswer]);
 
   useEffect(() => {
     if (questions.length === 0 || answered) return;
@@ -240,7 +257,7 @@ export default function QuizScreen() {
         ]),
       ]).start(() => setFloatText(''));
 
-      setAnswerMap((prev) => { const n = [...prev]; n[currentIndex] = true; return n; });
+      markAnswer(currentIndex, true);
 
       if (settings.current.vibration) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -260,7 +277,7 @@ export default function QuizScreen() {
         ]).start(() => setBonusText(''));
       }
     } else {
-      setAnswerMap((prev) => { const n = [...prev]; n[currentIndex] = false; return n; });
+      markAnswer(currentIndex, false);
       setStreak(0);
       if (settings.current.vibration) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -274,7 +291,7 @@ export default function QuizScreen() {
     const nextIndex = currentIndex + 1;
 
     if (nextIndex >= questions.length) {
-      finishQuiz(score, correctCount, maxStreak);
+      finishQuiz(score, correctCount, maxStreak, answerMapRef.current);
       return;
     }
 

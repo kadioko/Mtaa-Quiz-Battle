@@ -134,10 +134,11 @@ export const StorageService = {
     }
   },
 
-  async updateCategoryStats(categoryId: string): Promise<void> {
+  async updateCategoryStats(categoryId: string): Promise<Record<string, number>> {
     const stats = await StorageService.getCategoryStats();
     stats[categoryId] = (stats[categoryId] || 0) + 1;
     await AsyncStorage.setItem(KEYS.CATEGORY_STATS, JSON.stringify(stats));
+    return stats;
   },
 
   async resetAllData(): Promise<void> {
@@ -157,6 +158,13 @@ export const StorageService = {
       newStreak = 1;
     }
 
+    const categoryStats = result.categoryId === 'daily'
+      ? await StorageService.getCategoryStats()
+      : await StorageService.updateCategoryStats(result.categoryId);
+    const favoriteCategory = Object.entries(categoryStats)
+      .filter(([categoryId]) => categoryId !== 'daily')
+      .sort((a, b) => b[1] - a[1])[0]?.[0] ?? profile.favoriteCategory;
+
     const updatedProfile: UserProfile = {
       ...profile,
       totalGamesPlayed: profile.totalGamesPlayed + 1,
@@ -167,10 +175,10 @@ export const StorageService = {
       lastPlayedDate: today,
       totalCorrectAnswers: profile.totalCorrectAnswers + result.correctAnswers,
       totalQuestions: profile.totalQuestions + result.totalQuestions,
+      favoriteCategory,
     };
 
     await StorageService.saveUserProfile(updatedProfile);
-    await StorageService.updateCategoryStats(result.categoryId);
     return updatedProfile;
   },
 };

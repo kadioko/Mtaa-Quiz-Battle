@@ -65,16 +65,11 @@ export default function ProfileScreen() {
   };
 
   const getFavoriteCategory = (): string => {
-    if (!catStats || Object.keys(catStats).length === 0) return t('noFavorite');
-    let maxId = '';
-    let maxCount = 0;
-    Object.keys(catStats).forEach((id) => {
-      if (catStats[id] > maxCount) {
-        maxCount = catStats[id];
-        maxId = id;
-      }
-    });
-    const cat = categories.find((c) => c.id === maxId);
+    const knownCategoryIds = new Set(categories.map((category) => category.id));
+    const favoriteEntry = Object.entries(catStats)
+      .filter(([id]) => knownCategoryIds.has(id))
+      .sort((a, b) => b[1] - a[1])[0];
+    const cat = categories.find((c) => c.id === (favoriteEntry?.[0] ?? profile?.favoriteCategory));
     if (!cat) return t('noFavorite');
     return language === 'en' ? cat.name_en : cat.name;
   };

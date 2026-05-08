@@ -44,6 +44,7 @@ export interface QuizResult {
   score: number;
   correctAnswers: number;
   totalQuestions: number;
+  answerMap?: boolean[];
   coinsEarned: number;
   maxStreak: number;
   accuracy: number;

@@ -72,7 +72,8 @@ export const buildQuizResult = (
   correctAnswers: number,
   totalQuestions: number,
   maxStreak: number,
-  isDaily: boolean
+  isDaily: boolean,
+  answerMap?: boolean[]
 ): QuizResult => {
   const coins = calculateCoins(score, correctAnswers, totalQuestions);
   return {
@@ -82,6 +83,7 @@ export const buildQuizResult = (
     score,
     correctAnswers,
     totalQuestions,
+    answerMap,
     coinsEarned: coins,
     maxStreak,
     accuracy: Math.round((correctAnswers / totalQuestions) * 100),

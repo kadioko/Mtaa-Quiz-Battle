@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,14 @@ export default function ResultScreen() {
   const { resultJson } = useLocalSearchParams<{ resultJson: string }>();
   const { language } = useLanguage();
 
-  const result: QuizResult = resultJson ? JSON.parse(resultJson) : null;
+  const result = useMemo<QuizResult | null>(() => {
+    if (!resultJson) return null;
+    try {
+      return JSON.parse(resultJson);
+    } catch {
+      return null;
+    }
+  }, [resultJson]);
 
   const scoreAnim = useRef(new Animated.Value(0)).current;
   const cardAnim = useRef(new Animated.Value(0)).current;
@@ -32,16 +39,18 @@ export default function ResultScreen() {
   const countAnim = useRef(new Animated.Value(0)).current;
   const [displayScore, setDisplayScore] = useState(0);
   const [isNewRecord, setIsNewRecord] = useState(false);
-  const [prevBest, setPrevBest] = useState(0);
+  const [bestScore, setBestScore] = useState(0);
 
   useEffect(() => {
     if (!result) return;
-    StorageService.getUserProfile().then((p) => {
-      const prev = Math.max(0, p.bestScore - result.score);
-      setPrevBest(prev > 0 ? prev : 0);
-      setIsNewRecord(result.score > 0 && result.score >= p.bestScore && p.totalGamesPlayed > 1);
+    StorageService.getQuizHistory().then((history) => {
+      const previousBest = history
+        .filter((entry) => entry.id !== result.id)
+        .reduce((best, entry) => Math.max(best, entry.score), 0);
+      setBestScore(Math.max(previousBest, result.score));
+      setIsNewRecord(result.score > 0 && result.score > previousBest);
     });
-  }, []);
+  }, [result]);
 
   useEffect(() => {
     if (!result) return;
@@ -195,7 +204,7 @@ export default function ResultScreen() {
             <View style={styles.detailDivider} />
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>⭐ {t('bestScore')}</Text>
-              <Text style={[styles.detailValue, { color: Colors.gold }]}>{Math.max(result.score, prevBest)}</Text>
+              <Text style={[styles.detailValue, { color: Colors.gold }]}>{bestScore}</Text>
             </View>
           </Animated.View>
 
@@ -206,7 +215,7 @@ export default function ResultScreen() {
             </Text>
             <View style={styles.breakdownRow}>
               {Array.from({ length: result.totalQuestions }).map((_, i) => {
-                const hit = i < result.correctAnswers;
+                const hit = result.answerMap?.[i] ?? i < result.correctAnswers;
                 return (
                   <View
                     key={i}
@@ -239,10 +248,12 @@ export default function ResultScreen() {
             <PrimaryButton
               label={t('playAgain')}
               onPress={() =>
-                router.replace({
-                  pathname: '/quiz',
-                  params: { categoryId: result.categoryId },
-                })
+                result.isDaily
+                  ? router.replace('/daily')
+                  : router.replace({
+                      pathname: '/quiz',
+                      params: { categoryId: result.categoryId },
+                    })
               }
               color={Colors.primary}
               textColor={Colors.black}
