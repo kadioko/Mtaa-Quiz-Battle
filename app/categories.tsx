@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   Dimensions,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,6 +23,17 @@ const CARD_WIDTH = (width - Spacing.base * 2 - Spacing.sm) / 2;
 export default function CategoriesScreen() {
   const router = useRouter();
   const { language } = useLanguage();
+  const [search, setSearch] = useState('');
+
+  const filtered = search.trim() === ''
+    ? categories
+    : categories.filter((c) => {
+        const q = search.toLowerCase();
+        return (
+          c.name.toLowerCase().includes(q) ||
+          c.name_en.toLowerCase().includes(q)
+        );
+      });
 
   const renderItem = ({ item }: { item: Category }) => (
     <TouchableOpacity
@@ -58,8 +70,20 @@ export default function CategoriesScreen() {
           <View style={{ width: 40 }} />
         </View>
 
+        {/* Search bar */}
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+            placeholder={language === 'sw' ? 'Tafuta kundi...' : 'Search category...'}
+            placeholderTextColor={Colors.textMuted}
+            clearButtonMode="while-editing"
+          />
+        </View>
+
         <FlatList
-          data={categories}
+          data={filtered}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           numColumns={2}
@@ -100,6 +124,20 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.base,
     fontWeight: Typography.fontWeights.bold,
     color: Colors.text,
+  },
+  searchRow: {
+    paddingHorizontal: Spacing.base,
+    paddingBottom: Spacing.sm,
+  },
+  searchInput: {
+    backgroundColor: Colors.backgroundCardLight,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    color: Colors.text,
+    fontSize: Typography.fontSizes.md,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
   },
   list: {
     paddingHorizontal: Spacing.base,

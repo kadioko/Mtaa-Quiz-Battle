@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
 import { getRating, formatDate } from '../src/utils/gameLogic';
+import { StorageService } from '../src/storage/storage';
 import PrimaryButton from '../src/components/PrimaryButton';
 import StatCard from '../src/components/StatCard';
 
@@ -27,6 +28,39 @@ export default function ResultScreen() {
 
   const scoreAnim = useRef(new Animated.Value(0)).current;
   const cardAnim = useRef(new Animated.Value(0)).current;
+  const recordAnim = useRef(new Animated.Value(0)).current;
+  const countAnim = useRef(new Animated.Value(0)).current;
+  const [displayScore, setDisplayScore] = useState(0);
+  const [isNewRecord, setIsNewRecord] = useState(false);
+  const [prevBest, setPrevBest] = useState(0);
+
+  useEffect(() => {
+    if (!result) return;
+    StorageService.getUserProfile().then((p) => {
+      const prev = Math.max(0, p.bestScore - result.score);
+      setPrevBest(prev > 0 ? prev : 0);
+      setIsNewRecord(result.score > 0 && result.score >= p.bestScore && p.totalGamesPlayed > 1);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!result) return;
+    const target = result.score;
+    const duration = 1200;
+    const steps = 40;
+    const interval = duration / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current += Math.ceil(target / steps);
+      if (current >= target) {
+        setDisplayScore(target);
+        clearInterval(timer);
+      } else {
+        setDisplayScore(current);
+      }
+    }, interval);
+    return () => clearInterval(timer);
+  }, [result?.score]);
 
   useEffect(() => {
     Animated.stagger(200, [
@@ -43,6 +77,16 @@ export default function ResultScreen() {
       }),
     ]).start();
   }, [scoreAnim, cardAnim]);
+
+  useEffect(() => {
+    if (!isNewRecord) return;
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(recordAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+        Animated.timing(recordAnim, { toValue: 0.7, duration: 500, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [isNewRecord]);
 
   if (!result) {
     return (
@@ -93,8 +137,13 @@ export default function ResultScreen() {
             ]}
           >
             <Text style={styles.medalEmoji}>{getMedalEmoji()}</Text>
+            {isNewRecord && (
+              <Animated.Text style={[styles.newRecordBadge, { opacity: recordAnim }]}>
+                {language === 'sw' ? '🏆 Rekodi Mpya!' : '🏆 New Record!'}
+              </Animated.Text>
+            )}
             <Text style={[styles.scoreValue, { color: getScoreColor() }]}>
-              {result.score}
+              {displayScore}
             </Text>
             <Text style={styles.scoreLabel}>{t('yourScore')}</Text>
             <Text style={styles.ratingText}>{rating}</Text>
@@ -137,6 +186,11 @@ export default function ResultScreen() {
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>📅 {t('date')}</Text>
               <Text style={styles.detailValue}>{formatDate(result.date)}</Text>
+            </View>
+            <View style={styles.detailDivider} />
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>⭐ {t('bestScore')}</Text>
+              <Text style={[styles.detailValue, { color: Colors.gold }]}>{Math.max(result.score, prevBest)}</Text>
             </View>
           </Animated.View>
 
@@ -217,6 +271,13 @@ const styles = StyleSheet.create({
     color: Colors.text,
     textAlign: 'center',
     paddingHorizontal: Spacing.base,
+  },
+  newRecordBadge: {
+    fontSize: Typography.fontSizes.lg,
+    fontWeight: Typography.fontWeights.black,
+    color: Colors.gold,
+    marginBottom: Spacing.xs,
+    letterSpacing: 0.5,
   },
 
   statsRow: {

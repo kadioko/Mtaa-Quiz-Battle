@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   BackHandler,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -70,6 +71,7 @@ export default function QuizScreen() {
   const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
   const [answered, setAnswered] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [explanationExpanded, setExplanationExpanded] = useState(true);
   const [bonusText, setBonusText] = useState('');
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -267,6 +269,7 @@ export default function QuizScreen() {
     setSelectedAnswer(null);
     setAnswerStates(['default', 'default', 'default', 'default']);
     setShowExplanation(false);
+    setExplanationExpanded(true);
     setTimeLeft(QUESTION_TIME);
   };
 
@@ -398,12 +401,23 @@ export default function QuizScreen() {
           {/* Explanation */}
           {showExplanation && (
             <View style={styles.explanationCard}>
-              <Text style={styles.explanationTitle}>
-                {selectedAnswer === (language === 'en' && current.answer_en ? current.answer_en : current.answer)
-                  ? `✅ ${t('correct')}`
-                  : `❌ ${t('wrong')}`}
-              </Text>
-              <Text style={styles.explanationText}>{explanationText}</Text>
+              <TouchableOpacity
+                style={styles.explanationHeader}
+                onPress={() => setExplanationExpanded((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.explanationTitle}>
+                  {selectedAnswer === (language === 'en' && current.answer_en ? current.answer_en : current.answer)
+                    ? `✅ ${t('correct')}`
+                    : `❌ ${t('wrong')}`}
+                </Text>
+                <Text style={styles.explanationChevron}>
+                  {explanationExpanded ? '▲' : '▼'}
+                </Text>
+              </TouchableOpacity>
+              {explanationExpanded && (
+                <Text style={styles.explanationText}>{explanationText}</Text>
+              )}
             </View>
           )}
 
@@ -558,11 +572,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderLight,
   },
+  explanationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  explanationChevron: {
+    color: Colors.textMuted,
+    fontSize: Typography.fontSizes.xs,
+  },
   explanationTitle: {
     fontSize: Typography.fontSizes.base,
     fontWeight: Typography.fontWeights.bold,
     color: Colors.text,
-    marginBottom: Spacing.xs,
+    flex: 1,
   },
   explanationText: {
     fontSize: Typography.fontSizes.md,

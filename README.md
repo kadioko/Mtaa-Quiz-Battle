@@ -25,27 +25,32 @@ A Swahili-first Tanzanian trivia game built with **React Native + Expo**.
 ## 🚀 Setup & Installation
 
 ### 1. Prerequisites
+
 - Node.js 18+
 - Expo CLI: `npm install -g expo-cli`
 - Android device or emulator (or Expo Go app)
 
 ### 2. Install dependencies
+
 ```bash
 cd "Mtaa Quiz Battle"
 npm install
 ```
 
 ### 3. Run on Android
+
 ```bash
 npx expo start --android
 ```
 
 Or scan the QR code with **Expo Go** after running:
+
 ```bash
 npx expo start
 ```
 
 ### 4. Build APK (for distribution)
+
 ```bash
 npx expo build:android
 # or with EAS Build:
@@ -144,6 +149,7 @@ The category question counts update automatically.
 ## 💰 Monetization (Future)
 
 Placeholders are in `settings.tsx`:
+
 - Rewarded ad → Extra life
 - Rewarded ad → Double coins
 - Remove ads premium
