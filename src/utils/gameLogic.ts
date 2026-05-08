@@ -6,16 +6,24 @@ export const MAX_SPEED_BONUS = 50;
 export const STREAK_BONUS = 30;
 export const STREAK_THRESHOLD = 3;
 
+export const getDifficultyMultiplier = (difficulty: 'easy' | 'medium' | 'hard'): number => {
+  if (difficulty === 'hard') return 2;
+  if (difficulty === 'medium') return 1.5;
+  return 1;
+};
+
 export const calculateScore = (
   timeLeft: number,
   totalTime: number,
-  streak: number
-): { points: number; speedBonus: number; streakBonus: number } => {
+  streak: number,
+  difficulty: 'easy' | 'medium' | 'hard' = 'medium'
+): { points: number; speedBonus: number; streakBonus: number; multiplier: number } => {
   const speedRatio = timeLeft / totalTime;
   const speedBonus = Math.round(speedRatio * MAX_SPEED_BONUS);
   const streakBonus = streak >= STREAK_THRESHOLD ? STREAK_BONUS : 0;
-  const points = BASE_SCORE + speedBonus + streakBonus;
-  return { points, speedBonus, streakBonus };
+  const multiplier = getDifficultyMultiplier(difficulty);
+  const points = Math.round((BASE_SCORE + speedBonus + streakBonus) * multiplier);
+  return { points, speedBonus, streakBonus, multiplier };
 };
 
 export const calculateCoins = (score: number, correctAnswers: number, total: number): number => {

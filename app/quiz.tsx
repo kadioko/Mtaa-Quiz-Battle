@@ -73,6 +73,7 @@ export default function QuizScreen() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [explanationExpanded, setExplanationExpanded] = useState(true);
   const [bonusText, setBonusText] = useState('');
+  const [answerMap, setAnswerMap] = useState<(boolean | null)[]>(Array(TOTAL_QUESTIONS).fill(null));
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const questionAnim = useRef(new Animated.Value(1)).current;
@@ -222,8 +223,10 @@ export default function QuizScreen() {
       setMaxStreak((prev) => Math.max(prev, newStreak));
       setCorrectCount((prev) => prev + 1);
 
-      const { points, speedBonus, streakBonus } = calculateScore(timeLeft, QUESTION_TIME, newStreak);
+      const { points, speedBonus, streakBonus, multiplier } = calculateScore(timeLeft, QUESTION_TIME, newStreak, current.difficulty);
       setScore((prev) => prev + points);
+
+      setAnswerMap((prev) => { const n = [...prev]; n[currentIndex] = true; return n; });
 
       if (settings.current.vibration) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -231,7 +234,8 @@ export default function QuizScreen() {
       playSound('correct', settings.current.sound);
 
       let bonus = '';
-      if (streakBonus > 0) bonus = `🔥 ${t('streakBonus')} +${streakBonus}`;
+      if (multiplier > 1) bonus = `${multiplier === 2 ? '🔴' : '🟡'} ×${multiplier} ${language === 'sw' ? 'Mgawo' : 'Multiplier'}!`;
+      else if (streakBonus > 0) bonus = `🔥 ${t('streakBonus')} +${streakBonus}`;
       else if (speedBonus > 20) bonus = `⚡ ${t('speedBonus')} +${speedBonus}`;
       if (bonus) {
         setBonusText(bonus);
@@ -242,6 +246,7 @@ export default function QuizScreen() {
         ]).start(() => setBonusText(''));
       }
     } else {
+      setAnswerMap((prev) => { const n = [...prev]; n[currentIndex] = false; return n; });
       setStreak(0);
       if (settings.current.vibration) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -276,17 +281,17 @@ export default function QuizScreen() {
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       Alert.alert(
-        'Acha Mchezo?',
-        'Je, unataka kuacha mchezo huu?',
+        language === 'sw' ? 'Acha Mchezo?' : 'Quit Game?',
+        language === 'sw' ? 'Je, unataka kuacha mchezo huu?' : 'Are you sure you want to quit?',
         [
           { text: t('cancel'), style: 'cancel' },
-          { text: 'Acha', onPress: () => router.back(), style: 'destructive' },
+          { text: language === 'sw' ? 'Acha' : 'Quit', onPress: () => router.back(), style: 'destructive' },
         ]
       );
       return true;
     });
     return () => sub.remove();
-  }, [router]);
+  }, [router, language]);
 
   if (questions.length === 0) {
     return (
@@ -325,6 +330,22 @@ export default function QuizScreen() {
           <View style={[styles.streakBadge, streak >= 3 && styles.streakActive]}>
             <Text style={styles.streakText}>🔥 {streak}</Text>
           </View>
+        </View>
+
+        {/* Question dot stepper */}
+        <View style={styles.dotStepper}>
+          {questions.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                i < currentIndex && answerMap[i] === true && styles.dotCorrect,
+                i < currentIndex && answerMap[i] === false && styles.dotWrong,
+                i === currentIndex && styles.dotCurrent,
+                i > currentIndex && styles.dotFuture,
+              ]}
+            />
+          ))}
         </View>
 
         {/* Progress bar */}
@@ -501,6 +522,37 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: Colors.primary,
     borderRadius: Radius.full,
+  },
+
+  dotStepper: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: Spacing.base,
+    marginBottom: Spacing.xs,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.border,
+  },
+  dotCorrect: {
+    backgroundColor: Colors.secondary,
+  },
+  dotWrong: {
+    backgroundColor: Colors.accent,
+  },
+  dotCurrent: {
+    backgroundColor: Colors.primary,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  dotFuture: {
+    backgroundColor: Colors.border,
+    opacity: 0.4,
   },
 
   timerRow: {

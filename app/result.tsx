@@ -102,7 +102,12 @@ export default function ResultScreen() {
   const accuracy = result.accuracy;
 
   const handleShare = async () => {
-    const shareText = t('shareText', { correct: result.correctAnswers });
+    const cat = result.categoryName;
+    const acc = result.accuracy;
+    const streak = result.maxStreak;
+    const shareText = language === 'sw'
+      ? `Nimepata ${result.score} alama kwenye "${cat}" katika Mtaa Quiz Battle!\nUsahihi: ${acc}% | Mfululizo: ${streak}\nUnaweza kunizidi? 🎯🇿🇳`
+      : `I scored ${result.score} pts on "${cat}" in Mtaa Quiz Battle!\nAccuracy: ${acc}% | Streak: ${streak}\nCan you beat me? 🎯🇿🇳`;
     await Share.share({ message: shareText });
   };
 
@@ -191,6 +196,41 @@ export default function ResultScreen() {
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>⭐ {t('bestScore')}</Text>
               <Text style={[styles.detailValue, { color: Colors.gold }]}>{Math.max(result.score, prevBest)}</Text>
+            </View>
+          </Animated.View>
+
+          {/* Answer breakdown dots */}
+          <Animated.View style={[styles.breakdownCard, { opacity: cardAnim }]}>
+            <Text style={styles.breakdownTitle}>
+              {language === 'sw' ? 'Muhtasari wa Majibu' : 'Answer Breakdown'}
+            </Text>
+            <View style={styles.breakdownRow}>
+              {Array.from({ length: result.totalQuestions }).map((_, i) => {
+                const hit = i < result.correctAnswers;
+                return (
+                  <View
+                    key={i}
+                    style={[
+                      styles.breakdownDot,
+                      { backgroundColor: hit ? Colors.secondary : Colors.accent },
+                    ]}
+                  />
+                );
+              })}
+            </View>
+            <View style={styles.breakdownLegend}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: Colors.secondary }]} />
+                <Text style={styles.legendText}>
+                  {result.correctAnswers} {language === 'sw' ? 'Sahihi' : 'Correct'}
+                </Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: Colors.accent }]} />
+                <Text style={styles.legendText}>
+                  {result.totalQuestions - result.correctAnswers} {language === 'sw' ? 'Makosa' : 'Wrong'}
+                </Text>
+              </View>
             </View>
           </Animated.View>
 
@@ -315,5 +355,51 @@ const styles = StyleSheet.create({
 
   buttonsCol: {
     gap: 0,
+  },
+
+  breakdownCard: {
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: Radius.xl,
+    padding: Spacing.base,
+    marginBottom: Spacing.base,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  breakdownTitle: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: Typography.fontWeights.semiBold,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+    marginBottom: Spacing.sm,
+  },
+  breakdownDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+  },
+  breakdownLegend: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendText: {
+    fontSize: Typography.fontSizes.sm,
+    color: Colors.textSecondary,
   },
 });
