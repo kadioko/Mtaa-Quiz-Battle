@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../src/storage/storage';
 import { GameSettings } from '../src/types';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
-import { t, setLanguage } from '../src/utils/i18n';
+import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
 
 export default function SettingsScreen() {
@@ -34,11 +34,10 @@ export default function SettingsScreen() {
   const updateSetting = async (key: keyof GameSettings, value: boolean | string) => {
     const updated = { ...settings, [key]: value };
     setSettings(updated);
-    await StorageService.saveSettings(updated);
     if (key === 'language') {
-      const lang = value as 'sw' | 'en';
-      setLang(lang);
-      setLanguage(lang);
+      await setLang(value as 'sw' | 'en');
+    } else {
+      await StorageService.saveSettings(updated);
     }
   };
 
@@ -123,7 +122,7 @@ export default function SettingsScreen() {
               <TouchableOpacity
                 style={[
                   styles.langBtn,
-                  settings.language === 'sw' && styles.langBtnActive,
+                  language === 'sw' && styles.langBtnActive,
                 ]}
                 onPress={() => updateSetting('language', 'sw')}
               >
@@ -131,12 +130,12 @@ export default function SettingsScreen() {
                 <Text
                   style={[
                     styles.langText,
-                    settings.language === 'sw' && styles.langTextActive,
+                    language === 'sw' && styles.langTextActive,
                   ]}
                 >
                   {t('swahili')}
                 </Text>
-                {settings.language === 'sw' && (
+                {language === 'sw' && (
                   <Text style={styles.checkmark}>✓</Text>
                 )}
               </TouchableOpacity>
@@ -144,7 +143,7 @@ export default function SettingsScreen() {
               <TouchableOpacity
                 style={[
                   styles.langBtn,
-                  settings.language === 'en' && styles.langBtnActive,
+                  language === 'en' && styles.langBtnActive,
                 ]}
                 onPress={() => updateSetting('language', 'en')}
               >
@@ -152,12 +151,12 @@ export default function SettingsScreen() {
                 <Text
                   style={[
                     styles.langText,
-                    settings.language === 'en' && styles.langTextActive,
+                    language === 'en' && styles.langTextActive,
                   ]}
                 >
                   {t('english')}
                 </Text>
-                {settings.language === 'en' && (
+                {language === 'en' && (
                   <Text style={styles.checkmark}>✓</Text>
                 )}
               </TouchableOpacity>

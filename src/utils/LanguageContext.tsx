@@ -1,15 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { StorageService } from '../storage/storage';
-import { setLanguage, getLanguage } from './i18n';
+import { setLanguage } from './i18n';
 
 interface LanguageContextType {
   language: 'sw' | 'en';
-  setLang: (lang: 'sw' | 'en') => void;
+  setLang: (lang: 'sw' | 'en') => Promise<void>;
 }
 
 const LanguageContext = createContext<LanguageContextType>({
   language: 'sw',
-  setLang: () => {},
+  setLang: async () => {},
 });
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -22,9 +22,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   }, []);
 
-  const setLang = (lang: 'sw' | 'en') => {
+  const setLang = async (lang: 'sw' | 'en') => {
     setLanguageState(lang);
     setLanguage(lang);
+    const current = await StorageService.getSettings();
+    await StorageService.saveSettings({ ...current, language: lang });
   };
 
   return (
