@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -17,11 +17,28 @@ import { useLanguage } from '../src/utils/LanguageContext';
 import { isToday } from '../src/utils/gameLogic';
 import PrimaryButton from '../src/components/PrimaryButton';
 
+const getMsUntilMidnight = (): number => {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  return midnight.getTime() - now.getTime();
+};
+
+const formatCountdown = (ms: number): string => {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600).toString().padStart(2, '0');
+  const m = Math.floor((total % 3600) / 60).toString().padStart(2, '0');
+  const s = (total % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${s}`;
+};
+
 export default function DailyScreen() {
   const router = useRouter();
   const { language } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [alreadyPlayed, setAlreadyPlayed] = useState(false);
+  const [countdown, setCountdown] = useState(getMsUntilMidnight());
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     StorageService.getUserProfile().then((p) => {
@@ -29,6 +46,14 @@ export default function DailyScreen() {
       setAlreadyPlayed(isToday(p.lastDailyDate) && p.dailyCompleted);
     });
   }, [language]);
+
+  useEffect(() => {
+    if (!alreadyPlayed) return;
+    timerRef.current = setInterval(() => {
+      setCountdown(getMsUntilMidnight());
+    }, 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [alreadyPlayed]);
 
   const handleStart = () => {
     router.push({ pathname: '/quiz', params: { categoryId: 'daily', isDaily: 'true' } });
@@ -130,8 +155,9 @@ export default function DailyScreen() {
           {alreadyPlayed ? (
             <View style={styles.completedBox}>
               <Text style={styles.completedText}>
-                {language === 'sw' ? 'Rudi kesho saa 12 usiku kwa changamoto mpya!' : 'Come back tomorrow at midnight for a new challenge!'}
+                {language === 'sw' ? 'Changamoto mpya inakuja!' : 'Next challenge in:'}
               </Text>
+              <Text style={styles.countdownText}>{formatCountdown(countdown)}</Text>
               <PrimaryButton
                 label={language === 'sw' ? 'Cheza Mchezo Mwingine' : 'Play Another Game'}
                 onPress={() => router.push('/categories')}
@@ -297,5 +323,13 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     textAlign: 'center',
     fontWeight: Typography.fontWeights.medium,
+  },
+  countdownText: {
+    fontSize: Typography.fontSizes.xxl,
+    fontWeight: Typography.fontWeights.black,
+    color: Colors.primary,
+    letterSpacing: 2,
+    marginTop: Spacing.sm,
+    fontVariant: ['tabular-nums'],
   },
 });

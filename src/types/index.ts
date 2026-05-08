@@ -65,6 +65,7 @@ export interface UserProfile {
   dailyStreak: number;
   lastDailyDate: string;
   dailyCompleted: boolean;
+  avatar: string;
 }
 
 export interface LeaderboardEntry {

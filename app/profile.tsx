@@ -21,6 +21,11 @@ import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
 import StatCard from '../src/components/StatCard';
 
+const AVATAR_OPTIONS = [
+  '🇹🇿','🦁','🐘','🦒','🦓','🐆','🦅','🌍',
+  '⚽','🎵','🏆','🎮','🔥','💎','🧠','👑',
+];
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { language } = useLanguage();
@@ -28,6 +33,7 @@ export default function ProfileScreen() {
   const [catStats, setCatStats] = useState<Record<string, number>>({});
   const [editModal, setEditModal] = useState(false);
   const [draftName, setDraftName] = useState('');
+  const [avatarModal, setAvatarModal] = useState(false);
 
   useEffect(() => {
     StorageService.getUserProfile().then(setProfile);
@@ -46,6 +52,14 @@ export default function ProfileScreen() {
     setProfile(updated);
     await StorageService.saveUserProfile(updated);
     setEditModal(false);
+  };
+
+  const saveAvatar = async (emoji: string) => {
+    if (!profile) return;
+    const updated = { ...profile, avatar: emoji };
+    setProfile(updated);
+    await StorageService.saveUserProfile(updated);
+    setAvatarModal(false);
   };
 
   const getFavoriteCategory = (): string => {
@@ -85,9 +99,12 @@ export default function ProfileScreen() {
         >
           {/* Avatar */}
           <View style={styles.avatarSection}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarEmoji}>🇹🇿</Text>
-            </View>
+            <TouchableOpacity style={styles.avatarCircle} onPress={() => setAvatarModal(true)} activeOpacity={0.8}>
+              <Text style={styles.avatarEmoji}>{profile?.avatar ?? '��'}</Text>
+              <View style={styles.avatarEditBadge}>
+                <Text style={styles.avatarEditIcon}>✏️</Text>
+              </View>
+            </TouchableOpacity>
             <TouchableOpacity onPress={openEdit} style={styles.usernameRow}>
               <Text style={styles.username}>{profile?.username ?? 'Mchezaji'}</Text>
               <Text style={styles.editIcon}>✏️</Text>
@@ -169,6 +186,34 @@ export default function ProfileScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Avatar picker modal */}
+      <Modal visible={avatarModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              {language === 'sw' ? 'Chagua Picha' : 'Choose Avatar'}
+            </Text>
+            <View style={styles.avatarGrid}>
+              {AVATAR_OPTIONS.map((emoji) => (
+                <TouchableOpacity
+                  key={emoji}
+                  style={[
+                    styles.avatarOption,
+                    profile?.avatar === emoji && styles.avatarOptionActive,
+                  ]}
+                  onPress={() => saveAvatar(emoji)}
+                >
+                  <Text style={styles.avatarOptionEmoji}>{emoji}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity style={styles.avatarCancelBtn} onPress={() => setAvatarModal(false)}>
+              <Text style={styles.avatarCancelText}>{language === 'sw' ? 'Ghairi' : 'Cancel'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Username edit modal */}
       <Modal visible={editModal} transparent animationType="fade">
@@ -271,6 +316,48 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   avatarEmoji: { fontSize: 44 },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarEditIcon: { fontSize: 10 },
+  avatarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    justifyContent: 'center',
+    marginBottom: Spacing.base,
+  },
+  avatarOption: {
+    width: 52,
+    height: 52,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.backgroundCardLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  avatarOptionActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '22',
+  },
+  avatarOptionEmoji: { fontSize: 26 },
+  avatarCancelBtn: {
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+  },
+  avatarCancelText: {
+    color: Colors.textMuted,
+    fontSize: Typography.fontSizes.md,
+  },
   username: {
     fontSize: Typography.fontSizes.xl,
     fontWeight: Typography.fontWeights.bold,

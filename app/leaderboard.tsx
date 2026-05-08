@@ -16,10 +16,26 @@ import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
 import { formatDate } from '../src/utils/gameLogic';
 
+type FilterTab = 'all' | 'daily' | 'best';
+
 export default function LeaderboardScreen() {
   const router = useRouter();
   const { language } = useLanguage();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [tab, setTab] = useState<FilterTab>('all');
+
+  const displayed = (() => {
+    if (tab === 'daily') return entries.filter((e) => e.categoryName.toLowerCase().includes('daily') || e.categoryName === 'Daily Challenge');
+    if (tab === 'best') {
+      const seen = new Set<string>();
+      return entries.filter((e) => {
+        if (seen.has(e.username)) return false;
+        seen.add(e.username);
+        return true;
+      });
+    }
+    return entries;
+  })();
 
   useEffect(() => {
     StorageService.getLeaderboard().then(setEntries);
@@ -64,14 +80,33 @@ export default function LeaderboardScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        {entries.length === 0 ? (
+        {/* Filter tabs */}
+        <View style={styles.tabs}>
+          {(['all', 'daily', 'best'] as FilterTab[]).map((f) => (
+            <TouchableOpacity
+              key={f}
+              style={[styles.tab, tab === f && styles.tabActive]}
+              onPress={() => setTab(f)}
+            >
+              <Text style={[styles.tabText, tab === f && styles.tabTextActive]}>
+                {f === 'all'
+                  ? (language === 'sw' ? 'Zote' : 'All')
+                  : f === 'daily'
+                  ? (language === 'sw' ? 'Kila Siku' : 'Daily')
+                  : (language === 'sw' ? 'Bora' : 'Best')}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {displayed.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🏆</Text>
             <Text style={styles.emptyText}>{t('noLeaderboard')}</Text>
           </View>
         ) : (
           <FlatList
-            data={entries}
+            data={displayed}
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
@@ -108,6 +143,33 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.lg,
     fontWeight: Typography.fontWeights.bold,
     color: Colors.text,
+  },
+  tabs: {
+    flexDirection: 'row',
+    marginHorizontal: Spacing.base,
+    marginBottom: Spacing.base,
+    backgroundColor: Colors.backgroundCardLight,
+    borderRadius: Radius.lg,
+    padding: 3,
+    gap: 3,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+  },
+  tabActive: {
+    backgroundColor: Colors.primary,
+  },
+  tabText: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: Typography.fontWeights.semiBold,
+    color: Colors.textMuted,
+  },
+  tabTextActive: {
+    color: Colors.black,
+    fontWeight: Typography.fontWeights.bold,
   },
   list: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
   row: {

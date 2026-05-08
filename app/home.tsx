@@ -22,10 +22,23 @@ import PrimaryButton from '../src/components/PrimaryButton';
 
 const { width } = Dimensions.get('window');
 
+const getGreeting = (lang: 'sw' | 'en'): string => {
+  const h = new Date().getHours();
+  if (lang === 'sw') {
+    if (h < 12) return 'Habari za asubuhi';
+    if (h < 17) return 'Habari za mchana';
+    return 'Habari za jioni';
+  }
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const { language } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [dailyDone, setDailyDone] = useState(false);
   const [rewardModal, setRewardModal] = useState(false);
   const [todayCoins, setTodayCoins] = useState(0);
   const [rewardStreak, setRewardStreak] = useState(1);
@@ -34,6 +47,7 @@ export default function HomeScreen() {
   const loadProfile = useCallback(async () => {
     const p = await StorageService.getUserProfile();
     setProfile(p);
+    setDailyDone(p.dailyCompleted && p.lastDailyDate === new Date().toDateString());
 
     const reward = await StorageService.getDailyReward();
     const today = new Date().toDateString();
@@ -75,8 +89,10 @@ export default function HomeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.greeting}>{t('welcomeBack')} 👋</Text>
-              <Text style={styles.appName}>{t('appName')}</Text>
+              <Text style={styles.greeting}>{getGreeting(language)} 👋</Text>
+              <Text style={styles.appName}>
+                {profile?.username ?? 'Mchezaji'}
+              </Text>
             </View>
             <TouchableOpacity
               style={styles.settingsBtn}
@@ -158,19 +174,31 @@ export default function HomeScreen() {
             activeOpacity={0.85}
           >
             <LinearGradient
-              colors={['#1DB954', '#0d7a38']}
+              colors={dailyDone ? ['#1a1a35', '#252545'] : ['#1DB954', '#0d7a38']}
               style={styles.dailyGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
               <View style={styles.dailyLeft}>
-                <Text style={styles.dailyIcon}>⚡</Text>
+                <Text style={styles.dailyIcon}>{dailyDone ? '✅' : '⚡'}</Text>
                 <View>
-                  <Text style={styles.dailyTitle}>{t('dailyChallenge')}</Text>
-                  <Text style={styles.dailySub}>{t('dailyChallengeDesc')}</Text>
+                  <Text style={[styles.dailyTitle, dailyDone && { color: Colors.textSecondary }]}>
+                    {t('dailyChallenge')}
+                  </Text>
+                  <Text style={[styles.dailySub, dailyDone && { color: Colors.textMuted }]}>
+                    {dailyDone
+                      ? (language === 'sw' ? 'Umekwisha cheza leo!' : 'Already played today!')
+                      : t('dailyChallengeDesc')}
+                  </Text>
                 </View>
               </View>
-              <Text style={styles.dailyArrow}>›</Text>
+              {dailyDone ? (
+                <View style={styles.doneBadge}>
+                  <Text style={styles.doneBadgeText}>{language === 'sw' ? 'IMEKAMILIKA' : 'DONE'}</Text>
+                </View>
+              ) : (
+                <Text style={styles.dailyArrow}>›</Text>
+              )}
             </LinearGradient>
           </TouchableOpacity>
         </ScrollView>
@@ -337,6 +365,20 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: Colors.white,
     fontWeight: Typography.fontWeights.bold,
+  },
+  doneBadge: {
+    backgroundColor: Colors.secondary + '33',
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+  },
+  doneBadgeText: {
+    fontSize: Typography.fontSizes.xs,
+    fontWeight: Typography.fontWeights.bold,
+    color: Colors.secondary,
+    letterSpacing: 0.5,
   },
 
   modalOverlay: {

@@ -30,6 +30,7 @@ const DEFAULT_PROFILE: UserProfile = {
   dailyStreak: 0,
   lastDailyDate: '',
   dailyCompleted: false,
+  avatar: '🇹🇿',
 };
 
 const DEFAULT_SETTINGS: GameSettings = {
