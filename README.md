@@ -1,13 +1,11 @@
-# 🇹🇿 Mtaa Quiz Battle
+# Mtaa Quiz Battle
 
 A **Swahili-first Tanzanian trivia game** built with React Native + Expo.
 Test your knowledge of Tanzania — music, football, geography, history, food, language, and more.
 
-> 🔗 **GitHub**: [kadioko/Mtaa-Quiz-Battle](https://github.com/kadioko/Mtaa-Quiz-Battle)
-
 ---
 
-## 📱 Screens
+## Screens
 
 | Screen | Description |
 | --- | --- |
@@ -18,7 +16,7 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 | **Result** (`result.tsx`) | Animated score counter, new-record banner, answer breakdown, share card |
 | **Leaderboard** (`leaderboard.tsx`) | All / Daily / Best filter tabs, top-50 scores |
 | **Profile** (`profile.tsx`) | Avatar emoji picker, username editor, animated accuracy bar, stats |
-| **Settings** (`settings.tsx`) | Sound, vibration, language toggle, version, GitHub link |
+| **Settings** (`settings.tsx`) | Sound, vibration, language toggle, version info |
 | **Daily Challenge** (`daily.tsx`) | Daily quiz, streak tracking, live midnight countdown when done |
 
 ---
@@ -79,7 +77,9 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 - **Offline-first** — zero backend, all data in AsyncStorage
 - **Expo Router v3** file-based navigation
 - **TypeScript** strict mode throughout
-- `tsc --noEmit` = 0 errors
+- Result history stores per-question correctness for accurate answer breakdowns
+- Category stats track play counts and the profile favourite category
+- `npm run typecheck` = strict TypeScript check
 
 ---
 
@@ -88,7 +88,7 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 ### Prerequisites
 
 - Node.js 18+
-- Expo CLI: `npm install -g expo-cli`
+- Expo CLI via `npx expo` or a global install
 - Android device / emulator or Expo Go app
 
 ### Install
@@ -101,10 +101,20 @@ npm install
 ### Run
 
 ```bash
-npx expo start           # Scan QR with Expo Go
-npx expo start --android # Launch on Android emulator
-npx expo start --ios     # Launch on iOS simulator
+npm start                # Scan QR with Expo Go
+npm run start:tunnel     # Tunnel mode for external devices/networks
+npm run android          # Launch on Android emulator/device
+npm run ios              # Launch on iOS simulator
+npm run web              # Launch web preview
 ```
+
+### Quality Checks
+
+```bash
+npm run typecheck
+```
+
+Run this before committing gameplay, storage, or route changes.
 
 ### Build APK
 
@@ -243,8 +253,11 @@ Integrate with `react-native-google-mobile-ads` when ready.
 - All data stored locally — no internet required
 - Daily challenge questions are date-seeded (same set for all players on a given day)
 - `dailyCompleted` flag auto-resets at midnight via `getUserProfile()`
+- Daily challenge results route back to the Daily screen instead of starting an invalid replay
 - Leaderboard keeps top 50 entries sorted by score
 - Quiz history keeps last 100 results
+- Result records may include `answerMap`, a boolean array used by the result screen for exact answer breakdown dots
+- Category play counts exclude the daily challenge so favourite category stays tied to regular categories
 
 ---
 

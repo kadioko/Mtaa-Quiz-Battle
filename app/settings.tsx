@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
-  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -216,14 +215,6 @@ export default function SettingsScreen() {
               <Text style={styles.aboutMeta}>📱 {language === 'sw' ? 'Toleo' : 'Version'}</Text>
               <Text style={styles.aboutMetaVal}>v1.0.0</Text>
             </View>
-            <View style={styles.divider} />
-            <TouchableOpacity
-              style={styles.aboutRow}
-              onPress={() => Linking.openURL('https://github.com/kadioko/Mtaa-Quiz-Battle')}
-            >
-              <Text style={styles.aboutMeta}>🔗 GitHub</Text>
-              <Text style={[styles.aboutMetaVal, { color: Colors.tanzaniaBlue }]}>kadioko/Mtaa-Quiz-Battle ›</Text>
-            </TouchableOpacity>
             <View style={styles.divider} />
             <Text style={styles.madeWith}>🤍 {language === 'sw' ? 'Imetengenezwa kwa Tanzania' : 'Made with ❤️ in Tanzania'}</Text>
           </View>
