@@ -61,7 +61,7 @@ eas build --platform android --profile preview
 
 ## 📁 Project Structure
 
-```
+```text
 Mtaa Quiz Battle/
 ├── app/                    # Expo Router screens
 │   ├── _layout.tsx         # Root layout + navigation
