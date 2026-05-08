@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Spacing } from '../src/theme';
+import { StorageService } from '../src/storage/storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -11,6 +12,32 @@ export default function SplashScreen() {
   const logoScale = useRef(new Animated.Value(0.3)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;
+  const dot0 = useRef(new Animated.Value(0.3)).current;
+  const dot1 = useRef(new Animated.Value(0.3)).current;
+  const dot2 = useRef(new Animated.Value(0.3)).current;
+  const [tagline, setTagline] = useState('Jaribu Ujuzi Wako wa Bongo!');
+
+  useEffect(() => {
+    StorageService.getSettings().then((s) => {
+      setTagline(s.language === 'en' ? 'Test Your Tanzania Knowledge!' : 'Jaribu Ujuzi Wako wa Bongo!');
+    });
+  }, []);
+
+  useEffect(() => {
+    const pulse = (dot: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0.3, duration: 300, useNativeDriver: true }),
+        ])
+      );
+    Animated.parallel([
+      pulse(dot0, 0),
+      pulse(dot1, 200),
+      pulse(dot2, 400),
+    ]).start();
+  }, [dot0, dot1, dot2]);
 
   useEffect(() => {
     Animated.sequence([
@@ -61,17 +88,17 @@ export default function SplashScreen() {
         </Animated.View>
 
         <Animated.Text style={[styles.tagline, { opacity: taglineOpacity }]}>
-          Jaribu Ujuzi Wako wa Bongo!
+          {tagline}
         </Animated.Text>
       </View>
 
       <View style={styles.dotsRow}>
-        {[0, 1, 2].map((i) => (
-          <View
+        {([dot0, dot1, dot2] as Animated.Value[]).map((anim, i) => (
+          <Animated.View
             key={i}
             style={[
               styles.dot,
-              { backgroundColor: i === 1 ? Colors.primary : Colors.border },
+              { backgroundColor: Colors.primary, opacity: anim },
             ]}
           />
         ))}

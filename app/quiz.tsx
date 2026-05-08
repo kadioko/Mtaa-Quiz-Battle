@@ -78,6 +78,9 @@ export default function QuizScreen() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const questionAnim = useRef(new Animated.Value(1)).current;
   const bonusAnim = useRef(new Animated.Value(0)).current;
+  const floatY = useRef(new Animated.Value(0)).current;
+  const floatOpacity = useRef(new Animated.Value(0)).current;
+  const [floatText, setFloatText] = useState('');
 
   const settings = useRef({ sound: true, vibration: true });
 
@@ -226,6 +229,17 @@ export default function QuizScreen() {
       const { points, speedBonus, streakBonus, multiplier } = calculateScore(timeLeft, QUESTION_TIME, newStreak, current.difficulty);
       setScore((prev) => prev + points);
 
+      setFloatText(`+${points}`);
+      floatY.setValue(0);
+      floatOpacity.setValue(1);
+      Animated.parallel([
+        Animated.timing(floatY, { toValue: -48, duration: 900, useNativeDriver: true }),
+        Animated.sequence([
+          Animated.delay(400),
+          Animated.timing(floatOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+        ]),
+      ]).start(() => setFloatText(''));
+
       setAnswerMap((prev) => { const n = [...prev]; n[currentIndex] = true; return n; });
 
       if (settings.current.vibration) {
@@ -324,8 +338,20 @@ export default function QuizScreen() {
               {t('question')} {currentIndex + 1}/{questions.length}
             </Text>
           </View>
-          <View style={styles.scoreBadge}>
-            <Text style={styles.scoreText}>⭐ {score}</Text>
+          <View style={styles.scoreBadgeWrap}>
+            <View style={styles.scoreBadge}>
+              <Text style={styles.scoreText}>⭐ {score}</Text>
+            </View>
+            {floatText ? (
+              <Animated.Text
+                style={[
+                  styles.floatScore,
+                  { opacity: floatOpacity, transform: [{ translateY: floatY }] },
+                ]}
+              >
+                {floatText}
+              </Animated.Text>
+            ) : null}
           </View>
           <View style={[styles.streakBadge, streak >= 3 && styles.streakActive]}>
             <Text style={styles.streakText}>🔥 {streak}</Text>
@@ -482,11 +508,22 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: Typography.fontWeights.medium,
   },
+  scoreBadgeWrap: {
+    position: 'relative',
+    alignItems: 'center',
+  },
   scoreBadge: {
     backgroundColor: Colors.backgroundCardLight,
     borderRadius: Radius.full,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
+  },
+  floatScore: {
+    position: 'absolute',
+    top: 0,
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: Typography.fontWeights.black,
+    color: Colors.secondary,
   },
   scoreText: {
     fontSize: Typography.fontSizes.sm,

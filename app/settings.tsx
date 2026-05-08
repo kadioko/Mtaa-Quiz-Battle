@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -210,6 +211,21 @@ export default function SettingsScreen() {
           <Text style={styles.sectionLabel}>ℹ️ {t('about')}</Text>
           <View style={styles.card}>
             <Text style={styles.aboutText}>{t('aboutText')}</Text>
+            <View style={styles.divider} />
+            <View style={styles.aboutRow}>
+              <Text style={styles.aboutMeta}>📱 {language === 'sw' ? 'Toleo' : 'Version'}</Text>
+              <Text style={styles.aboutMetaVal}>v1.0.0</Text>
+            </View>
+            <View style={styles.divider} />
+            <TouchableOpacity
+              style={styles.aboutRow}
+              onPress={() => Linking.openURL('https://github.com/kadioko/Mtaa-Quiz-Battle')}
+            >
+              <Text style={styles.aboutMeta}>🔗 GitHub</Text>
+              <Text style={[styles.aboutMetaVal, { color: Colors.tanzaniaBlue }]}>kadioko/Mtaa-Quiz-Battle ›</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <Text style={styles.madeWith}>🤍 {language === 'sw' ? 'Imetengenezwa kwa Tanzania' : 'Made with ❤️ in Tanzania'}</Text>
           </View>
 
           {/* Reset */}
@@ -347,5 +363,27 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.base,
     fontWeight: Typography.fontWeights.bold,
     color: Colors.accent,
+  },
+  aboutRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+  },
+  aboutMeta: {
+    fontSize: Typography.fontSizes.md,
+    color: Colors.textSecondary,
+  },
+  aboutMetaVal: {
+    fontSize: Typography.fontSizes.md,
+    fontWeight: Typography.fontWeights.semiBold,
+    color: Colors.text,
+  },
+  madeWith: {
+    fontSize: Typography.fontSizes.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: Spacing.sm,
   },
 });

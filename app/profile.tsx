@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -34,6 +35,7 @@ export default function ProfileScreen() {
   const [editModal, setEditModal] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [avatarModal, setAvatarModal] = useState(false);
+  const accuracyAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     StorageService.getUserProfile().then(setProfile);
@@ -81,6 +83,14 @@ export default function ProfileScreen() {
     profile && profile.totalQuestions > 0
       ? Math.round((profile.totalCorrectAnswers / profile.totalQuestions) * 100)
       : 0;
+
+  useEffect(() => {
+    Animated.timing(accuracyAnim, {
+      toValue: accuracy,
+      duration: 900,
+      useNativeDriver: false,
+    }).start();
+  }, [accuracy]);
 
   return (
     <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
@@ -175,10 +185,16 @@ export default function ProfileScreen() {
               {t('correctAnswers')}: {profile?.totalCorrectAnswers ?? 0} / {profile?.totalQuestions ?? 0}
             </Text>
             <View style={styles.progressTrack}>
-              <View
+              <Animated.View
                 style={[
                   styles.progressFill,
-                  { width: `${accuracy}%`, backgroundColor: accuracy >= 70 ? Colors.secondary : Colors.primary },
+                  {
+                    width: accuracyAnim.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: ['0%', '100%'],
+                    }),
+                    backgroundColor: accuracy >= 70 ? Colors.secondary : Colors.primary,
+                  },
                 ]}
               />
             </View>
