@@ -52,29 +52,82 @@ Mtaa Quiz Battle is a Swahili-first Tanzanian trivia game focused on quick sessi
 - **EAS build profiles** in `eas.json`: `development`, `preview` (internal APK/IPA), `production` (AAB/IPA + autoIncrement + submit config).
 - **Release checklist** (`docs/RELEASE_CHECKLIST.md`) covering code quality, versioning, assets, `app.json`, permissions, EAS builds, store metadata, question bank, localisation, and post-release steps.
 
----
+### Sharing & Admin Tooling
 
-## Active / Next
+- **Shareable result cards** — `react-native-view-shot` captures the score card as a PNG; `expo-sharing` shares it natively. Text-share fallback included.
+- **Background music toggle** — `music` field added to `GameSettings`, separated from sound effects in settings UI and storage.
+- **Admin review CLI** (`scripts/admin-review.mjs`) — interactive + flag-based: `--stats`, `--stale`, `--missing-en`, `--find <term>`, `--category`, `--difficulty`, `--export`. Run via `npm run admin:review`.
+
+### Offline PWA & Notifications
+
+- **Offline PWA** — `public/sw.js` service worker with cache-first (assets), stale-while-revalidate (shell), and network-first (external) strategies. `public/manifest.json` for installability. SW auto-registered on web startup in `_layout.tsx`.
+- **Local push notifications** — `src/services/NotificationService.ts` wraps `expo-notifications`. Daily challenge reminder toggle in Settings; tapping a notification deep-links to `/daily`. Android channel configured.
+
+### Monetisation Scaffolding
+
+- **Rewarded ads** (`src/services/AdService.ts`) — `react-native-google-mobile-ads` integrated; `showRewardedAd('extra-life' | 'double-coins')` resolves with reward on success. Test IDs used in dev; real AdMob IDs needed before release.
+- **Remove Ads IAP** (`src/services/IAPService.ts`) — `expo-in-app-purchases` integrated; `purchaseRemoveAds()`, `restorePurchases()`, `isAdFree()` (persisted to AsyncStorage). Real product IDs needed before release.
+- Settings Premium section fully wired: Watch Ad buttons, Remove Ads purchase, Restore Purchases — no longer "coming soon" placeholders.
 
 ### Content Expansion ✅
 
 **Goal achieved:** Every category now has ~50 questions (502 total, q001–q502).
 
-- Review any `timeSensitive` questions whose `reviewAfter` date has passed.
+- Review any `timeSensitive` questions whose `reviewAfter` date has passed (`npm run admin:review -- --stale`).
 - Next content push (if desired): start at `q503` with `inject-batch6.mjs`.
+
+---
+
+## Active / Next
+
+### Store Release Preparation
+
+To ship v1.0 to Google Play and App Store:
+
+1. **Replace placeholder IDs** in `app.json` and `src/services/AdService.ts` / `src/services/IAPService.ts` with real AdMob App IDs and IAP product IDs.
+2. **Real assets** — replace `assets/icon.png`, `assets/splash.png`, `assets/adaptive-icon.png` with production 1024×1024 / correct-resolution artwork.
+3. **`eas.json` submit config** — fill in `appleId`, `ascAppId`, `appleTeamId`, and provide `google-play-key.json`.
+4. **Run full CI gate**: `npm run check`.
+5. **EAS build + submit**: `eas build --platform all --profile production` → `eas submit`.
+6. **Store metadata** — screenshots, descriptions (SW + EN), content rating, privacy policy URL.
 
 ---
 
 ## Later Backlog
 
-- Cloud leaderboard with anonymous player IDs or optional sign-in.
-- Optional cross-device progress sync.
-- Rewarded ads → extra life or double coins; premium remove-ads IAP.
-- Push notification reminders for daily challenges.
-- Shareable result cards as generated images (not just text share).
-- Admin tooling for bulk question review and import.
-- Background music toggle separate from sound effects.
-- Offline PWA support (web service worker).
+### Online Features
+
+- Cloud leaderboard with anonymous player IDs or optional sign-in (e.g. Firebase / Supabase).
+- Optional cross-device progress sync tied to account.
+- Real server-side push notifications (Expo Push Token + notification server for scheduled daily blasts).
+
+### Gameplay & Content
+
+- **Multiplayer mode** — real-time 1v1 or async challenge via room code.
+- **Tournament mode** — weekly bracket-style competition across all categories.
+- **Timed sprint mode** — answer as many questions as possible in 60 seconds.
+- **Hints system** — spend coins to eliminate 2 wrong options or skip a question.
+- **Streak freeze** — purchasable item to protect daily streak on a missed day.
+- Periodic content refresh — add questions, retire stale ones, run `admin:review --stale`.
+
+### UX & Polish
+
+- **Onboarding flow** — brief tutorial for first-time players covering scoring, streaks, and daily challenge.
+- **Animated category icons** — Lottie or Reanimated 3 entrance animations on category select screen.
+- **Sound design expansion** — background music tracks per category (respects `music` toggle).
+- **Haptic patterns** — distinct patterns for streak milestone, level-up, and achievement unlock.
+
+### Monetisation (Post-Launch)
+
+- **Coin shop** — purchasable coin packs as consumable IAPs.
+- **Season pass** — monthly subscription unlocking bonus questions and exclusive category themes.
+- **Rewarded ad placement on result screen** — "Watch ad to double coins from this round" button wired to `showRewardedAd('double-coins')` result-screen integration.
+
+### Platform
+
+- **Expo Web deployment** — host static PWA build (e.g. Netlify / Vercel) for browser play.
+- **iPad / tablet layout** — two-column grid on wide screens.
+- **Accessibility** — VoiceOver / TalkBack labels, larger touch targets, high-contrast mode.
 
 ---
 
