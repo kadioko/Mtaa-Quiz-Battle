@@ -185,6 +185,7 @@ export default function QuizScreen() {
         categoryName: cat.name,
         date: result.date,
         correctAnswers: finalCorrect,
+        isDaily: isDaily === 'true',
       });
 
       if (isDaily === 'true') {

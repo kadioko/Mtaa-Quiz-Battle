@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../src/storage/storage';
 import { LeaderboardEntry } from '../src/types';
+import { getCategoryByName } from '../src/data/categories';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
@@ -25,7 +26,11 @@ export default function LeaderboardScreen() {
   const [tab, setTab] = useState<FilterTab>('all');
 
   const displayed = (() => {
-    if (tab === 'daily') return entries.filter((e) => e.categoryName.toLowerCase().includes('daily') || e.categoryName === 'Daily Challenge');
+    if (tab === 'daily') {
+      return entries.filter((e) =>
+        e.isDaily || e.categoryName.toLowerCase().includes('daily') || e.categoryName === 'Daily Challenge'
+      );
+    }
     if (tab === 'best') {
       const seen = new Set<string>();
       return entries.filter((e) => {
@@ -55,12 +60,21 @@ export default function LeaderboardScreen() {
     return `${i + 1}`;
   };
 
+  const getDisplayCategoryName = (entry: LeaderboardEntry): string => {
+    if (entry.isDaily || entry.categoryName === 'Daily Challenge') {
+      return t('dailyChallenge');
+    }
+    const category = getCategoryByName(entry.categoryName);
+    if (!category) return entry.categoryName;
+    return language === 'en' ? category.name_en : category.name;
+  };
+
   const renderItem = ({ item, index }: { item: LeaderboardEntry; index: number }) => (
     <View style={[styles.row, index < 3 && { borderColor: rankColor(index) }]}>
       <Text style={[styles.rank, { color: rankColor(index) }]}>{rankEmoji(index)}</Text>
       <View style={styles.rowInfo}>
         <Text style={styles.rowName}>{item.username}</Text>
-        <Text style={styles.rowCat} numberOfLines={1}>{item.categoryName}</Text>
+        <Text style={styles.rowCat} numberOfLines={1}>{getDisplayCategoryName(item)}</Text>
       </View>
       <View style={styles.rowRight}>
         <Text style={[styles.rowScore, { color: rankColor(index) }]}>{item.score}</Text>
@@ -90,10 +104,10 @@ export default function LeaderboardScreen() {
             >
               <Text style={[styles.tabText, tab === f && styles.tabTextActive]}>
                 {f === 'all'
-                  ? (language === 'sw' ? 'Zote' : 'All')
+                  ? t('allTab')
                   : f === 'daily'
-                  ? (language === 'sw' ? 'Kila Siku' : 'Daily')
-                  : (language === 'sw' ? 'Bora' : 'Best')}
+                  ? t('dailyTab')
+                  : t('bestTab')}
               </Text>
             </TouchableOpacity>
           ))}

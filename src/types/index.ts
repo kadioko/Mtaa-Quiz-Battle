@@ -10,6 +10,11 @@ export interface Question {
   explanation: string;
   explanation_en?: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  sourceNote?: string;
+  sourceUrl?: string;
+  timeSensitive?: boolean;
+  reviewAfter?: string;
+  reviewReason?: string;
 }
 
 export interface Category {
@@ -76,6 +81,7 @@ export interface LeaderboardEntry {
   categoryName: string;
   date: string;
   correctAnswers: number;
+  isDaily?: boolean;
 }
 
 export interface GameSettings {
@@ -83,6 +89,7 @@ export interface GameSettings {
   vibration: boolean;
   language: 'sw' | 'en';
   notifications: boolean;
+  themeMode: 'dark' | 'light';
 }
 
 export interface DailyReward {

@@ -16,16 +16,23 @@ import { GameSettings } from '../src/types';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
+import { useTheme, useThemeColors } from '../src/utils/ThemeContext';
+import { ThemeMode } from '../src/theme/colors';
+
+const DEFAULT_SETTINGS: GameSettings = {
+  sound: true,
+  vibration: true,
+  language: 'sw',
+  notifications: true,
+  themeMode: 'dark',
+};
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { language, setLang } = useLanguage();
-  const [settings, setSettings] = useState<GameSettings>({
-    sound: true,
-    vibration: true,
-    language: 'sw',
-    notifications: true,
-  });
+  const { themeMode, setThemeMode } = useTheme();
+  const colors = useThemeColors();
+  const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
     StorageService.getSettings().then(setSettings);
@@ -36,6 +43,8 @@ export default function SettingsScreen() {
     setSettings(updated);
     if (key === 'language') {
       await setLang(value as 'sw' | 'en');
+    } else if (key === 'themeMode') {
+      await setThemeMode(value as ThemeMode);
     } else {
       await StorageService.saveSettings(updated);
     }
@@ -52,7 +61,11 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             await StorageService.resetAllData();
+            setSettings(DEFAULT_SETTINGS);
+            await setThemeMode(DEFAULT_SETTINGS.themeMode);
+            await setLang(DEFAULT_SETTINGS.language);
             Alert.alert('✅', t('resetSuccess'));
+            router.replace('/home');
           },
         },
       ]
@@ -72,24 +85,24 @@ export default function SettingsScreen() {
   }) => (
     <View style={styles.settingRow}>
       <Text style={styles.settingEmoji}>{emoji}</Text>
-      <Text style={styles.settingLabel}>{label}</Text>
+      <Text style={[styles.settingLabel, { color: colors.text }]}>{label}</Text>
       <Switch
         value={value}
         onValueChange={onToggle}
-        trackColor={{ false: Colors.border, true: Colors.primary + '88' }}
-        thumbColor={value ? Colors.primary : Colors.textMuted}
+        trackColor={{ false: colors.border, true: colors.primary + '88' }}
+        thumbColor={value ? colors.primary : colors.textMuted}
       />
     </View>
   );
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={styles.backIcon}>‹</Text>
+          <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.backgroundCardLight }]}>
+            <Text style={[styles.backIcon, { color: colors.text }]}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>⚙️ {t('settings')}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>⚙️ {t('settings')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -98,15 +111,15 @@ export default function SettingsScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Sound & Vibration */}
-          <Text style={styles.sectionLabel}>🔊 {t('sound')} & {t('vibration')}</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>🔊 {t('sound')} & {t('vibration')}</Text>
+          <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
             <SettingRow
               label={t('sound')}
               emoji="🎵"
               value={settings.sound}
               onToggle={(v) => updateSetting('sound', v)}
             />
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <SettingRow
               label={t('vibration')}
               emoji="📳"
@@ -115,14 +128,46 @@ export default function SettingsScreen() {
             />
           </View>
 
+          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>◐ {t('appearance')}</Text>
+          <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+            <View style={styles.langRow}>
+              {(['dark', 'light'] as ThemeMode[]).map((mode) => (
+                <TouchableOpacity
+                  key={mode}
+                  style={[
+                    styles.langBtn,
+                    { backgroundColor: colors.backgroundCardLight, borderColor: colors.border },
+                    themeMode === mode && { backgroundColor: colors.primary + '22', borderColor: colors.primary },
+                  ]}
+                  onPress={() => updateSetting('themeMode', mode)}
+                >
+                  <Text style={styles.langFlag}>{mode === 'dark' ? '🌙' : '☀️'}</Text>
+                  <Text
+                    style={[
+                      styles.langText,
+                      { color: colors.textSecondary },
+                      themeMode === mode && { color: colors.primary, fontWeight: Typography.fontWeights.bold },
+                    ]}
+                  >
+                    {mode === 'dark' ? t('darkMode') : t('lightMode')}
+                  </Text>
+                  {themeMode === mode && (
+                    <Text style={[styles.checkmark, { color: colors.primary }]}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           {/* Language */}
-          <Text style={styles.sectionLabel}>🌍 {t('language')}</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>🌍 {t('language')}</Text>
+          <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
             <View style={styles.langRow}>
               <TouchableOpacity
                 style={[
                   styles.langBtn,
-                  language === 'sw' && styles.langBtnActive,
+                  { backgroundColor: colors.backgroundCardLight, borderColor: colors.border },
+                  language === 'sw' && { backgroundColor: colors.primary + '22', borderColor: colors.primary },
                 ]}
                 onPress={() => updateSetting('language', 'sw')}
               >
@@ -130,20 +175,22 @@ export default function SettingsScreen() {
                 <Text
                   style={[
                     styles.langText,
-                    language === 'sw' && styles.langTextActive,
+                    { color: colors.textSecondary },
+                    language === 'sw' && { color: colors.primary, fontWeight: Typography.fontWeights.bold },
                   ]}
                 >
                   {t('swahili')}
                 </Text>
                 {language === 'sw' && (
-                  <Text style={styles.checkmark}>✓</Text>
+                  <Text style={[styles.checkmark, { color: colors.primary }]}>✓</Text>
                 )}
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
                   styles.langBtn,
-                  language === 'en' && styles.langBtnActive,
+                  { backgroundColor: colors.backgroundCardLight, borderColor: colors.border },
+                  language === 'en' && { backgroundColor: colors.primary + '22', borderColor: colors.primary },
                 ]}
                 onPress={() => updateSetting('language', 'en')}
               >
@@ -151,54 +198,55 @@ export default function SettingsScreen() {
                 <Text
                   style={[
                     styles.langText,
-                    language === 'en' && styles.langTextActive,
+                    { color: colors.textSecondary },
+                    language === 'en' && { color: colors.primary, fontWeight: Typography.fontWeights.bold },
                   ]}
                 >
                   {t('english')}
                 </Text>
                 {language === 'en' && (
-                  <Text style={styles.checkmark}>✓</Text>
+                  <Text style={[styles.checkmark, { color: colors.primary }]}>✓</Text>
                 )}
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Monetization placeholders */}
-          <Text style={styles.sectionLabel}>💎 Premium</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>💎 Premium</Text>
+          <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
             <TouchableOpacity style={styles.premiumRow} disabled>
               <Text style={styles.settingEmoji}>🎁</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>
                   {settings.language === 'sw' ? 'Tazama Tangazo - Pata Maisha' : 'Watch Ad - Get Extra Life'}
                 </Text>
-                <Text style={styles.comingSoon}>
+                <Text style={[styles.comingSoon, { color: colors.textMuted }]}>
                   {settings.language === 'sw' ? 'Inakuja hivi karibuni' : 'Coming soon'}
                 </Text>
               </View>
               <Text style={styles.lockIcon}>🔒</Text>
             </TouchableOpacity>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <TouchableOpacity style={styles.premiumRow} disabled>
               <Text style={styles.settingEmoji}>🪙</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>
                   {settings.language === 'sw' ? 'Tazama Tangazo - Sarafu Mara Mbili' : 'Watch Ad - Double Coins'}
                 </Text>
-                <Text style={styles.comingSoon}>
+                <Text style={[styles.comingSoon, { color: colors.textMuted }]}>
                   {settings.language === 'sw' ? 'Inakuja hivi karibuni' : 'Coming soon'}
                 </Text>
               </View>
               <Text style={styles.lockIcon}>🔒</Text>
             </TouchableOpacity>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <TouchableOpacity style={styles.premiumRow} disabled>
               <Text style={styles.settingEmoji}>⭐</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>
                   {settings.language === 'sw' ? 'Ondoa Matangazo' : 'Remove Ads'}
                 </Text>
-                <Text style={styles.comingSoon}>
+                <Text style={[styles.comingSoon, { color: colors.textMuted }]}>
                   {settings.language === 'sw' ? 'Inakuja hivi karibuni' : 'Coming soon'}
                 </Text>
               </View>
@@ -207,21 +255,21 @@ export default function SettingsScreen() {
           </View>
 
           {/* About */}
-          <Text style={styles.sectionLabel}>ℹ️ {t('about')}</Text>
-          <View style={styles.card}>
-            <Text style={styles.aboutText}>{t('aboutText')}</Text>
-            <View style={styles.divider} />
+          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>ℹ️ {t('about')}</Text>
+          <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+            <Text style={[styles.aboutText, { color: colors.textSecondary }]}>{t('aboutText')}</Text>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <View style={styles.aboutRow}>
-              <Text style={styles.aboutMeta}>📱 {language === 'sw' ? 'Toleo' : 'Version'}</Text>
-              <Text style={styles.aboutMetaVal}>v1.0.0</Text>
+              <Text style={[styles.aboutMeta, { color: colors.textSecondary }]}>📱 {language === 'sw' ? 'Toleo' : 'Version'}</Text>
+              <Text style={[styles.aboutMetaVal, { color: colors.text }]}>v1.0.0</Text>
             </View>
-            <View style={styles.divider} />
-            <Text style={styles.madeWith}>🤍 {language === 'sw' ? 'Imetengenezwa kwa Tanzania' : 'Made with ❤️ in Tanzania'}</Text>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <Text style={[styles.madeWith, { color: colors.textMuted }]}>🤍 {language === 'sw' ? 'Imetengenezwa kwa Tanzania' : 'Made with ❤️ in Tanzania'}</Text>
           </View>
 
           {/* Reset */}
-          <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
-            <Text style={styles.resetText}>🗑️ {t('resetProgress')}</Text>
+          <TouchableOpacity style={[styles.resetBtn, { backgroundColor: colors.accent + '22', borderColor: colors.accent }]} onPress={handleReset}>
+            <Text style={[styles.resetText, { color: colors.accent }]}>🗑️ {t('resetProgress')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>

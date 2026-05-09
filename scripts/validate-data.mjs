@@ -43,6 +43,17 @@ questions.forEach((question, index) => {
   if (!difficultyLevels.has(question.difficulty)) {
     report(errors, `${label}: invalid difficulty "${question.difficulty}"`);
   }
+  if (question.sourceUrl && !/^https?:\/\//.test(question.sourceUrl)) {
+    report(errors, `${label}: sourceUrl must start with http:// or https://`);
+  }
+  if (question.timeSensitive) {
+    if (!question.sourceUrl) report(errors, `${label}: time-sensitive questions require sourceUrl`);
+    if (!question.sourceNote) report(errors, `${label}: time-sensitive questions require sourceNote`);
+    if (!question.reviewAfter || Number.isNaN(Date.parse(question.reviewAfter))) {
+      report(errors, `${label}: time-sensitive questions require a valid reviewAfter date`);
+    }
+    if (!question.reviewReason) report(errors, `${label}: time-sensitive questions require reviewReason`);
+  }
 
   ['question_en', 'answer_en', 'explanation_en'].forEach((field) => {
     if (!question[field]) report(errors, `${label}: missing ${field}`);
@@ -122,6 +133,17 @@ Object.entries(translations).forEach(([language, languageMap]) => {
       report(errors, `${language}.${key}: translation must be a non-empty string`);
     }
   });
+});
+
+swTranslationKeys.forEach((key) => {
+  const swVars = Array.from(translations.sw[key].matchAll(/\{([^}]+)\}/g)).map((match) => match[1]).sort();
+  const enVars = Array.from(translations.en[key].matchAll(/\{([^}]+)\}/g)).map((match) => match[1]).sort();
+  if (swVars.join('|') !== enVars.join('|')) {
+    report(
+      errors,
+      `Translation placeholders mismatch for "${key}": sw {${swVars.join(', ')}} vs en {${enVars.join(', ')}}`
+    );
+  }
 });
 
 warnings.forEach((warning) => console.warn(`Warning: ${warning}`));

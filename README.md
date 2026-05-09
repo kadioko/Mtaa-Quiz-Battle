@@ -260,11 +260,14 @@ Integrate with `react-native-google-mobile-ads` when ready.
 ## 📝 Notes
 
 - All data stored locally — no internet required
+- Roadmap and remaining work live in `docs/ROADMAP.md`
+- Question authoring rules live in `docs/QUESTION_AUTHORING.md`
 - Daily challenge questions are date-seeded (same set for all players on a given day)
 - Daily challenge selection uses a seeded Fisher-Yates shuffle and balances across categories
 - `dailyCompleted` flag auto-resets at midnight via `getUserProfile()`
 - Daily challenge results route back to the Daily screen instead of starting an invalid replay
 - Leaderboard keeps top 50 entries sorted by score
+- Leaderboard entries store daily-challenge metadata and localize category names at display time
 - Quiz history keeps last 100 results
 - Result records may include `answerMap`, a boolean array used by the result screen for exact answer breakdown dots
 - Category play counts exclude the daily challenge so favourite category stays tied to regular categories

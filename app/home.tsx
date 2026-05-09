@@ -17,6 +17,7 @@ import { UserProfile, DailyReward } from '../src/types';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
+import { useThemeColors } from '../src/utils/ThemeContext';
 import { isToday, isYesterday } from '../src/utils/gameLogic';
 import PrimaryButton from '../src/components/PrimaryButton';
 
@@ -37,6 +38,7 @@ const getGreeting = (lang: 'sw' | 'en'): string => {
 export default function HomeScreen() {
   const router = useRouter();
   const { language } = useLanguage();
+  const colors = useThemeColors();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dailyDone, setDailyDone] = useState(false);
   const [rewardModal, setRewardModal] = useState(false);
@@ -46,7 +48,7 @@ export default function HomeScreen() {
 
   const loadProfile = useCallback(async () => {
     const p = await StorageService.getUserProfile();
-    setProfile(p);
+    let nextProfile = p;
     setDailyDone(p.dailyCompleted && p.lastDailyDate === new Date().toDateString());
 
     const reward = await StorageService.getDailyReward();
@@ -64,8 +66,10 @@ export default function HomeScreen() {
         consecutiveDays: newDays,
         totalClaimed: reward.totalClaimed + coins,
       });
-      await StorageService.saveUserProfile({ ...p, totalCoins: p.totalCoins + coins });
+      nextProfile = { ...p, totalCoins: p.totalCoins + coins };
+      await StorageService.saveUserProfile(nextProfile);
     }
+    setProfile(nextProfile);
   }, []);
 
   useEffect(() => {
@@ -80,7 +84,7 @@ export default function HomeScreen() {
   ];
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -89,13 +93,13 @@ export default function HomeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.greeting}>{getGreeting(language)} 👋</Text>
-              <Text style={styles.appName}>
+              <Text style={[styles.greeting, { color: colors.textSecondary }]}>{getGreeting(language)} 👋</Text>
+              <Text style={[styles.appName, { color: colors.text }]}>
                 {profile?.username ?? 'Mchezaji'}
               </Text>
             </View>
             <TouchableOpacity
-              style={styles.settingsBtn}
+              style={[styles.settingsBtn, { backgroundColor: colors.backgroundCardLight }]}
               onPress={() => router.push('/settings')}
             >
               <Text style={styles.settingsIcon}>⚙️</Text>
@@ -104,60 +108,60 @@ export default function HomeScreen() {
 
           {/* Stats row */}
           <View style={styles.statsRow}>
-            <View style={[styles.statChip, { borderColor: Colors.gold }]}>
+            <View style={[styles.statChip, { backgroundColor: colors.backgroundCard, borderColor: colors.gold }]}>
               <Text style={styles.statEmoji}>🪙</Text>
               <Text style={[styles.statValue, { color: Colors.gold }]}>
                 {profile?.totalCoins ?? 0}
               </Text>
-              <Text style={styles.statLabel}>{t('coins')}</Text>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('coins')}</Text>
             </View>
-            <View style={[styles.statChip, { borderColor: Colors.streak }]}>
+            <View style={[styles.statChip, { backgroundColor: colors.backgroundCard, borderColor: colors.streak }]}>
               <Text style={styles.statEmoji}>🔥</Text>
               <Text style={[styles.statValue, { color: Colors.streak }]}>
                 {profile?.dailyStreak ?? 0}
               </Text>
-              <Text style={styles.statLabel}>{t('dailyStreakLabel')}</Text>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('dailyStreakLabel')}</Text>
             </View>
-            <View style={[styles.statChip, { borderColor: Colors.secondary }]}>
+            <View style={[styles.statChip, { backgroundColor: colors.backgroundCard, borderColor: colors.secondary }]}>
               <Text style={styles.statEmoji}>⭐</Text>
               <Text style={[styles.statValue, { color: Colors.secondary }]}>
                 {profile?.bestScore ?? 0}
               </Text>
-              <Text style={styles.statLabel}>{t('bestScore')}</Text>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('bestScore')}</Text>
             </View>
           </View>
 
           {/* Hero banner */}
           <LinearGradient
-            colors={[Colors.primary, Colors.primaryDark]}
+            colors={[colors.primary, colors.primaryDark]}
             style={styles.heroBanner}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
             <View>
-              <Text style={styles.heroTitle}>Tayari Kucheza? 🎮</Text>
+              <Text style={styles.heroTitle}>{t('readyToPlay')} 🎮</Text>
               <Text style={styles.heroSub}>
                 {profile?.totalGamesPlayed
-                  ? `Michezo ${profile.totalGamesPlayed} imechezwa`
-                  : 'Anza mchezo wako wa kwanza!'}
+                  ? t('gamesPlayed', { count: profile.totalGamesPlayed })
+                  : t('firstGamePrompt')}
               </Text>
             </View>
             <PrimaryButton
               label={t('playNow')}
               onPress={() => router.push('/categories')}
-              color={Colors.backgroundCard}
-              textColor={Colors.primary}
+              color={colors.backgroundCard}
+              textColor={colors.primary}
               size="md"
             />
           </LinearGradient>
 
           {/* Nav grid */}
-          <Text style={styles.sectionTitle}>Menyu Kuu</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('mainMenu')}</Text>
           <View style={styles.navGrid}>
             {navItems.map((item) => (
               <TouchableOpacity
                 key={item.route}
-                style={[styles.navCard, { borderColor: item.color }]}
+                style={[styles.navCard, { backgroundColor: colors.backgroundCard, borderColor: item.color }]}
                 onPress={() => router.push(item.route as any)}
                 activeOpacity={0.8}
               >
@@ -174,7 +178,7 @@ export default function HomeScreen() {
             activeOpacity={0.85}
           >
             <LinearGradient
-              colors={dailyDone ? ['#1a1a35', '#252545'] : ['#1DB954', '#0d7a38']}
+              colors={dailyDone ? [colors.backgroundCard, colors.backgroundCardLight] : [colors.secondary, colors.secondaryDark]}
               style={styles.dailyGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
@@ -182,12 +186,12 @@ export default function HomeScreen() {
               <View style={styles.dailyLeft}>
                 <Text style={styles.dailyIcon}>{dailyDone ? '✅' : '⚡'}</Text>
                 <View>
-                  <Text style={[styles.dailyTitle, dailyDone && { color: Colors.textSecondary }]}>
+                  <Text style={[styles.dailyTitle, dailyDone && { color: colors.textSecondary }]}>
                     {t('dailyChallenge')}
                   </Text>
-                  <Text style={[styles.dailySub, dailyDone && { color: Colors.textMuted }]}>
+                  <Text style={[styles.dailySub, dailyDone && { color: colors.textMuted }]}>
                     {dailyDone
-                      ? (language === 'sw' ? 'Umekwisha cheza leo!' : 'Already played today!')
+                      ? t('alreadyPlayedToday')
                       : t('dailyChallengeDesc')}
                   </Text>
                 </View>
@@ -207,10 +211,10 @@ export default function HomeScreen() {
       {/* Daily reward modal */}
       <Modal visible={rewardModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { backgroundColor: colors.backgroundCard, borderColor: colors.primary }]}>
             <Text style={styles.modalEmoji}>🎁</Text>
-            <Text style={styles.modalTitle}>{t('dailyReward')}</Text>
-            <Text style={styles.modalSub}>{t('welcomeBack')}</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('dailyReward')}</Text>
+            <Text style={[styles.modalSub, { color: colors.textSecondary }]}>{t('welcomeBack')}</Text>
             <View style={styles.streakRow}>
               <Text style={styles.streakDayText}>🔥 {language === 'sw' ? `Siku ya ${rewardStreak}` : `Day ${rewardStreak}`}</Text>
               {streakReset && (
@@ -219,14 +223,14 @@ export default function HomeScreen() {
                 </Text>
               )}
             </View>
-            <View style={styles.coinsBadge}>
+            <View style={[styles.coinsBadge, { backgroundColor: colors.backgroundCardLight }]}>
               <Text style={styles.coinsText}>+{todayCoins} 🪙</Text>
             </View>
             <PrimaryButton
               label={t('claimReward')}
               onPress={() => setRewardModal(false)}
-              color={Colors.primary}
-              textColor={Colors.black}
+              color={colors.primary}
+              textColor={colors.black}
               style={{ marginTop: Spacing.base, width: '100%' }}
             />
           </View>

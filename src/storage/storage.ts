@@ -38,6 +38,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   vibration: true,
   language: 'sw',
   notifications: true,
+  themeMode: 'dark',
 };
 
 const parseStoredValue = <T>(data: string | null, fallback: T): T => {
@@ -88,7 +89,12 @@ export const StorageService = {
     try {
       const data = await AsyncStorage.getItem(KEYS.LEADERBOARD);
       const leaderboard = parseStoredValue<LeaderboardEntry[]>(data, []);
-      return Array.isArray(leaderboard) ? leaderboard : [];
+      return Array.isArray(leaderboard)
+        ? leaderboard
+            .filter((entry) => entry && typeof entry.score === 'number')
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 50)
+        : [];
     } catch {
       return [];
     }

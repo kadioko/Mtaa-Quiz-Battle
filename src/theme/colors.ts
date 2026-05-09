@@ -1,4 +1,4 @@
-export const Colors = {
+export const DarkColors = {
   primary: '#F5A623',
   primaryDark: '#D4881A',
   secondary: '#1DB954',
@@ -35,6 +35,29 @@ export const Colors = {
   tanzaniaYellow: '#F5A623',
   tanzaniaBlue: '#1E90FF',
 };
+
+export const LightColors: typeof DarkColors = {
+  ...DarkColors,
+  background: '#F7F8FC',
+  backgroundCard: '#FFFFFF',
+  backgroundCardLight: '#EEF2F8',
+  surface: '#FFFFFF',
+  surfaceLight: '#E7EDF8',
+  text: '#111827',
+  textSecondary: '#4B5563',
+  textMuted: '#7B8496',
+  border: '#D8DEE9',
+  borderLight: '#C8D1E1',
+  overlay: 'rgba(15,23,42,0.35)',
+  gradientStart: '#F8FAFC',
+  gradientEnd: '#EAF1FB',
+  black: '#111827',
+};
+
+export const Colors = DarkColors;
+
+export type ThemeMode = 'dark' | 'light';
+export type ThemeColors = typeof DarkColors;
 
 export const CategoryColors: Record<string, string> = {
   'Bongo Fleva': '#E63946',
