@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +19,9 @@ import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
 import { useTheme, useThemeColors } from '../src/utils/ThemeContext';
 import { ThemeMode } from '../src/theme/colors';
+import { NotificationService } from '../src/services/NotificationService';
+import { showRewardedAd, adsAvailable } from '../src/services/AdService';
+import { IAPService } from '../src/services/IAPService';
 
 const DEFAULT_SETTINGS: GameSettings = {
   sound: true,
@@ -34,9 +38,20 @@ export default function SettingsScreen() {
   const { themeMode, setThemeMode } = useTheme();
   const colors = useThemeColors();
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [adFree, setAdFree] = useState(false);
+  const [adLoading, setAdLoading] = useState(false);
+  const [iapLoading, setIapLoading] = useState(false);
 
   useEffect(() => {
     StorageService.getSettings().then(setSettings);
+    NotificationService.hasPermission().then(async (granted) => {
+      if (granted) {
+        const scheduled = await NotificationService.isDailyReminderScheduled();
+        setNotifEnabled(scheduled);
+      }
+    });
+    IAPService.isAdFree().then(setAdFree);
   }, [language]);
 
   const updateSetting = async (key: keyof GameSettings, value: boolean | string) => {
@@ -219,47 +234,160 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {/* Monetization placeholders */}
+          {/* Notifications */}
+          {Platform.OS !== 'web' && (
+            <>
+              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>� {language === 'sw' ? 'Arifa' : 'Notifications'}</Text>
+              <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+                <View style={styles.settingRow}>
+                  <Text style={styles.settingEmoji}>📅</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.settingLabel, { color: colors.text }]}>
+                      {language === 'sw' ? 'Kikumbusha cha Kila Siku' : 'Daily Challenge Reminder'}
+                    </Text>
+                    <Text style={[styles.comingSoon, { color: colors.textMuted }]}>
+                      {language === 'sw' ? 'Saa 7 jioni (19:00)' : '7 PM daily (19:00)'}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={notifEnabled}
+                    onValueChange={async (v) => {
+                      if (v) {
+                        const granted = await NotificationService.requestPermission();
+                        if (!granted) {
+                          Alert.alert(
+                            language === 'sw' ? 'Ruhusa inahitajika' : 'Permission required',
+                            language === 'sw'
+                              ? 'Tafadhali ruhusu arifa katika mipangilio ya simu yako.'
+                              : 'Please allow notifications in your phone settings.'
+                          );
+                          return;
+                        }
+                        await NotificationService.scheduleDailyReminder({ hour: 19, minute: 0 });
+                      } else {
+                        await NotificationService.cancelDailyReminder();
+                      }
+                      setNotifEnabled(v);
+                    }}
+                    trackColor={{ false: colors.border, true: colors.primary + '88' }}
+                    thumbColor={notifEnabled ? colors.primary : colors.textMuted}
+                  />
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* Premium */}
           <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>💎 Premium</Text>
           <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
-            <TouchableOpacity style={styles.premiumRow} disabled>
-              <Text style={styles.settingEmoji}>🎁</Text>
-              <View style={{ flex: 1 }}>
+            {adsAvailable() && !adFree ? (
+              <>
+                <TouchableOpacity
+                  style={[styles.premiumRow, adLoading && { opacity: 0.5 }]}
+                  disabled={adLoading}
+                  onPress={async () => {
+                    setAdLoading(true);
+                    const reward = await showRewardedAd('extra-life');
+                    setAdLoading(false);
+                    if (reward) {
+                      Alert.alert('🎁', language === 'sw' ? 'Umepata maisha ya ziada!' : 'You earned an extra life!');
+                    }
+                  }}
+                >
+                  <Text style={styles.settingEmoji}>🎁</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.settingLabel, { color: colors.text }]}>
+                      {language === 'sw' ? 'Tazama Tangazo — Pata Maisha' : 'Watch Ad — Get Extra Life'}
+                    </Text>
+                  </View>
+                  <Text style={styles.lockIcon}>{adLoading ? '⏳' : '▶'}</Text>
+                </TouchableOpacity>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={[styles.premiumRow, adLoading && { opacity: 0.5 }]}
+                  disabled={adLoading}
+                  onPress={async () => {
+                    setAdLoading(true);
+                    const reward = await showRewardedAd('double-coins');
+                    setAdLoading(false);
+                    if (reward) {
+                      Alert.alert('🪙', language === 'sw' ? 'Sarafu mara mbili kwenye mchezo ujao!' : 'Double coins on your next game!');
+                    }
+                  }}
+                >
+                  <Text style={styles.settingEmoji}>🪙</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.settingLabel, { color: colors.text }]}>
+                      {language === 'sw' ? 'Tazama Tangazo — Sarafu Mara Mbili' : 'Watch Ad — Double Coins'}
+                    </Text>
+                  </View>
+                  <Text style={styles.lockIcon}>{adLoading ? '⏳' : '▶'}</Text>
+                </TouchableOpacity>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              </>
+            ) : null}
+
+            {adFree ? (
+              <View style={styles.premiumRow}>
+                <Text style={styles.settingEmoji}>✅</Text>
                 <Text style={[styles.settingLabel, { color: colors.text }]}>
-                  {settings.language === 'sw' ? 'Tazama Tangazo - Pata Maisha' : 'Watch Ad - Get Extra Life'}
-                </Text>
-                <Text style={[styles.comingSoon, { color: colors.textMuted }]}>
-                  {settings.language === 'sw' ? 'Inakuja hivi karibuni' : 'Coming soon'}
+                  {language === 'sw' ? 'Matangazo yameondolewa — Asante!' : 'Ads removed — Thank you!'}
                 </Text>
               </View>
-              <Text style={styles.lockIcon}>🔒</Text>
-            </TouchableOpacity>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity style={styles.premiumRow} disabled>
-              <Text style={styles.settingEmoji}>🪙</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.settingLabel, { color: colors.text }]}>
-                  {settings.language === 'sw' ? 'Tazama Tangazo - Sarafu Mara Mbili' : 'Watch Ad - Double Coins'}
-                </Text>
-                <Text style={[styles.comingSoon, { color: colors.textMuted }]}>
-                  {settings.language === 'sw' ? 'Inakuja hivi karibuni' : 'Coming soon'}
-                </Text>
-              </View>
-              <Text style={styles.lockIcon}>🔒</Text>
-            </TouchableOpacity>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity style={styles.premiumRow} disabled>
-              <Text style={styles.settingEmoji}>⭐</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.settingLabel, { color: colors.text }]}>
-                  {settings.language === 'sw' ? 'Ondoa Matangazo' : 'Remove Ads'}
-                </Text>
-                <Text style={[styles.comingSoon, { color: colors.textMuted }]}>
-                  {settings.language === 'sw' ? 'Inakuja hivi karibuni' : 'Coming soon'}
-                </Text>
-              </View>
-              <Text style={styles.lockIcon}>🔒</Text>
-            </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.premiumRow, iapLoading && { opacity: 0.5 }]}
+                disabled={iapLoading || Platform.OS === 'web'}
+                onPress={async () => {
+                  setIapLoading(true);
+                  const ok = await IAPService.purchaseRemoveAds();
+                  setIapLoading(false);
+                  if (ok) {
+                    setAdFree(true);
+                    Alert.alert('⭐', language === 'sw' ? 'Matangazo yameondolewa!' : 'Ads removed successfully!');
+                  }
+                }}
+              >
+                <Text style={styles.settingEmoji}>⭐</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    {language === 'sw' ? 'Ondoa Matangazo' : 'Remove Ads'}
+                  </Text>
+                  {Platform.OS === 'web' && (
+                    <Text style={[styles.comingSoon, { color: colors.textMuted }]}>
+                      {language === 'sw' ? 'Inapatikana kwenye app peke yake' : 'Available in the app only'}
+                    </Text>
+                  )}
+                </View>
+                <Text style={styles.lockIcon}>{iapLoading ? '⏳' : Platform.OS === 'web' ? '🔒' : '›'}</Text>
+              </TouchableOpacity>
+            )}
+
+            {!adFree && Platform.OS !== 'web' && (
+              <>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={[styles.premiumRow, iapLoading && { opacity: 0.5 }]}
+                  disabled={iapLoading}
+                  onPress={async () => {
+                    setIapLoading(true);
+                    const restored = await IAPService.restorePurchases();
+                    setIapLoading(false);
+                    if (restored) {
+                      setAdFree(true);
+                      Alert.alert('✅', language === 'sw' ? 'Manunuzi yamerudishwa!' : 'Purchases restored!');
+                    } else {
+                      Alert.alert('', language === 'sw' ? 'Hakuna manunuzi ya kurejesha.' : 'No purchases found to restore.');
+                    }
+                  }}
+                >
+                  <Text style={styles.settingEmoji}>🔄</Text>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    {language === 'sw' ? 'Rejesha Manunuzi' : 'Restore Purchases'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
 
           {/* About */}

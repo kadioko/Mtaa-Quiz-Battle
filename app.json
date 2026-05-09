@@ -24,12 +24,41 @@
       "versionCode": 1
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "serviceWorker": {
+        "src": "./public/sw.js"
+      },
+      "manifest": {
+        "name": "Mtaa Quiz Battle",
+        "shortName": "Mtaa Quiz",
+        "description": "Swahili-first Tanzanian trivia game",
+        "backgroundColor": "#1A1A2E",
+        "themeColor": "#6C63FF",
+        "lang": "sw",
+        "startUrl": "/"
+      }
     },
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#6C63FF",
+          "defaultChannel": "daily-challenge"
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
+          "iosAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"
+        }
+      ]
     ],
     "scheme": "mtaaquiz"
   }

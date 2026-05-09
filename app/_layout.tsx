@@ -1,16 +1,35 @@
 import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Platform } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { LanguageProvider } from '../src/utils/LanguageContext';
 import { ThemeProvider, useTheme } from '../src/utils/ThemeContext';
+import { NotificationService } from '../src/services/NotificationService';
+import { IAPService } from '../src/services/IAPService';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
+
+    // Register service worker for offline PWA (web only)
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
+    // Connect IAP service (native only)
+    if (Platform.OS !== 'web') {
+      IAPService.connect().catch(() => {});
+    }
+
+    return () => {
+      if (Platform.OS !== 'web') {
+        IAPService.disconnect().catch(() => {});
+      }
+    };
   }, []);
 
   return (
@@ -26,6 +45,15 @@ export default function RootLayout() {
 
 function RootStack() {
   const { themeMode } = useTheme();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Navigate to the correct screen when a notification is tapped
+    const subscription = NotificationService.addResponseListener((screen) => {
+      if (screen === 'daily') router.push('/daily');
+    });
+    return () => subscription.remove();
+  }, [router]);
 
   return (
     <>
