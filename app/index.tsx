@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors, Typography, Spacing } from '../src/theme';
+import { DarkColors, LightColors, Typography, Spacing } from '../src/theme';
 import { StorageService } from '../src/storage/storage';
 
 const { width, height } = Dimensions.get('window');
@@ -16,10 +16,12 @@ export default function SplashScreen() {
   const dot1 = useRef(new Animated.Value(0.3)).current;
   const dot2 = useRef(new Animated.Value(0.3)).current;
   const [tagline, setTagline] = useState('Jaribu Ujuzi Wako wa Bongo!');
+  const [colors, setColors] = useState(DarkColors);
 
   useEffect(() => {
     StorageService.getSettings().then((s) => {
       setTagline(s.language === 'en' ? 'Test Your Tanzania Knowledge!' : 'Jaribu Ujuzi Wako wa Bongo!');
+      setColors(s.themeMode === 'light' ? LightColors : DarkColors);
     });
   }, []);
 
@@ -70,7 +72,7 @@ export default function SplashScreen() {
 
   return (
     <LinearGradient
-      colors={['#0F0F23', '#1A1A35', '#0F0F23']}
+      colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]}
       style={styles.container}
     >
       <View style={styles.content}>
@@ -98,7 +100,7 @@ export default function SplashScreen() {
             key={i}
             style={[
               styles.dot,
-              { backgroundColor: Colors.primary, opacity: anim },
+              { backgroundColor: colors.primary, opacity: anim },
             ]}
           />
         ))}
@@ -126,13 +128,13 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: Colors.backgroundCardLight,
+    backgroundColor: DarkColors.backgroundCardLight,
     borderWidth: 3,
-    borderColor: Colors.primary,
+    borderColor: DarkColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.base,
-    shadowColor: Colors.primary,
+    shadowColor: DarkColors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 20,
@@ -144,19 +146,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography.fontSizes.xxxl,
     fontWeight: Typography.fontWeights.extraBold,
-    color: Colors.text,
+    color: DarkColors.text,
     letterSpacing: 1,
   },
   titleAccent: {
     fontSize: Typography.fontSizes.display,
     fontWeight: Typography.fontWeights.black,
-    color: Colors.primary,
+    color: DarkColors.primary,
     letterSpacing: 2,
     marginTop: -8,
   },
   tagline: {
     fontSize: Typography.fontSizes.base,
-    color: Colors.textSecondary,
+    color: DarkColors.textSecondary,
     letterSpacing: 0.5,
     marginTop: Spacing.base,
   },

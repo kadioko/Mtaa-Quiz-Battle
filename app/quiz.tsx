@@ -24,6 +24,8 @@ import {
   calculateScore,
   shuffleOptions,
   buildQuizResult,
+  getAdaptiveDifficulty,
+  applyDifficultyWeights,
 } from '../src/utils/gameLogic';
 import { StorageService } from '../src/storage/storage';
 import { Question } from '../src/types';
@@ -156,15 +158,25 @@ export default function QuizScreen() {
     resetQuizState();
     setQuizStatus('loading');
 
-    let qs: Question[] = [];
-    if (isDaily === 'true') {
-      qs = getDailyQuestions(TOTAL_QUESTIONS);
-    } else {
-      const category = getCategoryById(categoryId ?? '');
-      qs = category ? getRandomQuestionsByCategory(category.name, TOTAL_QUESTIONS) : [];
-    }
-    setQuestions(qs);
-    setQuizStatus(qs.length > 0 ? 'ready' : 'empty');
+    const load = async () => {
+      let qs: Question[] = [];
+      if (isDaily === 'true') {
+        qs = getDailyQuestions(TOTAL_QUESTIONS);
+      } else {
+        const category = getCategoryById(categoryId ?? '');
+        if (category) {
+          const pool = getRandomQuestionsByCategory(category.name, category.questionCount);
+          const history = await StorageService.getQuizHistory();
+          const adaptive = getAdaptiveDifficulty(history, category.name);
+          qs = adaptive.active
+            ? applyDifficultyWeights(pool, adaptive.weights, TOTAL_QUESTIONS)
+            : pool.slice(0, TOTAL_QUESTIONS);
+        }
+      }
+      setQuestions(qs);
+      setQuizStatus(qs.length > 0 ? 'ready' : 'empty');
+    };
+    load();
   }, [categoryId, isDaily, resetQuizState]);
 
   useEffect(() => {

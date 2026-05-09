@@ -94,6 +94,112 @@ export const buildQuizResult = (
   };
 };
 
+export const ADAPTIVE_MIN_GAMES = 30;
+export const ADAPTIVE_MIN_QUESTIONS = 200;
+export const ADAPTIVE_HISTORY_WINDOW = 30;
+
+export interface DifficultyWeights {
+  easy: number;
+  medium: number;
+  hard: number;
+}
+
+export interface AdaptiveDifficultyResult {
+  active: boolean;
+  weights: DifficultyWeights;
+  reason?: string;
+}
+
+export const getAdaptiveDifficulty = (
+  history: QuizResult[],
+  categoryName: string
+): AdaptiveDifficultyResult => {
+  const neutralWeights: DifficultyWeights = { easy: 1, medium: 1, hard: 1 };
+
+  const nonDailyHistory = history.filter((r) => !r.isDaily);
+  const totalGames = nonDailyHistory.length;
+  const totalAnswered = nonDailyHistory.reduce((sum, r) => sum + r.totalQuestions, 0);
+
+  if (totalGames < ADAPTIVE_MIN_GAMES || totalAnswered < ADAPTIVE_MIN_QUESTIONS) {
+    return { active: false, weights: neutralWeights };
+  }
+
+  const recentWindow = nonDailyHistory
+    .filter((r) => r.categoryName === categoryName)
+    .slice(0, ADAPTIVE_HISTORY_WINDOW);
+
+  if (recentWindow.length < 3) {
+    return { active: false, weights: neutralWeights };
+  }
+
+  const perDifficulty: Record<string, { correct: number; total: number }> = {
+    easy: { correct: 0, total: 0 },
+    medium: { correct: 0, total: 0 },
+    hard: { correct: 0, total: 0 },
+  };
+
+  recentWindow.forEach((result) => {
+    if (!result.reviewItems) return;
+    result.reviewItems.forEach((item) => {
+      const bucket = perDifficulty[item.difficulty];
+      if (!bucket) return;
+      bucket.total += 1;
+      if (item.wasCorrect) bucket.correct += 1;
+    });
+  });
+
+  const acc = (d: string): number | null => {
+    const bucket = perDifficulty[d];
+    return bucket.total >= 5 ? bucket.correct / bucket.total : null;
+  };
+
+  const easyAcc = acc('easy');
+  const mediumAcc = acc('medium');
+
+  const weights: DifficultyWeights = { easy: 1, medium: 1, hard: 1 };
+  let didBias = false;
+
+  if (easyAcc !== null && easyAcc >= 0.8) {
+    weights.easy = 0.4;
+    weights.medium = 1.4;
+    weights.hard = 1.2;
+    didBias = true;
+  }
+  if (mediumAcc !== null && mediumAcc >= 0.8) {
+    weights.medium = 0.4;
+    weights.hard = 1.6;
+    didBias = true;
+  }
+
+  if (!didBias) {
+    return { active: false, weights: neutralWeights };
+  }
+
+  return {
+    active: true,
+    weights,
+    reason: `Adapted from ${recentWindow.length} recent ${categoryName} games`,
+  };
+};
+
+export const applyDifficultyWeights = (
+  questions: Question[],
+  weights: DifficultyWeights,
+  count: number
+): Question[] => {
+  const byDiff: Record<string, Question[]> = { easy: [], medium: [], hard: [] };
+  questions.forEach((q) => byDiff[q.difficulty]?.push(q));
+
+  const weightedPool: Question[] = [];
+  (['easy', 'medium', 'hard'] as const).forEach((d) => {
+    const w = Math.round(weights[d] * byDiff[d].length);
+    const shuffled = [...byDiff[d]].sort(() => Math.random() - 0.5);
+    weightedPool.push(...shuffled.slice(0, w));
+  });
+
+  return weightedPool.sort(() => Math.random() - 0.5).slice(0, count);
+};
+
 export const formatDate = (isoString: string): string => {
   const d = new Date(isoString);
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
