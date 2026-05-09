@@ -23,6 +23,7 @@ require.extensions['.ts'] = (module, filename) => {
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { questions, getDailyQuestions } = require(path.join(rootDir, 'src/data/questions.ts'));
 const { categories } = require(path.join(rootDir, 'src/data/categories.ts'));
+const { translations } = require(path.join(rootDir, 'src/utils/i18n.ts'));
 
 const errors = [];
 const warnings = [];
@@ -102,6 +103,26 @@ if (dailyIds.join('|') !== repeatedDailyIds.join('|')) {
 if (dailyCategoryCount < Math.min(10, categories.length)) {
   report(errors, `Daily challenge covers ${dailyCategoryCount} categories, expected ${Math.min(10, categories.length)}`);
 }
+
+const swTranslationKeys = Object.keys(translations.sw);
+const enTranslationKeys = Object.keys(translations.en);
+const missingEnglishKeys = swTranslationKeys.filter((key) => !(key in translations.en));
+const missingSwahiliKeys = enTranslationKeys.filter((key) => !(key in translations.sw));
+
+if (missingEnglishKeys.length > 0) {
+  report(errors, `English translations missing keys: ${missingEnglishKeys.join(', ')}`);
+}
+if (missingSwahiliKeys.length > 0) {
+  report(errors, `Swahili translations missing keys: ${missingSwahiliKeys.join(', ')}`);
+}
+
+Object.entries(translations).forEach(([language, languageMap]) => {
+  Object.entries(languageMap).forEach(([key, value]) => {
+    if (typeof value !== 'string' || value.trim() === '') {
+      report(errors, `${language}.${key}: translation must be a non-empty string`);
+    }
+  });
+});
 
 warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
 

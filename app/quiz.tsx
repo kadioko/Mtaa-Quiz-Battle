@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
 import { getCategoryById } from '../src/data/categories';
-import { getDailyQuestions, getQuestionsByCategory } from '../src/data/questions';
+import { getDailyQuestions, getRandomQuestionsByCategory } from '../src/data/questions';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
@@ -32,6 +32,7 @@ import TimerBar from '../src/components/TimerBar';
 import PrimaryButton from '../src/components/PrimaryButton';
 
 const TOTAL_QUESTIONS = 10;
+type QuizStatus = 'loading' | 'ready' | 'empty';
 
 const playSound = async (type: 'correct' | 'wrong' | 'timeup', enabled: boolean) => {
   if (!enabled) return;
@@ -58,6 +59,7 @@ export default function QuizScreen() {
   }>();
   const { language } = useLanguage();
 
+  const [quizStatus, setQuizStatus] = useState<QuizStatus>('loading');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
@@ -76,6 +78,9 @@ export default function QuizScreen() {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const answerMapRef = useRef<(boolean | null)[]>(Array(TOTAL_QUESTIONS).fill(null));
+  const scoreRef = useRef(0);
+  const correctCountRef = useRef(0);
+  const maxStreakRef = useRef(0);
   const questionAnim = useRef(new Animated.Value(1)).current;
   const bonusAnim = useRef(new Animated.Value(0)).current;
   const floatY = useRef(new Animated.Value(0)).current;
@@ -83,6 +88,31 @@ export default function QuizScreen() {
   const [floatText, setFloatText] = useState('');
 
   const settings = useRef({ sound: true, vibration: true });
+
+  const resetQuizState = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    const freshAnswerMap: (boolean | null)[] = Array(TOTAL_QUESTIONS).fill(null);
+    answerMapRef.current = freshAnswerMap;
+    scoreRef.current = 0;
+    correctCountRef.current = 0;
+    maxStreakRef.current = 0;
+
+    setCurrentIndex(0);
+    setShuffledOptions([]);
+    setSelectedAnswer(null);
+    setAnswerStates(['default', 'default', 'default', 'default']);
+    setScore(0);
+    setStreak(0);
+    setMaxStreak(0);
+    setCorrectCount(0);
+    setTimeLeft(QUESTION_TIME);
+    setAnswered(false);
+    setShowExplanation(false);
+    setExplanationExpanded(true);
+    setBonusText('');
+    setFloatText('');
+    setAnswerMap(freshAnswerMap);
+  }, []);
 
   const markAnswer = useCallback((index: number, isCorrect: boolean) => {
     setAnswerMap((prev) => {
@@ -100,19 +130,19 @@ export default function QuizScreen() {
   }, []);
 
   useEffect(() => {
+    resetQuizState();
+    setQuizStatus('loading');
+
     let qs: Question[] = [];
     if (isDaily === 'true') {
       qs = getDailyQuestions(TOTAL_QUESTIONS);
     } else {
-      const pool = getCategoryById(categoryId ?? '')
-        ? getQuestionsByCategory(
-            getCategoryById(categoryId ?? '')?.name ?? ''
-          )
-        : [];
-      qs = [...pool].sort(() => Math.random() - 0.5).slice(0, TOTAL_QUESTIONS);
+      const category = getCategoryById(categoryId ?? '');
+      qs = category ? getRandomQuestionsByCategory(category.name, TOTAL_QUESTIONS) : [];
     }
     setQuestions(qs);
-  }, [categoryId, isDaily]);
+    setQuizStatus(qs.length > 0 ? 'ready' : 'empty');
+  }, [categoryId, isDaily, resetQuizState]);
 
   useEffect(() => {
     if (questions.length > 0) {
@@ -140,10 +170,10 @@ export default function QuizScreen() {
         cat.name,
         finalScore,
         finalCorrect,
-        TOTAL_QUESTIONS,
+        questions.length,
         finalMaxStreak,
         isDaily === 'true',
-        finalAnswerMap.map((answer) => answer === true)
+        finalAnswerMap.slice(0, questions.length).map((answer) => answer === true)
       );
 
       const updatedProfile = await StorageService.updateProfileAfterGame(result);
@@ -176,7 +206,7 @@ export default function QuizScreen() {
         params: { resultJson: JSON.stringify(result) },
       });
     },
-    [categoryId, isDaily, router]
+    [categoryId, isDaily, questions.length, router]
   );
 
   const handleTimeUp = useCallback(() => {
@@ -239,11 +269,17 @@ export default function QuizScreen() {
     if (isCorrect) {
       const newStreak = streak + 1;
       setStreak(newStreak);
-      setMaxStreak((prev) => Math.max(prev, newStreak));
-      setCorrectCount((prev) => prev + 1);
 
       const { points, speedBonus, streakBonus, multiplier } = calculateScore(timeLeft, QUESTION_TIME, newStreak, current.difficulty);
-      setScore((prev) => prev + points);
+      const nextScore = scoreRef.current + points;
+      const nextCorrectCount = correctCountRef.current + 1;
+      const nextMaxStreak = Math.max(maxStreakRef.current, newStreak);
+      scoreRef.current = nextScore;
+      correctCountRef.current = nextCorrectCount;
+      maxStreakRef.current = nextMaxStreak;
+      setScore(nextScore);
+      setCorrectCount(nextCorrectCount);
+      setMaxStreak(nextMaxStreak);
 
       setFloatText(`+${points}`);
       floatY.setValue(0);
@@ -290,7 +326,7 @@ export default function QuizScreen() {
     const nextIndex = currentIndex + 1;
 
     if (nextIndex >= questions.length) {
-      finishQuiz(score, correctCount, maxStreak, answerMapRef.current);
+      finishQuiz(scoreRef.current, correctCountRef.current, maxStreakRef.current, answerMapRef.current);
       return;
     }
 
@@ -323,12 +359,40 @@ export default function QuizScreen() {
     return () => sub.remove();
   }, [router, language]);
 
-  if (questions.length === 0) {
+  if (quizStatus === 'loading') {
     return (
       <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
         <View style={styles.loading}>
           <Text style={styles.loadingText}>{t('loading')}</Text>
         </View>
+      </LinearGradient>
+    );
+  }
+
+  if (quizStatus === 'empty') {
+    return (
+      <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
+        <SafeAreaView style={styles.safe}>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>?</Text>
+            <Text style={styles.emptyTitle}>{t('quizUnavailable')}</Text>
+            <Text style={styles.emptyText}>{t('quizUnavailableDesc')}</Text>
+            <PrimaryButton
+              label={t('chooseCategory')}
+              onPress={() => router.replace('/categories')}
+              color={Colors.primary}
+              textColor={Colors.black}
+              style={styles.emptyButton}
+            />
+            <PrimaryButton
+              label={t('backHome')}
+              onPress={() => router.replace('/home')}
+              color={Colors.backgroundCardLight}
+              textColor={Colors.text}
+              style={styles.emptyButton}
+            />
+          </View>
+        </SafeAreaView>
       </LinearGradient>
     );
   }
@@ -509,6 +573,35 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { color: Colors.textSecondary, fontSize: Typography.fontSizes.lg },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  emptyEmoji: {
+    fontSize: 56,
+    color: Colors.primary,
+    marginBottom: Spacing.base,
+  },
+  emptyTitle: {
+    fontSize: Typography.fontSizes.xl,
+    fontWeight: Typography.fontWeights.extraBold,
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  emptyText: {
+    fontSize: Typography.fontSizes.md,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: Typography.fontSizes.md * 1.6,
+    marginBottom: Spacing.lg,
+  },
+  emptyButton: {
+    width: '100%',
+    marginTop: Spacing.sm,
+  },
 
   topBar: {
     flexDirection: 'row',

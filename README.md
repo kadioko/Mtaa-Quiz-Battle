@@ -79,7 +79,7 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 - **TypeScript** strict mode throughout
 - Result history stores per-question correctness for accurate answer breakdowns
 - Category stats track play counts and the profile favourite category
-- Data validator catches duplicate options, missing translations, bad category links, and daily challenge regressions
+- Data validator catches duplicate options, missing question translations, mismatched UI translation keys, bad category links, and daily challenge regressions
 - `npm run typecheck` = strict TypeScript check
 
 ---
@@ -268,6 +268,7 @@ Integrate with `react-native-google-mobile-ads` when ready.
 - Quiz history keeps last 100 results
 - Result records may include `answerMap`, a boolean array used by the result screen for exact answer breakdown dots
 - Category play counts exclude the daily challenge so favourite category stays tied to regular categories
+- Invalid quiz/category links show a recovery screen instead of spinning forever
 
 ---
 

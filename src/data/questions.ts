@@ -1491,6 +1491,10 @@ export const getRandomQuestions = (count: number = 10): Question[] => {
   return shuffleWithRandom(questions).slice(0, count);
 };
 
+export const getRandomQuestionsByCategory = (category: string, count: number = 10): Question[] => {
+  return shuffleWithRandom(getQuestionsByCategory(category)).slice(0, count);
+};
+
 export const getDailyQuestions = (count: number = 10, date: Date = new Date()): Question[] => {
   const seed = date.toDateString();
   const random = createSeededRandom(seed);
