@@ -74,6 +74,53 @@ export interface QuizReviewItem {
   timedOut: boolean;
 }
 
+export interface PlayerRank {
+  level: number;
+  title: string;
+  title_en: string;
+  emoji: string;
+  minCoins: number;
+  color: string;
+}
+
+export type AchievementId =
+  | 'first_game'
+  | 'games_10' | 'games_50' | 'games_100'
+  | 'streak_3' | 'streak_7' | 'streak_30'
+  | 'perfect_round'
+  | 'perfect_5'
+  | 'accuracy_80'
+  | 'accuracy_90'
+  | 'daily_7'
+  | 'daily_30'
+  | 'coins_100'
+  | 'coins_500'
+  | 'all_categories'
+  | 'speed_demon';
+
+export interface Achievement {
+  id: AchievementId;
+  title: string;
+  title_en: string;
+  description: string;
+  description_en: string;
+  emoji: string;
+  unlockedAt?: string;
+  unlocked: boolean;
+}
+
+export interface CategoryMastery {
+  categoryId: string;
+  categoryName: string;
+  categoryName_en: string;
+  gamesPlayed: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  accuracy: number;
+  emoji: string;
+  color: string;
+}
+
 export interface UserProfile {
   username: string;
   totalGamesPlayed: number;
@@ -89,6 +136,7 @@ export interface UserProfile {
   lastDailyDate: string;
   dailyCompleted: boolean;
   avatar: string;
+  achievements?: AchievementId[];
 }
 
 export interface LeaderboardEntry {

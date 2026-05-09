@@ -5,7 +5,9 @@ import {
   GameSettings,
   QuizResult,
   DailyReward,
+  AchievementId,
 } from '../types';
+import { evaluateAchievements } from '../utils/gameLogic';
 
 const KEYS = {
   USER_PROFILE: '@mtaa_user_profile',
@@ -14,6 +16,7 @@ const KEYS = {
   QUIZ_HISTORY: '@mtaa_quiz_history',
   DAILY_REWARD: '@mtaa_daily_reward',
   CATEGORY_STATS: '@mtaa_category_stats',
+  ACHIEVEMENTS: '@mtaa_achievements',
 };
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -158,6 +161,20 @@ export const StorageService = {
     return stats;
   },
 
+  async getUnlockedAchievements(): Promise<AchievementId[]> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.ACHIEVEMENTS);
+      const list = parseStoredValue<AchievementId[]>(data, []);
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async saveUnlockedAchievements(ids: AchievementId[]): Promise<void> {
+    await AsyncStorage.setItem(KEYS.ACHIEVEMENTS, JSON.stringify(ids));
+  },
+
   async resetAllData(): Promise<void> {
     await AsyncStorage.multiRemove(Object.values(KEYS));
   },
@@ -196,6 +213,14 @@ export const StorageService = {
     };
 
     await StorageService.saveUserProfile(updatedProfile);
+
+    const history = await StorageService.getQuizHistory();
+    const existingAchievements = await StorageService.getUnlockedAchievements();
+    const newAchievements = evaluateAchievements(updatedProfile, [result, ...history], existingAchievements);
+    if (newAchievements.length !== existingAchievements.length) {
+      await StorageService.saveUnlockedAchievements(newAchievements);
+    }
+
     return updatedProfile;
   },
 };
