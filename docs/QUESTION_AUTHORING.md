@@ -1,22 +1,36 @@
 # Question Authoring Guide
 
 Use this guide when adding or editing Mtaa Quiz Battle questions.
+For the full field reference, difficulty guidelines, apostrophe rules, and per-category examples see `docs/AUTHORING_GUIDE.md`.
 
-## Goals
+## Current state
 
-- Keep questions fun, local, and replayable.
-- Keep facts accurate enough for trivia.
-- Make Swahili the primary language while preserving a complete English experience.
-- Flag questions that can become outdated.
+- **222 questions** across 10 categories (IDs `q001`–`q222`)
+- **Next available ID: `q223`**
+- Target: 30–50 questions per category
 
-## Required Fields
+## Adding questions
 
-Every question in `src/data/questions.ts` must include:
+**For multiple questions (recommended):** use the batch injector.
+
+```bash
+# 1. Create scripts/q-<slug>.mjs exporting an array of question objects
+# 2. Import that array in scripts/inject-questions.mjs
+# 3. Run:
+node scripts/inject-questions.mjs
+npm run validate:data
+```
+
+**For one or two questions:** append directly to `src/data/questions.ts` before the closing `];`.
+
+## Required fields
+
+Every question must have all of these:
 
 ```ts
 {
-  id: 'q123',
-  category: 'General Knowledge TZ',
+  id: 'q223',
+  category: 'General Knowledge TZ',   // must match categories.ts exactly
   question: 'Swali la Kiswahili?',
   question_en: 'English question?',
   options: ['A', 'B', 'C', 'D'],
@@ -25,103 +39,62 @@ Every question in `src/data/questions.ts` must include:
   answer_en: 'B',
   explanation: 'Maelezo mafupi ya Kiswahili.',
   explanation_en: 'Short English explanation.',
-  difficulty: 'medium',
+  difficulty: 'medium',               // 'easy' | 'medium' | 'hard'
 }
 ```
 
 Rules:
 
-- `id` must be unique and follow the current `q###` style.
-- `category` must exactly match a category name from `src/data/categories.ts`.
-- `options` and `options_en` must each contain exactly four unique choices.
-- `answer` must appear in `options`.
-- `answer_en` must appear in `options_en`.
-- `difficulty` must be `easy`, `medium`, or `hard`.
-- English fields are required for every question.
+- `id` must be unique and follow `q###` format.
+- `options` / `options_en` must each have exactly 4 unique choices.
+- `answer` must appear in `options`; `answer_en` must appear in `options_en`.
+- All `_en` fields are required.
 
-## Optional Source Metadata
+## Optional source metadata
 
-Use source metadata for questions that rely on public facts, official counts, office holders, institutions, or records:
+Recommended for any question relying on a fact, statistic, or official record:
 
 ```ts
 sourceNote: 'Official Ikulu profile identifies Samia Suluhu Hassan as President.',
 sourceUrl: 'https://www.ikulu.go.tz/president',
 ```
 
-Prefer primary or authoritative sources:
+## Time-sensitive questions
 
-- Government and public institution sites
-- Official sports federation or league sites
-- Official park, museum, or statistical agency pages
-- Publisher/artist/label pages for music questions
-
-Avoid using social media posts as the only source for a permanent trivia answer.
-
-## Time-Sensitive Questions
-
-If a question can change, add all of these fields:
+If the answer can change (current leaders, records, active counts), add all three fields:
 
 ```ts
 timeSensitive: true,
 reviewAfter: '2026-12-31',
-reviewReason: 'Current office holder questions should be checked after elections or succession events.',
+reviewReason: 'Office holder may change after elections.',
 ```
 
-Examples of time-sensitive questions:
+`sourceNote` and `sourceUrl` are **required** when `timeSensitive: true`.
 
-- Current presidents, ministers, mayors, captains, coaches, or CEOs
-- Active league team counts
-- Current population estimates
-- Current records, rankings, awards, prices, or statistics
-- "Most followed", "latest", "current", or "as of today" questions
+## Writing style
 
-For stable historical facts, use the year in the question instead of marking it current.
+- Short, direct questions. Avoid trick wording.
+- Use local Tanzanian phrasing — understandable across regions.
+- Explanations should be educational, not just restate the answer.
+- Aim for ~40% easy / 40% medium / 20% hard per category.
 
-## Writing Style
+## Apostrophes
 
-- Keep questions short and direct.
-- Avoid trick wording unless the explanation makes it fair.
-- Use local phrasing, but keep it understandable across Tanzania.
-- Keep explanations educational, not just "because it is correct."
-- Mix easy recall, medium context, and hard detail questions.
+All strings in `questions.ts` use single quotes. Escape apostrophes:
 
-## Category Growth Targets
+```ts
+explanation_en: 'Tanzania\'s capital is Dodoma.',
+```
 
-Target range per category:
-
-- Minimum playable depth: 20 questions
-- Good replay depth: 30 questions
-- Strong replay depth: 50 questions
-
-Current strategy:
-
-- Add balanced batches across all categories.
-- Avoid growing one category far ahead of the others unless a feature needs it.
-- Run validation after every content batch.
+Or use a double-quote string when the value contains many apostrophes.
 
 ## Validation
 
-Run:
+After every content change:
 
 ```bash
-npm run validate:data
+npm run validate:data   # fast check
+npm run check           # full CI gate (typecheck + validate + contrast + tests)
 ```
 
-Before merging content changes, run:
-
-```bash
-npm run check
-```
-
-The validator catches:
-
-- Duplicate question IDs
-- Category mismatches
-- Missing translations
-- Invalid difficulty values
-- Duplicate answer options
-- Answers missing from options
-- Broken source URL shape
-- Missing review fields on time-sensitive questions
-- Daily challenge selection regressions
-- UI translation key and placeholder mismatches
+The validator catches: duplicate IDs, category mismatches, missing translations, invalid difficulty, duplicate options, answers not in options, bad source URL shape, missing time-sensitive metadata, daily challenge regressions.

@@ -1,107 +1,86 @@
-# Mtaa Quiz Battle Roadmap
+# Mtaa Quiz Battle — Roadmap
 
 ## Product Direction
 
-Mtaa Quiz Battle is a Swahili-first Tanzanian trivia game focused on quick sessions, local culture, repeat play, and offline reliability. The near-term goal is to make the app feel polished, trustworthy, and easy to extend before adding online or monetized features.
+Mtaa Quiz Battle is a Swahili-first Tanzanian trivia game focused on quick sessions, local culture, repeat play, and offline reliability. The near-term goal is a polished, store-ready v1.0 before adding online or monetised features.
 
-## Recently Completed
+---
 
-- Upgraded to Expo SDK 55 with React 19 and React Native 0.83.
-- Added strict TypeScript and data validation checks through `npm run check`.
-- Added a data validator for question integrity, category links, translation parity, and daily challenge determinism.
-- Improved quiz result records with per-question answer maps.
-- Fixed daily challenge replay routing and invalid quiz/category recovery states.
-- Added fair Fisher-Yates question shuffling and category-balanced daily challenges.
-- Hardened AsyncStorage parsing and leaderboard sorting.
-- Improved Home, Settings, and Leaderboard localization.
-- Added persisted light/dark appearance settings and a theme provider foundation.
+## Completed
 
-## Next Priorities
+### Foundation
+- Expo SDK 55, React 19, React Native 0.83, TypeScript strict mode throughout.
+- Expo Router v3 file-based navigation; all 9 screens implemented.
+- Offline-first: zero backend, all state in AsyncStorage.
+- `npm run check` CI gate: typecheck + data validation + contrast check + tests.
 
-### 1. Complete Theme Coverage
+### Theme & Visual Polish
+- Full light/dark theme system via `useThemeColors()` — all screens and components themed.
+- Themed animated splash screen (`index.tsx`) with gradient and pulsing dots.
+- WCAG contrast checker script (`scripts/check-contrast.mjs`).
+- All reusable components (`PrimaryButton`, `AnswerButton`, `StatCard`, `TimerBar`) consume theme tokens.
 
-**Status:** In progress  
-**Goal:** Make light/dark mode consistent across every screen.
+### Gameplay Polish
+- Pause / quit confirmation modal during a quiz.
+- Review mode on result screen — inspect every question with the correct answer highlighted.
+- Improved answer explanation UI with category colour and difficulty context.
+- Timeout feedback — clear visual + haptic cue when the timer expires.
+- Adaptive difficulty — after ≥30 games and ≥200 answered questions, question selection biases toward the player's weak difficulty tier per category without affecting Daily Challenge fairness.
 
-Remaining work:
+### Content Quality
+- 222 bilingual questions across 10 categories (q001–q222).
+- Optional `sourceNote` / `sourceUrl` metadata and `timeSensitive` / `reviewAfter` / `reviewReason` fields.
+- Data validator (`scripts/validate-data.mjs`) checks IDs, categories, translations, options, answers, time-sensitive metadata, and daily challenge determinism.
+- Comprehensive authoring guide (`docs/AUTHORING_GUIDE.md`) with per-category examples and batch injection tooling.
 
-- Convert Categories, Quiz, Result, Daily, Profile, and Leaderboard styles to live theme tokens.
-- Update reusable components (`PrimaryButton`, `AnswerButton`, `StatCard`, `TimerBar`) to consume theme context.
-- Add visual checks for light and dark mode on mobile-width and desktop-width web.
-- Confirm contrast ratios for text, disabled controls, badges, and answer states.
+### Progression & Retention
+- **9 player ranks** (Mgeni → Hadithi) based on total coins — shown as a banner with progress bar on profile.
+- **17 achievements** auto-evaluated after every game (streaks, perfect rounds, accuracy, daily consistency, coins, category coverage).
+- **Category mastery** — per-category accuracy bars on profile computed from full quiz history.
+- **Recent game history** — last 10 games displayed as cards on profile.
+- Coins earned every game (score-based + accuracy bonus); daily login reward scales with consecutive-day streak.
 
-### 2. Improve Gameplay Polish
+### Testing & Release Readiness
+- **84 Jest tests** across 5 suites: scoring, daily challenge, storage migration, leaderboard filters, web/file smoke tests.
+- `npm test` / `npm run test:ci` (with coverage) added to CI gate via `npm run check`.
+- **EAS build profiles** in `eas.json`: `development`, `preview` (internal APK/IPA), `production` (AAB/IPA + autoIncrement + submit config).
+- **Release checklist** (`docs/RELEASE_CHECKLIST.md`) covering code quality, versioning, assets, `app.json`, permissions, EAS builds, store metadata, question bank, localisation, and post-release steps.
 
-**Status:** Planned  
-**Goal:** Make every quiz feel fair, responsive, and satisfying.
+---
 
-Remaining work:
+## Active / Next
 
-- Add a pause/quit confirmation that preserves score display cleanly.
-- Add review mode after results so players can inspect missed questions.
-- Improve answer explanation UI with category color and difficulty context.
-- Add better feedback for time-up answers.
-- Consider adaptive difficulty once enough local history exists. Proposed trigger: wait until a player has at least 30 completed games and 200 answered questions, then use recent category accuracy to bias practice rounds slightly toward weak difficulties without changing Daily Challenge fairness.
+### Content Expansion
+**Goal:** Bring every category to 30–50 questions for strong replay depth.
 
-### 3. Content Quality Expansion
+- Current: ~22 questions per category. Next batch starts at `q223`.
+- Add balanced batches across all 10 categories using the batch injector.
+- Continue flagging time-sensitive questions (`timeSensitive: true`) with `reviewAfter` dates.
+- Review any `reviewAfter` dates that have passed.
 
-**Status:** In progress  
-**Goal:** Increase replay value while keeping data accurate.
-
-Remaining work:
-
-- Continue growing each category toward 30-50 questions.
-- Add source notes to more fact-sensitive existing questions.
-- Continue flagging time-sensitive questions, such as current leaders or active records, for scheduled review.
-- Expand the authoring guide with examples from every category as the bank grows.
-
-Completed foundation:
-
-- Added optional source metadata and time-sensitive review fields to questions.
-- Added validator checks for time-sensitive question metadata.
-- Added a question authoring guide with examples and validation rules.
-- Added the first balanced expansion batch across all categories.
-
-### 4. Progression And Retention
-
-**Status:** Planned  
-**Goal:** Give players meaningful reasons to return.
-
-Remaining work:
-
-- Add levels or ranks based on total coins and accuracy.
-- Add achievements for streaks, perfect rounds, category mastery, and daily consistency.
-- Add profile history cards for recent games.
-- Add category mastery percentages.
-
-### 5. Testing And Release Readiness
-
-**Status:** Planned  
-**Goal:** Make the app safer to ship.
-
-Remaining work:
-
-- Add unit tests for scoring, daily challenge selection, storage migration, and leaderboard filters.
-- Add a lightweight smoke test for web routing.
-- Add EAS build profiles for preview and production.
-- Add release checklist covering assets, permissions, versioning, and store metadata.
+---
 
 ## Later Backlog
 
-- Cloud leaderboard with auth or anonymous player IDs.
-- Optional account sync across devices.
-- Rewarded ads and premium remove-ads flow.
+- Cloud leaderboard with anonymous player IDs or optional sign-in.
+- Optional cross-device progress sync.
+- Rewarded ads → extra life or double coins; premium remove-ads IAP.
 - Push notification reminders for daily challenges.
-- Shareable result cards as generated images.
-- Admin tooling for reviewing and importing question packs.
-- Audio/music settings split between effects and background music.
+- Shareable result cards as generated images (not just text share).
+- Admin tooling for bulk question review and import.
+- Background music toggle separate from sound effects.
+- Offline PWA support (web service worker).
+
+---
 
 ## Quality Bar
 
-Before merging meaningful changes:
+Before merging any change:
 
 ```bash
 npm run check
 ```
 
-For UI changes, also run the app and inspect the affected screens in both appearance modes.
+This runs: `tsc --noEmit` → `validate:data` → `check:contrast` → `jest --ci --coverage`.
+
+For UI changes, also launch the app and inspect affected screens in both light and dark mode.

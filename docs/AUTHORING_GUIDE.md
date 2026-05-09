@@ -4,7 +4,7 @@
 
 Before adding a question, confirm:
 
-- [ ] `id` is unique (`q001`–`q999`; next available after `q222`)
+- [ ] `id` is unique (`q001`–`q999`; next available: `q223`)
 - [ ] `category` matches exactly one name in `categories.ts`
 - [ ] `difficulty` is `'easy'`, `'medium'`, or `'hard'`
 - [ ] Exactly **4** options in both `options` (Swahili) and `options_en` (English)
