@@ -32,7 +32,7 @@ Mtaa Quiz Battle is a Swahili-first Tanzanian trivia game focused on quick sessi
 
 ### Content Quality
 
-- 462 bilingual questions across 10 categories (q001–q462, ~46 per category 🔥).
+- 502 bilingual questions across 10 categories (q001–q502, ~50 per category ✅ goal reached).
 - Optional `sourceNote` / `sourceUrl` metadata and `timeSensitive` / `reviewAfter` / `reviewReason` fields.
 - Data validator (`scripts/validate-data.mjs`) checks IDs, categories, translations, options, answers, time-sensitive metadata, and daily challenge determinism.
 - Comprehensive authoring guide (`docs/AUTHORING_GUIDE.md`) with per-category examples and batch injection tooling.
@@ -56,15 +56,12 @@ Mtaa Quiz Battle is a Swahili-first Tanzanian trivia game focused on quick sessi
 
 ## Active / Next
 
-### Content Expansion
+### Content Expansion ✅
 
-**Goal:** Bring every category to 30–50 questions for strong replay depth.
+**Goal achieved:** Every category now has ~50 questions (502 total, q001–q502).
 
-- Current: **~46 questions per category** (q001–q462). Target of 50 is very close.
-- Next batch starts at `q463`. 4 more questions per category will hit 50.
-- Add final batches using `scripts/inject-batch5.mjs` (follow same pattern as batch 4).
-- Continue flagging time-sensitive questions (`timeSensitive: true`) with `reviewAfter` dates.
-- Review any `reviewAfter` dates that have passed.
+- Review any `timeSensitive` questions whose `reviewAfter` date has passed.
+- Next content push (if desired): start at `q503` with `inject-batch6.mjs`.
 
 ---
 

@@ -25,7 +25,7 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 
 ### Gameplay
 
-- **462 questions** across 10 categories in Swahili (+ full English translations)
+- **502 questions** across 10 categories in Swahili (+ full English translations)
 - **Difficulty levels**: Easy / Medium / Hard — each with a score **multiplier** (×1 / ×1.5 / ×2)
 - **Scoring**: Base 100 + Speed bonus (up to +50) + Streak bonus (+30 at streak ≥ 3) × difficulty multiplier
 - **Adaptive difficulty** — after 30 games + 200 answered questions, question selection biases toward the player's weak difficulty tiers per category
@@ -229,7 +229,7 @@ Mtaa Quiz Battle/
 │   │   ├── StatCard.tsx
 │   │   └── TimerBar.tsx
 │   ├── data/
-│   │   ├── questions.ts          # 462 bilingual questions (q001–q462)
+│   │   ├── questions.ts          # 502 bilingual questions (q001–q502)
 │   │   └── categories.ts         # 10 category definitions (counts auto-calculated)
 │   ├── storage/
 │   │   └── storage.ts            # StorageService: profile, settings, leaderboard,
@@ -298,7 +298,7 @@ npm run validate:data
 
 ```typescript
 {
-  id: 'q463',                              # next available ID
+  id: 'q503',                              # next available ID
   category: 'General Knowledge TZ',        # must match categories.ts exactly
   question: 'Swali lako hapa?',
   question_en: 'Your question here?',
