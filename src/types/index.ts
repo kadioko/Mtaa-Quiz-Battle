@@ -56,6 +56,37 @@ export interface QuizResult {
   accuracy: number;
   date: string;
   isDaily: boolean;
+  mode?: 'standard' | 'sprint' | 'versus';
+}
+
+export interface SprintResult {
+  id: string;
+  score: number;
+  correctAnswers: number;
+  totalAnswered: number;
+  maxStreak: number;
+  coinsEarned: number;
+  date: string;
+}
+
+export interface StreakFreeze {
+  count: number;
+  lastPurchasedDate: string;
+}
+
+export interface VersusResult {
+  id: string;
+  player1Name: string;
+  player2Name: string;
+  player1Score: number;
+  player2Score: number;
+  player1Correct: number;
+  player2Correct: number;
+  totalQuestions: number;
+  categoryId: string;
+  categoryName: string;
+  winnerId: 'player1' | 'player2' | 'draw';
+  date: string;
 }
 
 export interface QuizReviewItem {
@@ -96,7 +127,13 @@ export type AchievementId =
   | 'coins_100'
   | 'coins_500'
   | 'all_categories'
-  | 'speed_demon';
+  | 'speed_demon'
+  | 'sprint_debut'
+  | 'sprint_50'
+  | 'sprint_100'
+  | 'hint_master'
+  | 'versus_win'
+  | 'freeze_used';
 
 export interface Achievement {
   id: AchievementId;
@@ -170,6 +207,8 @@ export type RootStackParamList = {
   Categories: undefined;
   Quiz: { categoryId: string; isDaily?: boolean };
   Result: { result: QuizResult };
+  Sprint: undefined;
+  Versus: { categoryId?: string };
   Leaderboard: undefined;
   Profile: undefined;
   Settings: undefined;

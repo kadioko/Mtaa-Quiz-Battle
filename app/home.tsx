@@ -171,6 +171,49 @@ export default function HomeScreen() {
             ))}
           </View>
 
+          {/* New modes row */}
+          <View style={styles.modesRow}>
+            <TouchableOpacity
+              style={[styles.modeCard, { backgroundColor: colors.backgroundCard, borderColor: colors.primary }]}
+              onPress={() => router.push('/sprint')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modeEmoji}>🏃</Text>
+              <Text style={[styles.modeLabel, { color: colors.primary }]}>
+                {language === 'sw' ? 'Sprint' : 'Sprint'}
+              </Text>
+              <Text style={[styles.modeSub, { color: colors.textMuted }]}>
+                {language === 'sw' ? '60 sek' : '60s'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeCard, { backgroundColor: colors.backgroundCard, borderColor: colors.accent }]}
+              onPress={() => router.push('/versus')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modeEmoji}>🥊</Text>
+              <Text style={[styles.modeLabel, { color: colors.accent }]}>
+                {language === 'sw' ? 'Versus' : 'Versus'}
+              </Text>
+              <Text style={[styles.modeSub, { color: colors.textMuted }]}>
+                {language === 'sw' ? 'Watu 2' : '2 players'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeCard, { backgroundColor: colors.backgroundCard, borderColor: colors.gold }]}
+              onPress={() => router.push('/shop')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modeEmoji}>🛒</Text>
+              <Text style={[styles.modeLabel, { color: colors.gold }]}>
+                {language === 'sw' ? 'Duka' : 'Shop'}
+              </Text>
+              <Text style={[styles.modeSub, { color: colors.textMuted }]}>
+                {language === 'sw' ? 'Nunua' : 'Buy'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Daily challenge teaser */}
           <TouchableOpacity
             style={styles.dailyBanner}
@@ -340,6 +383,30 @@ const styles = StyleSheet.create({
   navLabel: {
     fontSize: Typography.fontSizes.md,
     fontWeight: Typography.fontWeights.bold,
+    textAlign: 'center',
+  },
+
+  modesRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.base,
+  },
+  modeCard: {
+    flex: 1,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    padding: Spacing.base,
+    alignItems: 'center',
+    gap: 4,
+  },
+  modeEmoji: { fontSize: 26 },
+  modeLabel: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: Typography.fontWeights.bold,
+    textAlign: 'center',
+  },
+  modeSub: {
+    fontSize: Typography.fontSizes.xs,
     textAlign: 'center',
   },
 

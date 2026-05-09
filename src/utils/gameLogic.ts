@@ -2,6 +2,11 @@ import { Question, QuizResult, QuizReviewItem, PlayerRank, Achievement, Achievem
 import { categories } from '../data/categories';
 
 export const QUESTION_TIME = 15;
+export const SPRINT_DURATION = 60;
+export const SPRINT_QUESTION_TIME = 8;
+export const HINT_ELIMINATE_COST = 15;
+export const HINT_SKIP_COST = 20;
+export const STREAK_FREEZE_COST = 50;
 export const BASE_SCORE = 100;
 export const MAX_SPEED_BONUS = 50;
 export const STREAK_BONUS = 30;
@@ -32,6 +37,10 @@ export const calculateCoins = (score: number, correctAnswers: number, total: num
   const baseCoins = Math.floor(score / 50);
   const accuracyBonus = accuracy >= 0.8 ? 10 : accuracy >= 0.6 ? 5 : 0;
   return baseCoins + accuracyBonus;
+};
+
+export const calculateSprintCoins = (score: number, correctAnswers: number): number => {
+  return Math.floor(score / 40) + (correctAnswers >= 10 ? 5 : 0);
 };
 
 export const getRating = (correct: number, total: number, lang: 'sw' | 'en' = 'sw'): string => {
@@ -265,12 +274,19 @@ export const ACHIEVEMENT_CATALOG: Achievement[] = [
   { id: 'coins_500',     emoji: '💰', unlocked: false, title: 'Sarafu 500',       title_en: '500 Coins',         description: 'Kusanya sarafu 500',                  description_en: 'Collect 500 coins' },
   { id: 'all_categories',emoji: '🗺️', unlocked: false, title: 'Mtaalamu',         title_en: 'All-rounder',       description: 'Cheza katika makundi yote 10',        description_en: 'Play in all 10 categories' },
   { id: 'speed_demon',   emoji: '⚡', unlocked: false, title: 'Mwepesi',          title_en: 'Speed Demon',       description: 'Pata bonasi ya kasi mara 10',         description_en: 'Earn 10 speed bonuses' },
+  { id: 'sprint_debut',  emoji: '🏃', unlocked: false, title: 'Mbio za Kwanza',   title_en: 'Sprint Debut',      description: 'Cheza Sprint kwa mara ya kwanza',     description_en: 'Play your first Sprint' },
+  { id: 'sprint_50',     emoji: '💨', unlocked: false, title: 'Mbio 50',          title_en: 'Sprint 50',         description: 'Jibu maswali 50 katika Sprint',       description_en: 'Answer 50 questions in Sprint mode' },
+  { id: 'sprint_100',    emoji: '🚀', unlocked: false, title: 'Mbio 100',         title_en: 'Sprint 100',        description: 'Jibu maswali 100 katika Sprint',      description_en: 'Answer 100 questions in Sprint mode' },
+  { id: 'hint_master',   emoji: '💡', unlocked: false, title: 'Mtoa Vidokezo',    title_en: 'Hint Master',       description: 'Tumia vidokezo mara 20',              description_en: 'Use hints 20 times' },
+  { id: 'versus_win',    emoji: '🥊', unlocked: false, title: 'Shujaa wa Versus', title_en: 'Versus Champion',   description: 'Shinda mchezo wa Versus',             description_en: 'Win a Versus match' },
+  { id: 'freeze_used',   emoji: '🧊', unlocked: false, title: 'Barafu Imetumika', title_en: 'Freeze Used',       description: 'Tumia Streak Freeze kulinda mfululizo', description_en: 'Use a Streak Freeze to protect your streak' },
 ];
 
 export const evaluateAchievements = (
   profile: { totalGamesPlayed: number; totalCoins: number; currentStreak: number; longestStreak: number; dailyStreak: number; totalCorrectAnswers: number; totalQuestions: number },
   history: QuizResult[],
-  existing: AchievementId[]
+  existing: AchievementId[],
+  extras?: { sprintTotal?: number; hintsUsed?: number; versusWins?: number; freezeEverUsed?: boolean }
 ): AchievementId[] => {
   const unlocked = new Set(existing);
   const add = (id: AchievementId) => unlocked.add(id);
@@ -308,6 +324,16 @@ export const evaluateAchievements = (
 
   const speedBonusGames = history.filter((r) => r.score > r.totalQuestions * 120).length;
   if (speedBonusGames >= 10) add('speed_demon');
+
+  if (extras) {
+    const { sprintTotal = 0, hintsUsed = 0, versusWins = 0, freezeEverUsed = false } = extras;
+    if (sprintTotal >= 1) add('sprint_debut');
+    if (sprintTotal >= 50) add('sprint_50');
+    if (sprintTotal >= 100) add('sprint_100');
+    if (hintsUsed >= 20) add('hint_master');
+    if (versusWins >= 1) add('versus_win');
+    if (freezeEverUsed) add('freeze_used');
+  }
 
   return Array.from(unlocked);
 };

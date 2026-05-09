@@ -6,6 +6,9 @@ import {
   QuizResult,
   DailyReward,
   AchievementId,
+  SprintResult,
+  StreakFreeze,
+  VersusResult,
 } from '../types';
 import { evaluateAchievements } from '../utils/gameLogic';
 
@@ -17,6 +20,10 @@ const KEYS = {
   DAILY_REWARD: '@mtaa_daily_reward',
   CATEGORY_STATS: '@mtaa_category_stats',
   ACHIEVEMENTS: '@mtaa_achievements',
+  SPRINT_HISTORY: '@mtaa_sprint_history',
+  STREAK_FREEZE: '@mtaa_streak_freeze',
+  HINTS_USED: '@mtaa_hints_used',
+  VERSUS_HISTORY: '@mtaa_versus_history',
 };
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -180,6 +187,90 @@ export const StorageService = {
     await AsyncStorage.multiRemove(Object.values(KEYS));
   },
 
+  // ── Sprint History ─────────────────────────────────────────────────────────
+  async getSprintHistory(): Promise<SprintResult[]> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.SPRINT_HISTORY);
+      const history = parseStoredValue<SprintResult[]>(data, []);
+      return Array.isArray(history) ? history : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async addSprintResult(result: SprintResult): Promise<void> {
+    const existing = await StorageService.getSprintHistory();
+    const updated = [result, ...existing].slice(0, 50);
+    await AsyncStorage.setItem(KEYS.SPRINT_HISTORY, JSON.stringify(updated));
+  },
+
+  // ── Streak Freeze ──────────────────────────────────────────────────────────
+  async getStreakFreeze(): Promise<StreakFreeze> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.STREAK_FREEZE);
+      return parseStoredValue<StreakFreeze>(data, { count: 0, lastPurchasedDate: '' });
+    } catch {
+      return { count: 0, lastPurchasedDate: '' };
+    }
+  },
+
+  async saveStreakFreeze(freeze: StreakFreeze): Promise<void> {
+    await AsyncStorage.setItem(KEYS.STREAK_FREEZE, JSON.stringify(freeze));
+  },
+
+  async purchaseStreakFreeze(coinCost: number): Promise<{ success: boolean; coinsLeft: number }> {
+    const profile = await StorageService.getUserProfile();
+    if (profile.totalCoins < coinCost) return { success: false, coinsLeft: profile.totalCoins };
+    const freeze = await StorageService.getStreakFreeze();
+    const updated = { count: freeze.count + 1, lastPurchasedDate: new Date().toISOString() };
+    await StorageService.saveStreakFreeze(updated);
+    const updatedProfile = { ...profile, totalCoins: profile.totalCoins - coinCost };
+    await StorageService.saveUserProfile(updatedProfile);
+    return { success: true, coinsLeft: updatedProfile.totalCoins };
+  },
+
+  async useStreakFreeze(): Promise<boolean> {
+    const freeze = await StorageService.getStreakFreeze();
+    if (freeze.count <= 0) return false;
+    const updated = { ...freeze, count: freeze.count - 1 };
+    await StorageService.saveStreakFreeze(updated);
+    return true;
+  },
+
+  // ── Hints Used ─────────────────────────────────────────────────────────────
+  async getHintsUsed(): Promise<number> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.HINTS_USED);
+      return parseStoredValue<number>(data, 0);
+    } catch {
+      return 0;
+    }
+  },
+
+  async incrementHintsUsed(): Promise<number> {
+    const current = await StorageService.getHintsUsed();
+    const next = current + 1;
+    await AsyncStorage.setItem(KEYS.HINTS_USED, JSON.stringify(next));
+    return next;
+  },
+
+  // ── Versus History ─────────────────────────────────────────────────────────
+  async getVersusHistory(): Promise<VersusResult[]> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.VERSUS_HISTORY);
+      const history = parseStoredValue<VersusResult[]>(data, []);
+      return Array.isArray(history) ? history : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async addVersusResult(result: VersusResult): Promise<void> {
+    const existing = await StorageService.getVersusHistory();
+    const updated = [result, ...existing].slice(0, 50);
+    await AsyncStorage.setItem(KEYS.VERSUS_HISTORY, JSON.stringify(updated));
+  },
+
   async updateProfileAfterGame(result: QuizResult): Promise<UserProfile> {
     const profile = await StorageService.getUserProfile();
     const today = new Date().toDateString();
@@ -190,7 +281,14 @@ export const StorageService = {
     if (lastPlayed === yesterday) {
       newStreak = profile.currentStreak + 1;
     } else if (lastPlayed !== today) {
-      newStreak = 1;
+      // Try to apply streak freeze for a missed day
+      const freeze = await StorageService.getStreakFreeze();
+      if (freeze.count > 0 && profile.currentStreak > 0) {
+        await StorageService.saveStreakFreeze({ ...freeze, count: freeze.count - 1 });
+        newStreak = profile.currentStreak + 1;
+      } else {
+        newStreak = 1;
+      }
     }
 
     const categoryStats = result.categoryId === 'daily'

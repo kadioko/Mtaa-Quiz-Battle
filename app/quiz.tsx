@@ -26,6 +26,8 @@ import {
   buildQuizResult,
   getAdaptiveDifficulty,
   applyDifficultyWeights,
+  HINT_ELIMINATE_COST,
+  HINT_SKIP_COST,
 } from '../src/utils/gameLogic';
 import { StorageService } from '../src/storage/storage';
 import { Question } from '../src/types';
@@ -84,6 +86,9 @@ export default function QuizScreen() {
   const [answerOutcome, setAnswerOutcome] = useState<AnswerOutcome>(null);
   const [paused, setPaused] = useState(false);
   const [quitConfirmVisible, setQuitConfirmVisible] = useState(false);
+  const [coins, setCoins] = useState(0);
+  const [hintEliminated, setHintEliminated] = useState<number[]>([]);
+  const [hintUsedThisQ, setHintUsedThisQ] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const answerMapRef = useRef<(boolean | null)[]>(Array(TOTAL_QUESTIONS).fill(null));
@@ -128,6 +133,8 @@ export default function QuizScreen() {
     setAnswerOutcome(null);
     setPaused(false);
     setQuitConfirmVisible(false);
+    setHintEliminated([]);
+    setHintUsedThisQ(false);
   }, []);
 
   const markAnswer = useCallback((index: number, isCorrect: boolean) => {
@@ -152,6 +159,7 @@ export default function QuizScreen() {
     StorageService.getSettings().then((s) => {
       settings.current = { sound: s.sound, vibration: s.vibration };
     });
+    StorageService.getUserProfile().then((p) => setCoins(p.totalCoins));
   }, []);
 
   useEffect(() => {
@@ -421,6 +429,57 @@ export default function QuizScreen() {
     setExplanationExpanded(true);
     setAnswerOutcome(null);
     setTimeLeft(QUESTION_TIME);
+    setHintEliminated([]);
+    setHintUsedThisQ(false);
+  };
+
+  const handleHintEliminate = async () => {
+    if (answered || hintUsedThisQ || coins < HINT_ELIMINATE_COST) return;
+    const current = questions[currentIndex];
+    const correctAnswer = language === 'en' && current.answer_en ? current.answer_en : current.answer;
+    const wrongIndices = shuffledOptions
+      .map((opt, i) => ({ opt, i }))
+      .filter(({ opt }) => opt !== correctAnswer)
+      .map(({ i }) => i);
+    const toEliminate: number[] = [];
+    const shuffledWrong = [...wrongIndices].sort(() => Math.random() - 0.5);
+    for (const idx of shuffledWrong) {
+      if (toEliminate.length < 2) toEliminate.push(idx);
+    }
+    setHintEliminated(toEliminate);
+    setHintUsedThisQ(true);
+    const profile = await StorageService.getUserProfile();
+    const newCoins = profile.totalCoins - HINT_ELIMINATE_COST;
+    await StorageService.saveUserProfile({ ...profile, totalCoins: newCoins });
+    setCoins(newCoins);
+    await StorageService.incrementHintsUsed();
+  };
+
+  const handleHintSkip = async () => {
+    if (answered || coins < HINT_SKIP_COST) return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    markAnswer(currentIndex, false);
+    markSelectedAnswer(currentIndex, null);
+    const profile = await StorageService.getUserProfile();
+    const newCoins = profile.totalCoins - HINT_SKIP_COST;
+    await StorageService.saveUserProfile({ ...profile, totalCoins: newCoins });
+    setCoins(newCoins);
+    await StorageService.incrementHintsUsed();
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= questions.length) {
+      finishQuiz(scoreRef.current, correctCountRef.current, maxStreakRef.current, answerMapRef.current);
+      return;
+    }
+    setCurrentIndex(nextIndex);
+    setAnswered(false);
+    setSelectedAnswer(null);
+    setAnswerStates(['default', 'default', 'default', 'default']);
+    setShowExplanation(false);
+    setExplanationExpanded(true);
+    setAnswerOutcome(null);
+    setTimeLeft(QUESTION_TIME);
+    setHintEliminated([]);
+    setHintUsedThisQ(false);
   };
 
   useEffect(() => {
@@ -594,13 +653,45 @@ export default function QuizScreen() {
               <AnswerButton
                 key={`${currentIndex}-${idx}`}
                 label={opt}
-                state={answerStates[idx]}
+                state={hintEliminated.includes(idx) ? 'wrong' : answerStates[idx]}
                 onPress={() => handleAnswer(opt)}
-                disabled={answered}
+                disabled={answered || hintEliminated.includes(idx)}
                 index={idx}
               />
             ))}
           </View>
+
+          {/* Hint bar */}
+          {!answered && (
+            <View style={styles.hintBar}>
+              <TouchableOpacity
+                style={[
+                  styles.hintBtn,
+                  { backgroundColor: colors.backgroundCardLight, borderColor: colors.border },
+                  (hintUsedThisQ || coins < HINT_ELIMINATE_COST) && { opacity: 0.4 },
+                ]}
+                onPress={handleHintEliminate}
+                disabled={hintUsedThisQ || coins < HINT_ELIMINATE_COST}
+              >
+                <Text style={[styles.hintBtnText, { color: colors.textSecondary }]}>
+                  💡 {language === 'en' ? `Remove 2 (${HINT_ELIMINATE_COST}🪙)` : `Ondoa 2 (${HINT_ELIMINATE_COST}🪙)`}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.hintBtn,
+                  { backgroundColor: colors.backgroundCardLight, borderColor: colors.border },
+                  (coins < HINT_SKIP_COST) && { opacity: 0.4 },
+                ]}
+                onPress={handleHintSkip}
+                disabled={coins < HINT_SKIP_COST}
+              >
+                <Text style={[styles.hintBtnText, { color: colors.textSecondary }]}>
+                  ⏭ {language === 'en' ? `Skip (${HINT_SKIP_COST}🪙)` : `Ruka (${HINT_SKIP_COST}🪙)`}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Bonus text */}
           {bonusText ? (
@@ -918,6 +1009,24 @@ const styles = StyleSheet.create({
 
   answersContainer: {
     marginBottom: Spacing.sm,
+  },
+
+  hintBar: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  hintBtn: {
+    flex: 1,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    alignItems: 'center',
+  },
+  hintBtnText: {
+    fontSize: Typography.fontSizes.xs,
+    fontWeight: Typography.fontWeights.medium,
   },
 
   bonusText: {

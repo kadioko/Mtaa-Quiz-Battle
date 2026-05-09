@@ -68,6 +68,9 @@ function RootStack() {
         <Stack.Screen name="profile" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="daily" />
+        <Stack.Screen name="sprint" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="versus" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="shop" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );
