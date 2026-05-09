@@ -5,12 +5,15 @@ import {
   StyleSheet,
   ScrollView,
   Share,
+  Alert,
   Animated,
   TouchableOpacity,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ViewShot from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { QuizResult } from '../src/types';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
@@ -40,10 +43,12 @@ export default function ResultScreen() {
   const cardAnim = useRef(new Animated.Value(0)).current;
   const recordAnim = useRef(new Animated.Value(0)).current;
   const countAnim = useRef(new Animated.Value(0)).current;
+  const viewShotRef = useRef<ViewShot>(null);
   const [displayScore, setDisplayScore] = useState(0);
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [bestScore, setBestScore] = useState(0);
   const [showReview, setShowReview] = useState(false);
+  const [sharingCard, setSharingCard] = useState(false);
 
   useEffect(() => {
     if (!result) return;
@@ -119,9 +124,28 @@ export default function ResultScreen() {
     const acc = result.accuracy;
     const streak = result.maxStreak;
     const shareText = language === 'sw'
-      ? `Nimepata ${result.score} alama kwenye "${cat}" katika Mtaa Quiz Battle!\nUsahihi: ${acc}% | Mfululizo: ${streak}\nUnaweza kunizidi? 🎯🇿🇳`
-      : `I scored ${result.score} pts on "${cat}" in Mtaa Quiz Battle!\nAccuracy: ${acc}% | Streak: ${streak}\nCan you beat me? 🎯🇿🇳`;
+      ? `Nimepata ${result.score} alama kwenye "${cat}" katika Mtaa Quiz Battle!\nUsahihi: ${acc}% | Mfululizo: ${streak}\nUnaweza kunizidi? 🎯��`
+      : `I scored ${result.score} pts on "${cat}" in Mtaa Quiz Battle!\nAccuracy: ${acc}% | Streak: ${streak}\nCan you beat me? 🎯��`;
     await Share.share({ message: shareText });
+  };
+
+  const handleShareCard = async () => {
+    if (!viewShotRef.current) return;
+    setSharingCard(true);
+    try {
+      const uri = await (viewShotRef.current as unknown as { capture: () => Promise<string> }).capture();
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Mtaa Quiz Battle' });
+      } else {
+        Alert.alert('', t('shareCardFail'));
+      }
+    } catch {
+      Alert.alert('', t('shareCardFail'));
+      await handleShare();
+    } finally {
+      setSharingCard(false);
+    }
   };
 
   const getScoreColor = () => {
@@ -151,30 +175,55 @@ export default function ResultScreen() {
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
-          {/* Medal & score */}
-          <Animated.View
-            style={[
-              styles.scoreSection,
-              {
-                backgroundColor: colors.backgroundCard,
-                borderColor: colors.border,
-                transform: [{ scale: scoreAnim }],
-                opacity: scoreAnim,
-              },
-            ]}
+          {/* Medal & score — wrapped in ViewShot for image capture */}
+          <ViewShot
+            ref={viewShotRef}
+            options={{ format: 'png', quality: 1 }}
+            style={{ borderRadius: Radius.xxl, overflow: 'hidden' }}
           >
-            <Text style={styles.medalEmoji}>{getMedalEmoji()}</Text>
-            {isNewRecord && (
-              <Animated.Text style={[styles.newRecordBadge, { opacity: recordAnim }]}>
-                {language === 'sw' ? '🏆 Rekodi Mpya!' : '🏆 New Record!'}
-              </Animated.Text>
-            )}
-            <Text style={[styles.scoreValue, { color: getScoreColor() }]}>
-              {displayScore}
-            </Text>
-            <Text style={[styles.scoreLabel, { color: colors.textSecondary }]}>{t('yourScore')}</Text>
-            <Text style={[styles.ratingText, { color: colors.text }]}>{rating}</Text>
-          </Animated.View>
+            <Animated.View
+              style={[
+                styles.scoreSection,
+                styles.scoreSectionCard,
+                {
+                  backgroundColor: colors.backgroundCard,
+                  borderColor: colors.border,
+                  transform: [{ scale: scoreAnim }],
+                  opacity: scoreAnim,
+                },
+              ]}
+            >
+              <Text style={[styles.cardBrand, { color: colors.textMuted }]}>🇹🇿 Mtaa Quiz Battle</Text>
+              <Text style={styles.medalEmoji}>{getMedalEmoji()}</Text>
+              {isNewRecord && (
+                <Animated.Text style={[styles.newRecordBadge, { opacity: recordAnim }]}>
+                  {language === 'sw' ? '🏆 Rekodi Mpya!' : '🏆 New Record!'}
+                </Animated.Text>
+              )}
+              <Text style={[styles.scoreValue, { color: getScoreColor() }]}>
+                {displayScore}
+              </Text>
+              <Text style={[styles.scoreLabel, { color: colors.textSecondary }]}>{t('yourScore')}</Text>
+              <Text style={[styles.ratingText, { color: colors.text }]}>{rating}</Text>
+              <View style={styles.cardStatsRow}>
+                <View style={styles.cardStat}>
+                  <Text style={[styles.cardStatVal, { color: colors.secondary }]}>{result.correctAnswers}/{result.totalQuestions}</Text>
+                  <Text style={[styles.cardStatLabel, { color: colors.textMuted }]}>{t('correctAnswers')}</Text>
+                </View>
+                <View style={[styles.cardStatDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.cardStat}>
+                  <Text style={[styles.cardStatVal, { color: colors.primary }]}>{result.accuracy}%</Text>
+                  <Text style={[styles.cardStatLabel, { color: colors.textMuted }]}>{t('accuracy')}</Text>
+                </View>
+                <View style={[styles.cardStatDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.cardStat}>
+                  <Text style={[styles.cardStatVal, { color: colors.gold }]}>🔥{result.maxStreak}</Text>
+                  <Text style={[styles.cardStatLabel, { color: colors.textMuted }]}>{t('streak')}</Text>
+                </View>
+              </View>
+              <Text style={[styles.cardCategory, { color: colors.textMuted }]}>{result.categoryName}</Text>
+            </Animated.View>
+          </ViewShot>
 
           {/* Stats row */}
           <Animated.View style={[styles.statsRow, { opacity: cardAnim }]}>
@@ -333,10 +382,17 @@ export default function ResultScreen() {
               textColor={colors.black}
             />
             <PrimaryButton
-              label={t('shareScore')}
-              onPress={handleShare}
+              label={sharingCard ? t('generatingCard') : t('shareCard')}
+              onPress={handleShareCard}
               color={colors.secondary}
               textColor={colors.white}
+              style={{ marginTop: Spacing.sm }}
+            />
+            <PrimaryButton
+              label={t('shareScore')}
+              onPress={handleShare}
+              color={colors.backgroundCardLight}
+              textColor={colors.text}
               style={{ marginTop: Spacing.sm }}
             />
             <PrimaryButton
@@ -379,6 +435,45 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.base,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  scoreSectionCard: {
+    paddingHorizontal: Spacing.xl,
+  },
+  cardBrand: {
+    fontSize: Typography.fontSizes.xs,
+    fontWeight: Typography.fontWeights.bold,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.sm,
+  },
+  cardStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
+  },
+  cardStat: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  cardStatVal: {
+    fontSize: Typography.fontSizes.lg,
+    fontWeight: Typography.fontWeights.black,
+  },
+  cardStatLabel: {
+    fontSize: Typography.fontSizes.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  cardStatDivider: {
+    width: 1,
+    height: 36,
+  },
+  cardCategory: {
+    fontSize: Typography.fontSizes.sm,
+    marginTop: Spacing.base,
+    fontWeight: Typography.fontWeights.medium,
   },
   medalEmoji: { fontSize: 64, marginBottom: Spacing.sm },
   scoreValue: {

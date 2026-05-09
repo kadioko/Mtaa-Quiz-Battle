@@ -151,6 +151,7 @@ export interface LeaderboardEntry {
 
 export interface GameSettings {
   sound: boolean;
+  music: boolean;
   vibration: boolean;
   language: 'sw' | 'en';
   notifications: boolean;

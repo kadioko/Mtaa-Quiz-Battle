@@ -21,6 +21,7 @@ import { ThemeMode } from '../src/theme/colors';
 
 const DEFAULT_SETTINGS: GameSettings = {
   sound: true,
+  music: true,
   vibration: true,
   language: 'sw',
   notifications: true,
@@ -118,6 +119,13 @@ export default function SettingsScreen() {
               emoji="🎵"
               value={settings.sound}
               onToggle={(v) => updateSetting('sound', v)}
+            />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <SettingRow
+              label={t('music')}
+              emoji="🎶"
+              value={settings.music ?? true}
+              onToggle={(v) => updateSetting('music', v)}
             />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <SettingRow

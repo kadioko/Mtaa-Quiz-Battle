@@ -38,6 +38,7 @@ const DEFAULT_PROFILE: UserProfile = {
 
 const DEFAULT_SETTINGS: GameSettings = {
   sound: true,
+  music: true,
   vibration: true,
   language: 'sw',
   notifications: true,
