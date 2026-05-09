@@ -24,6 +24,7 @@ const KEYS = {
   STREAK_FREEZE: '@mtaa_streak_freeze',
   HINTS_USED: '@mtaa_hints_used',
   VERSUS_HISTORY: '@mtaa_versus_history',
+  ONBOARDING_DONE: '@mtaa_onboarding_done',
 };
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -187,6 +188,20 @@ export const StorageService = {
     await AsyncStorage.multiRemove(Object.values(KEYS));
   },
 
+  // ── Onboarding ─────────────────────────────────────────────────────────────
+  async hasSeenOnboarding(): Promise<boolean> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.ONBOARDING_DONE);
+      return data === 'true';
+    } catch {
+      return false;
+    }
+  },
+
+  async markOnboardingDone(): Promise<void> {
+    await AsyncStorage.setItem(KEYS.ONBOARDING_DONE, 'true');
+  },
+
   // ── Sprint History ─────────────────────────────────────────────────────────
   async getSprintHistory(): Promise<SprintResult[]> {
     try {
@@ -271,7 +286,7 @@ export const StorageService = {
     await AsyncStorage.setItem(KEYS.VERSUS_HISTORY, JSON.stringify(updated));
   },
 
-  async updateProfileAfterGame(result: QuizResult): Promise<UserProfile> {
+  async updateProfileAfterGame(result: QuizResult): Promise<{ profile: UserProfile; achievementsUnlocked: number }> {
     const profile = await StorageService.getUserProfile();
     const today = new Date().toDateString();
     const lastPlayed = profile.lastPlayedDate;
@@ -316,10 +331,11 @@ export const StorageService = {
     const history = await StorageService.getQuizHistory();
     const existingAchievements = await StorageService.getUnlockedAchievements();
     const newAchievements = evaluateAchievements(updatedProfile, [result, ...history], existingAchievements);
-    if (newAchievements.length !== existingAchievements.length) {
+    const achievementsUnlocked = newAchievements.length - existingAchievements.length;
+    if (achievementsUnlocked > 0) {
       await StorageService.saveUnlockedAchievements(newAchievements);
     }
 
-    return updatedProfile;
+    return { profile: updatedProfile, achievementsUnlocked };
   },
 };

@@ -10,8 +10,9 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
+import { HapticService } from '../src/utils/haptics';
+import { MusicService } from '../src/services/MusicService';
 import { questions } from '../src/data/questions';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { useLanguage } from '../src/utils/LanguageContext';
@@ -89,11 +90,14 @@ export default function SprintScreen() {
   useEffect(() => {
     StorageService.getSettings().then((s) => {
       settings.current = { sound: s.sound, vibration: s.vibration };
+      MusicService.setEnabled(s.music ?? true);
+      MusicService.play('sprint');
     });
     StorageService.getSprintHistory().then((h) => {
       if (h.length > 0) setBestScore(Math.max(...h.map((r) => r.score)));
     });
     setPool(shuffleArray(questions));
+    return () => { MusicService.stop(); };
   }, []);
 
   useEffect(() => {
@@ -153,7 +157,7 @@ export default function SprintScreen() {
     const updated = evaluateAchievements(profile, [], existing, { sprintTotal, hintsUsed });
     if (updated.length !== existing.length) await StorageService.saveUnlockedAchievements(updated);
     playSound('timeup', settings.current.sound);
-    if (settings.current.vibration) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    HapticService.timeUp(settings.current.vibration);
   }, []);
 
   const handleAnswer = useCallback((option: string) => {
@@ -192,12 +196,13 @@ export default function SprintScreen() {
         Animated.timing(floatY, { toValue: -48, duration: 700, useNativeDriver: true }),
         Animated.sequence([Animated.delay(300), Animated.timing(floatOpacity, { toValue: 0, duration: 400, useNativeDriver: true })]),
       ]).start(() => setFloatText(''));
-      if (settings.current.vibration) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      HapticService.correctAnswer(settings.current.vibration);
+      if ([3, 5, 10].includes(streakRef.current)) HapticService.streakMilestone(settings.current.vibration);
       playSound('correct', settings.current.sound);
     } else {
       streakRef.current = 0;
       setStreak(0);
-      if (settings.current.vibration) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      HapticService.wrongAnswer(settings.current.vibration);
       playSound('wrong', settings.current.sound);
     }
 

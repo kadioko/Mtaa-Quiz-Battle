@@ -12,9 +12,10 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
 import { getCategoryById } from '../src/data/categories';
+import { HapticService } from '../src/utils/haptics';
+import { MusicService } from '../src/services/MusicService';
 import { getDailyQuestions, getRandomQuestionsByCategory } from '../src/data/questions';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
@@ -158,6 +159,7 @@ export default function QuizScreen() {
   useEffect(() => {
     StorageService.getSettings().then((s) => {
       settings.current = { sound: s.sound, vibration: s.vibration };
+      MusicService.setEnabled(s.music ?? true);
     });
     StorageService.getUserProfile().then((p) => setCoins(p.totalCoins));
   }, []);
@@ -183,8 +185,12 @@ export default function QuizScreen() {
       }
       setQuestions(qs);
       setQuizStatus(qs.length > 0 ? 'ready' : 'empty');
+      if (qs.length > 0) {
+        MusicService.play(isDaily === 'true' ? 'default' : (categoryId ?? 'default'));
+      }
     };
     load();
+    return () => { MusicService.stop(); };
   }, [categoryId, isDaily, resetQuizState]);
 
   useEffect(() => {
@@ -234,7 +240,8 @@ export default function QuizScreen() {
         }))
       );
 
-      const updatedProfile = await StorageService.updateProfileAfterGame(result);
+      const { profile: updatedProfile, achievementsUnlocked } = await StorageService.updateProfileAfterGame(result);
+      if (achievementsUnlocked > 0) HapticService.achievementUnlock(settings.current.vibration);
       await StorageService.addQuizResult(result);
       await StorageService.addLeaderboardEntry({
         id: result.id,
@@ -275,9 +282,7 @@ export default function QuizScreen() {
     setAnswerOutcome('timeout');
     markSelectedAnswer(currentIndex, null);
     markAnswer(currentIndex, false);
-    if (settings.current.vibration) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    }
+    HapticService.timeUp(settings.current.vibration);
     playSound('timeup', settings.current.sound);
     const newStreak = 0;
     setStreak(newStreak);
@@ -379,9 +384,8 @@ export default function QuizScreen() {
 
       markAnswer(currentIndex, true);
 
-      if (settings.current.vibration) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
+      HapticService.correctAnswer(settings.current.vibration);
+      if ([3, 5, 10].includes(newStreak)) HapticService.streakMilestone(settings.current.vibration);
       playSound('correct', settings.current.sound);
 
       let bonus = '';
@@ -400,9 +404,7 @@ export default function QuizScreen() {
       setAnswerOutcome('wrong');
       markAnswer(currentIndex, false);
       setStreak(0);
-      if (settings.current.vibration) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
+      HapticService.wrongAnswer(settings.current.vibration);
       playSound('wrong', settings.current.sound);
     }
     setShowExplanation(true);

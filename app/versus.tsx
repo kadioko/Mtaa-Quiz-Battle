@@ -16,8 +16,8 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
+import { HapticService } from '../src/utils/haptics';
 import { getCategoryById, categories } from '../src/data/categories';
 import { getRandomQuestions, getRandomQuestionsByCategory } from '../src/data/questions';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
@@ -145,7 +145,7 @@ export default function VersusScreen() {
     setAnswerStates(options.map((_, i) => (i === correctIdx ? 'reveal' : 'default')));
     streakRef.current = 0;
     setDisplayStreak(0);
-    if (settings.current.vibration) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    HapticService.timeUp(settings.current.vibration);
     playSound('timeup', settings.current.sound);
   };
 
@@ -173,12 +173,13 @@ export default function VersusScreen() {
         p2CorrectRef.current += 1;
       }
       setDisplayScore(currentPlayerRef.current === 1 ? p1ScoreRef.current : p2ScoreRef.current);
-      if (settings.current.vibration) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      HapticService.correctAnswer(settings.current.vibration);
+      if ([3, 5, 10].includes(streakRef.current)) HapticService.streakMilestone(settings.current.vibration);
       playSound('correct', settings.current.sound);
     } else {
       streakRef.current = 0;
       setDisplayStreak(0);
-      if (settings.current.vibration) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      HapticService.wrongAnswer(settings.current.vibration);
       playSound('wrong', settings.current.sound);
     }
   };

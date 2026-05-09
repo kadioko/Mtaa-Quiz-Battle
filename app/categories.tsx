@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,13 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -47,38 +54,20 @@ export default function CategoriesScreen() {
     return qs.some((question) => question.difficulty === diffFilter);
   });
 
-  const renderItem = ({ item }: { item: Category }) => {
+  const renderItem = useCallback(({ item, index }: { item: Category; index: number }) => {
     const playCount = playCounts[item.id] ?? 0;
     return (
-      <TouchableOpacity
-        style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: item.color }]}
+      <AnimatedCategoryCard
+        item={item}
+        index={index}
+        playCount={playCount}
+        language={language}
+        colors={colors}
         onPress={() => router.push({ pathname: '/quiz', params: { categoryId: item.id } })}
-        activeOpacity={0.82}
-      >
-        <View style={[styles.emojiCircle, { backgroundColor: item.color + '22' }]}>
-          <Text style={styles.emoji}>{item.emoji}</Text>
-        </View>
-        <Text style={[styles.name, { color: item.color }]} numberOfLines={2}>
-          {language === 'en' ? item.name_en : item.name}
-        </Text>
-        <Text style={[styles.desc, { color: colors.textMuted }]} numberOfLines={2}>
-          {language === 'en' ? item.description_en : item.description}
-        </Text>
-        <View style={styles.cardFooter}>
-          <View style={[styles.countBadge, { backgroundColor: colors.backgroundCardLight }]}>
-            <Text style={[styles.countText, { color: colors.textSecondary }]}>{item.questionCount} {t('questions')}</Text>
-          </View>
-          {playCount > 0 && (
-            <View style={[styles.playedBadge, { backgroundColor: item.color + '22' }]}>
-              <Text style={[styles.playedText, { color: item.color }]}>
-                {language === 'sw' ? `${playCount}×` : `${playCount}×`}
-              </Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
+      />
     );
-  };
+  }, [playCounts, language, colors, router]);
+
 
   return (
     <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
@@ -163,9 +152,74 @@ export default function CategoriesScreen() {
           contentContainerStyle={styles.list}
           columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
+          extraData={playCounts}
         />
       </SafeAreaView>
     </LinearGradient>
+  );
+}
+
+// ── AnimatedCategoryCard ─────────────────────────────────────────────────────
+function AnimatedCategoryCard({
+  item, index, playCount, language, colors, onPress,
+}: {
+  item: Category;
+  index: number;
+  playCount: number;
+  language: string;
+  colors: any;
+  onPress: () => void;
+}) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(32);
+
+  useEffect(() => {
+    const delay = index * 55;
+    opacity.value = withDelay(
+      delay,
+      withTiming(1, { duration: 320, easing: Easing.out(Easing.quad) })
+    );
+    translateY.value = withDelay(
+      delay,
+      withTiming(0, { duration: 320, easing: Easing.out(Easing.quad) })
+    );
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return (
+    <Animated.View style={animStyle}>
+      <TouchableOpacity
+        style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: item.color }]}
+        onPress={onPress}
+        activeOpacity={0.82}
+      >
+        <View style={[styles.emojiCircle, { backgroundColor: item.color + '22' }]}>
+          <Text style={styles.emoji}>{item.emoji}</Text>
+        </View>
+        <Text style={[styles.name, { color: item.color }]} numberOfLines={2}>
+          {language === 'en' ? item.name_en : item.name}
+        </Text>
+        <Text style={[styles.desc, { color: colors.textMuted }]} numberOfLines={2}>
+          {language === 'en' ? item.description_en : item.description}
+        </Text>
+        <View style={styles.cardFooter}>
+          <View style={[styles.countBadge, { backgroundColor: colors.backgroundCardLight }]}>
+            <Text style={[styles.countText, { color: colors.textSecondary }]}>
+              {item.questionCount} {t('questions')}
+            </Text>
+          </View>
+          {playCount > 0 && (
+            <View style={[styles.playedBadge, { backgroundColor: item.color + '22' }]}>
+              <Text style={[styles.playedText, { color: item.color }]}>{playCount}×</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 

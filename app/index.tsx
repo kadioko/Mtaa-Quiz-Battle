@@ -63,8 +63,9 @@ export default function SplashScreen() {
       }),
     ]).start();
 
-    const timer = setTimeout(() => {
-      router.replace('/home');
+    const timer = setTimeout(async () => {
+      const seen = await StorageService.hasSeenOnboarding();
+      router.replace(seen ? '/home' : '/onboarding');
     }, 2600);
 
     return () => clearTimeout(timer);
