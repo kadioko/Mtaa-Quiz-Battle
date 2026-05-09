@@ -12,6 +12,7 @@
  */
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 const DAILY_REMINDER_ID = 'daily-challenge-reminder';
 const CHANNEL_ID = 'daily-challenge';
@@ -141,5 +142,38 @@ export const NotificationService = {
       const data = response.notification.request.content.data as Record<string, string> | undefined;
       if (data?.screen) callback(data.screen);
     });
+  },
+
+  /**
+   * Get the Expo Push Token for this device.
+   * Returns null on web or simulator (no token available).
+   */
+  async getExpoPushToken(): Promise<string | null> {
+    if (Platform.OS === 'web') return null;
+    try {
+      const projectId =
+        Constants.expoConfig?.extra?.eas?.projectId ??
+        Constants.easConfig?.projectId;
+      const { data } = await Notifications.getExpoPushTokenAsync(
+        projectId ? { projectId } : undefined
+      );
+      return data ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Request permission, get the push token, and register it with the cloud.
+   * Should be called once after onboarding / on app start.
+   */
+  async registerWithCloud(): Promise<void> {
+    const granted = await NotificationService.requestPermission();
+    if (!granted) return;
+    const token = await NotificationService.getExpoPushToken();
+    if (!token) return;
+    // Lazy import to avoid circular deps
+    const { CloudService } = await import('./CloudService');
+    await CloudService.registerPushToken(token);
   },
 };

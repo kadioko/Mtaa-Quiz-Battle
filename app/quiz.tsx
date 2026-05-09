@@ -16,6 +16,7 @@ import { Audio } from 'expo-av';
 import { getCategoryById } from '../src/data/categories';
 import { HapticService } from '../src/utils/haptics';
 import { MusicService } from '../src/services/MusicService';
+import { CloudService } from '../src/services/CloudService';
 import { getDailyQuestions, getRandomQuestionsByCategory } from '../src/data/questions';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
@@ -252,6 +253,16 @@ export default function QuizScreen() {
         correctAnswers: finalCorrect,
         isDaily: isDaily === 'true',
       });
+      // Best-effort cloud submission (silent on failure)
+      CloudService.submitScore({
+        displayName: updatedProfile.username,
+        score: finalScore,
+        categoryName: cat.name,
+        categoryName_en: getCategoryById(categoryId ?? '')?.name_en,
+        correctAnswers: finalCorrect,
+        totalQuestions: questions.length,
+        isDaily: isDaily === 'true',
+      }).catch(() => {});
 
       if (isDaily === 'true') {
         const profile = await StorageService.getUserProfile();

@@ -9,6 +9,7 @@ import {
   SprintResult,
   StreakFreeze,
   VersusResult,
+  CloudUser,
 } from '../types';
 import { evaluateAchievements } from '../utils/gameLogic';
 
@@ -25,6 +26,8 @@ const KEYS = {
   HINTS_USED: '@mtaa_hints_used',
   VERSUS_HISTORY: '@mtaa_versus_history',
   ONBOARDING_DONE: '@mtaa_onboarding_done',
+  CLOUD_USER: '@mtaa_cloud_user',
+  LAST_SYNC: '@mtaa_last_sync',
 };
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -337,5 +340,36 @@ export const StorageService = {
     }
 
     return { profile: updatedProfile, achievementsUnlocked };
+  },
+
+  // ── Cloud Auth ──────────────────────────────────────────────────────────────
+  async getCloudUser(): Promise<CloudUser | null> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.CLOUD_USER);
+      return data ? parseStoredValue<CloudUser>(data, null as unknown as CloudUser) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  async saveCloudUser(user: CloudUser): Promise<void> {
+    await AsyncStorage.setItem(KEYS.CLOUD_USER, JSON.stringify(user));
+  },
+
+  async clearCloudUser(): Promise<void> {
+    await AsyncStorage.removeItem(KEYS.CLOUD_USER);
+  },
+
+  // ── Sync Metadata ───────────────────────────────────────────────────────────
+  async getLastSync(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(KEYS.LAST_SYNC);
+    } catch {
+      return null;
+    }
+  },
+
+  async saveLastSync(isoDate: string): Promise<void> {
+    await AsyncStorage.setItem(KEYS.LAST_SYNC, isoDate);
   },
 };

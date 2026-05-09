@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../src/storage/storage';
-import { LeaderboardEntry } from '../src/types';
+import { CloudService } from '../src/services/CloudService';
+import { LeaderboardEntry, CloudLeaderboardEntry } from '../src/types';
 import { getCategoryByName } from '../src/data/categories';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
@@ -19,15 +21,37 @@ import { formatDate } from '../src/utils/gameLogic';
 import { useThemeColors } from '../src/utils/ThemeContext';
 
 type FilterTab = 'all' | 'daily' | 'best';
+type SourceTab = 'local' | 'global';
 
 export default function LeaderboardScreen() {
   const router = useRouter();
   const { language } = useLanguage();
   const colors = useThemeColors();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [cloudEntries, setCloudEntries] = useState<CloudLeaderboardEntry[]>([]);
   const [tab, setTab] = useState<FilterTab>('all');
+  const [source, setSource] = useState<SourceTab>('local');
+  const [cloudLoading, setCloudLoading] = useState(false);
+  const cloudAvailable = CloudService.isAvailable();
+
+  const loadCloud = useCallback(async () => {
+    setCloudLoading(true);
+    const rows = await CloudService.fetchLeaderboard({ limit: 50 });
+    setCloudEntries(rows);
+    setCloudLoading(false);
+  }, []);
+
+  useEffect(() => {
+    StorageService.getLeaderboard().then(setEntries);
+    if (cloudAvailable) loadCloud();
+  }, [language, cloudAvailable, loadCloud]);
+
+  useEffect(() => {
+    if (source === 'global' && cloudAvailable) loadCloud();
+  }, [source, cloudAvailable, loadCloud]);
 
   const displayed = (() => {
+    if (source === 'global') return [];
     if (tab === 'daily') {
       return entries.filter((e) =>
         e.isDaily || e.categoryName.toLowerCase().includes('daily') || e.categoryName === 'Daily Challenge'
@@ -43,10 +67,6 @@ export default function LeaderboardScreen() {
     }
     return entries;
   })();
-
-  useEffect(() => {
-    StorageService.getLeaderboard().then(setEntries);
-  }, [language]);
 
   const rankColor = (i: number) => {
     if (i === 0) return colors.gold;
@@ -85,6 +105,22 @@ export default function LeaderboardScreen() {
     </View>
   );
 
+  const renderCloudItem = ({ item, index }: { item: CloudLeaderboardEntry; index: number }) => (
+    <View style={[styles.row, { backgroundColor: colors.backgroundCard, borderColor: colors.border }, index < 3 && { borderColor: rankColor(index) }]}>
+      <Text style={[styles.rank, { color: rankColor(index) }]}>{rankEmoji(index)}</Text>
+      <View style={styles.rowInfo}>
+        <Text style={[styles.rowName, { color: colors.text }]}>{item.displayName}</Text>
+        <Text style={[styles.rowCat, { color: colors.textMuted }]} numberOfLines={1}>
+          {language === 'en' ? (item.categoryName_en ?? item.categoryName) : item.categoryName}
+        </Text>
+      </View>
+      <View style={styles.rowRight}>
+        <Text style={[styles.rowScore, { color: rankColor(index) }]}>{item.score}</Text>
+        <Text style={[styles.rowDate, { color: colors.textMuted }]}>{formatDate(item.createdAt)}</Text>
+      </View>
+    </View>
+  );
+
   return (
     <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
@@ -93,29 +129,78 @@ export default function LeaderboardScreen() {
             <Text style={styles.backIcon}>‹</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>🏆 {t('leaderboard')}</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        {/* Filter tabs */}
-        <View style={[styles.tabs, { backgroundColor: colors.backgroundCardLight }]}>
-          {(['all', 'daily', 'best'] as FilterTab[]).map((f) => (
+          {cloudAvailable ? (
             <TouchableOpacity
-              key={f}
-              style={[styles.tab, tab === f && { backgroundColor: colors.primary }]}
-              onPress={() => setTab(f)}
+              style={[styles.signInBtn, { backgroundColor: colors.backgroundCardLight }]}
+              onPress={() => router.push('/signin')}
             >
-              <Text style={[styles.tabText, { color: colors.textMuted }, tab === f && { color: colors.black, fontWeight: Typography.fontWeights.bold }]}>
-                {f === 'all'
-                  ? t('allTab')
-                  : f === 'daily'
-                  ? t('dailyTab')
-                  : t('bestTab')}
-              </Text>
+              <Text style={[styles.signInBtnText, { color: colors.primary }]}>🌐</Text>
             </TouchableOpacity>
-          ))}
+          ) : <View style={{ width: 40 }} />}
         </View>
 
-        {displayed.length === 0 ? (
+        {/* Source toggle: Local / Global */}
+        {cloudAvailable && (
+          <View style={[styles.sourceTabs, { backgroundColor: colors.backgroundCardLight }]}>
+            {(['local', 'global'] as SourceTab[]).map((s) => (
+              <TouchableOpacity
+                key={s}
+                style={[styles.sourceTab, source === s && { backgroundColor: colors.primary }]}
+                onPress={() => setSource(s)}
+              >
+                <Text style={[styles.sourceTabText, { color: colors.textMuted }, source === s && { color: colors.black, fontWeight: Typography.fontWeights.bold }]}>
+                  {s === 'local' ? `📱 ${t('cloudLocal')}` : `🌐 ${t('cloudGlobal')}`}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Filter tabs (local only) */}
+        {source === 'local' && (
+          <View style={[styles.tabs, { backgroundColor: colors.backgroundCardLight }]}>
+            {(['all', 'daily', 'best'] as FilterTab[]).map((f) => (
+              <TouchableOpacity
+                key={f}
+                style={[styles.tab, tab === f && { backgroundColor: colors.primary }]}
+                onPress={() => setTab(f)}
+              >
+                <Text style={[styles.tabText, { color: colors.textMuted }, tab === f && { color: colors.black, fontWeight: Typography.fontWeights.bold }]}>
+                  {f === 'all' ? t('allTab') : f === 'daily' ? t('dailyTab') : t('bestTab')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {source === 'global' ? (
+          cloudLoading ? (
+            <View style={styles.empty}>
+              <ActivityIndicator color={colors.primary} size="large" />
+            </View>
+          ) : cloudEntries.length === 0 ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyEmoji}>🌐</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {language === 'sw' ? 'Hakuna alama za kimataifa bado.' : 'No global scores yet.'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.signInBtnLarge, { borderColor: colors.primary }]}
+                onPress={() => router.push('/signin')}
+              >
+                <Text style={[styles.signInBtnLargeText, { color: colors.primary }]}>{t('cloudSignIn')}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <FlatList
+              data={cloudEntries}
+              renderItem={renderCloudItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.list}
+              showsVerticalScrollIndicator={false}
+            />
+          )
+        ) : displayed.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🏆</Text>
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('noLeaderboard')}</Text>
@@ -237,5 +322,37 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.base,
     color: Colors.textSecondary,
     textAlign: 'center',
+  },
+  sourceTabs: {
+    flexDirection: 'row',
+    marginHorizontal: Spacing.base,
+    marginBottom: Spacing.sm,
+    borderRadius: Radius.lg,
+    padding: 3,
+    gap: 3,
+  },
+  sourceTab: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+  },
+  sourceTabText: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: Typography.fontWeights.semiBold,
+  },
+  signInBtn: {
+    width: 40, height: 40,
+    borderRadius: 20,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  signInBtnText: { fontSize: 20 },
+  signInBtnLarge: {
+    borderWidth: 1.5, borderRadius: Radius.full,
+    paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl,
+  },
+  signInBtnLargeText: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: Typography.fontWeights.semiBold,
   },
 });

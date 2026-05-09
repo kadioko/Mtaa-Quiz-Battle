@@ -10,12 +10,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../src/storage/storage';
-import { UserProfile, AchievementId, Achievement, CategoryMastery, QuizResult } from '../src/types';
+import { CloudService } from '../src/services/CloudService';
+import { UserProfile, AchievementId, Achievement, CategoryMastery, QuizResult, CloudUser } from '../src/types';
 import { categories } from '../src/data/categories';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
@@ -48,7 +50,12 @@ export default function ProfileScreen() {
   const [editModal, setEditModal] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [avatarModal, setAvatarModal] = useState(false);
+  const [cloudUser, setCloudUser] = useState<CloudUser | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'ok' | 'fail'>('idle');
+  const [lastSync, setLastSync] = useState<string | null>(null);
   const accuracyAnim = useRef(new Animated.Value(0)).current;
+  const cloudAvailable = CloudService.isAvailable();
 
   useEffect(() => {
     const load = async () => {
@@ -65,7 +72,20 @@ export default function ProfileScreen() {
       setMastery(getCategoryMastery(h));
     };
     load();
+    StorageService.getCloudUser().then(setCloudUser);
+    StorageService.getLastSync().then(setLastSync);
   }, [language]);
+
+  const handleSync = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncStatus('idle');
+    const ok = await CloudService.syncPush();
+    setSyncing(false);
+    setSyncStatus(ok ? 'ok' : 'fail');
+    if (ok) StorageService.getLastSync().then(setLastSync);
+    setTimeout(() => setSyncStatus('idle'), 3000);
+  };
 
   const openEdit = () => {
     setDraftName(profile?.username ?? 'Mchezaji');
@@ -298,6 +318,62 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               ))
+            )}
+          </View>
+
+          {/* ── Cloud / Sync ── */}
+          <View style={[styles.sectionCard, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>☁️ {language === 'sw' ? 'Akaunti & Sanisi' : 'Account & Sync'}</Text>
+
+            {cloudAvailable ? (
+              <>
+                <View style={[styles.cloudRow, { borderColor: colors.border }]}>
+                  <Text style={[styles.cloudLabel, { color: colors.textMuted }]}>
+                    {cloudUser
+                      ? cloudUser.isAnonymous
+                        ? `👤 ${t('cloudAnonymous')} · ${cloudUser.displayName}`
+                        : `✅ ${cloudUser.email ?? cloudUser.displayName}`
+                      : `👤 ${t('cloudAnonymous')}`}
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.cloudActionBtn, { borderColor: colors.primary }]}
+                    onPress={() => router.push('/signin')}
+                  >
+                    <Text style={[styles.cloudActionText, { color: colors.primary }]}>
+                      {cloudUser && !cloudUser.isAnonymous ? t('cloudSignOut') : t('cloudSignIn')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {lastSync && (
+                  <Text style={[styles.lastSyncText, { color: colors.textMuted }]}>
+                    🕐 {language === 'sw' ? 'Sanisi ya mwisho' : 'Last synced'}: {formatDate(lastSync)}
+                  </Text>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.syncBtn, { backgroundColor: syncing ? colors.backgroundCardLight : colors.primary }]}
+                  onPress={handleSync}
+                  disabled={syncing}
+                  activeOpacity={0.85}
+                >
+                  {syncing ? (
+                    <ActivityIndicator color={colors.primary} size="small" />
+                  ) : (
+                    <Text style={[styles.syncBtnText, { color: syncing ? colors.textMuted : '#000' }]}>
+                      {syncStatus === 'ok'
+                        ? `✅ ${t('cloudSyncDone')}`
+                        : syncStatus === 'fail'
+                        ? `❌ ${t('cloudSyncFailed')}`
+                        : `☁️ ${t('cloudSyncNow')}`}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            ) : (
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+                ⚙️ {t('cloudNotConfigured')}
+              </Text>
             )}
           </View>
         </ScrollView>
@@ -755,4 +831,22 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.xs,
     fontWeight: Typography.fontWeights.semiBold,
   },
+  cloudRow: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderBottomWidth: 1, marginBottom: Spacing.sm,
+  },
+  cloudLabel: { flex: 1, fontSize: Typography.fontSizes.sm },
+  cloudActionBtn: {
+    borderWidth: 1, borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm, paddingVertical: 4,
+  },
+  cloudActionText: { fontSize: Typography.fontSizes.xs, fontWeight: Typography.fontWeights.semiBold },
+  lastSyncText: { fontSize: Typography.fontSizes.xs, marginBottom: Spacing.sm },
+  syncBtn: {
+    borderRadius: Radius.full, paddingVertical: Spacing.sm,
+    alignItems: 'center', minHeight: 40, justifyContent: 'center',
+  },
+  syncBtnText: { fontSize: Typography.fontSizes.sm, fontWeight: Typography.fontWeights.semiBold },
 });

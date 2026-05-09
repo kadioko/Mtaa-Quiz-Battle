@@ -174,6 +174,38 @@ export interface UserProfile {
   dailyCompleted: boolean;
   avatar: string;
   achievements?: AchievementId[];
+  cloudUserId?: string;
+  cloudEmail?: string;
+}
+
+export interface CloudUser {
+  id: string;
+  email?: string;
+  displayName: string;
+  isAnonymous: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
+}
+
+export interface CloudLeaderboardEntry {
+  id: string;
+  userId: string;
+  displayName: string;
+  score: number;
+  categoryName: string;
+  categoryName_en?: string;
+  correctAnswers: number;
+  totalQuestions: number;
+  isDaily: boolean;
+  createdAt: string;
+}
+
+export interface SyncPayload {
+  profile: UserProfile;
+  achievements: AchievementId[];
+  quizHistory: QuizResult[];
+  lastSyncedAt: string;
 }
 
 export interface LeaderboardEntry {
@@ -193,6 +225,7 @@ export interface GameSettings {
   language: 'sw' | 'en';
   notifications: boolean;
   themeMode: 'dark' | 'light';
+  pushToken?: string;
 }
 
 export interface DailyReward {

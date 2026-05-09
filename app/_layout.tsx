@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Linking } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -8,6 +8,8 @@ import { LanguageProvider } from '../src/utils/LanguageContext';
 import { ThemeProvider, useTheme } from '../src/utils/ThemeContext';
 import { NotificationService } from '../src/services/NotificationService';
 import { IAPService } from '../src/services/IAPService';
+import { CloudService } from '../src/services/CloudService';
+import { StorageService } from '../src/storage/storage';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -23,9 +25,26 @@ export default function RootLayout() {
     // Connect IAP service (native only)
     if (Platform.OS !== 'web') {
       IAPService.connect().catch(() => {});
+      // Register Expo Push Token with cloud (best-effort, silent on failure)
+      NotificationService.registerWithCloud().catch(() => {});
     }
 
+    // Handle magic-link deep-link: mtaaquiz://auth?token=xxx&type=magiclink
+    const handleUrl = async (url: string) => {
+      try {
+        const parsed = new URL(url);
+        const token = parsed.searchParams.get('token');
+        const type = parsed.searchParams.get('type') as 'magiclink' | 'recovery' | null;
+        if (token && (type === 'magiclink' || type === 'recovery')) {
+          await CloudService.exchangeToken(token, type);
+        }
+      } catch {}
+    };
+    const sub = Linking.addEventListener('url', ({ url }) => { handleUrl(url); });
+    Linking.getInitialURL().then((url) => { if (url) handleUrl(url); });
+
     return () => {
+      sub.remove();
       if (Platform.OS !== 'web') {
         IAPService.disconnect().catch(() => {});
       }
@@ -72,6 +91,7 @@ function RootStack() {
         <Stack.Screen name="sprint" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="versus" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="shop" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="signin" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );
