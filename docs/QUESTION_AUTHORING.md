@@ -5,9 +5,9 @@ For the full field reference, difficulty guidelines, apostrophe rules, and per-c
 
 ## Current state
 
-- **222 questions** across 10 categories (IDs `q001`–`q222`)
-- **Next available ID: `q223`**
-- Target: 30–50 questions per category
+- **302 questions** across 10 categories (IDs `q001`–`q302`)
+- **Next available ID: `q303`**
+- Target: 30–50 questions per category (30 reached ✅)
 
 ## Adding questions
 
@@ -17,7 +17,7 @@ For the full field reference, difficulty guidelines, apostrophe rules, and per-c
 # 1. Create scripts/q-<slug>.mjs exporting an array of question objects
 # 2. Import that array in scripts/inject-questions.mjs
 # 3. Run:
-node scripts/inject-questions.mjs
+node scripts/inject-batch2.mjs  # or create inject-batch3.mjs for the next round
 npm run validate:data
 ```
 
@@ -29,7 +29,7 @@ Every question must have all of these:
 
 ```ts
 {
-  id: 'q223',
+  id: 'q303',
   category: 'General Knowledge TZ',   // must match categories.ts exactly
   question: 'Swali la Kiswahili?',
   question_en: 'English question?',
