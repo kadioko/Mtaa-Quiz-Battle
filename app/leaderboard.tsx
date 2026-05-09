@@ -16,12 +16,14 @@ import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
 import { formatDate } from '../src/utils/gameLogic';
+import { useThemeColors } from '../src/utils/ThemeContext';
 
 type FilterTab = 'all' | 'daily' | 'best';
 
 export default function LeaderboardScreen() {
   const router = useRouter();
   const { language } = useLanguage();
+  const colors = useThemeColors();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [tab, setTab] = useState<FilterTab>('all');
 
@@ -47,10 +49,10 @@ export default function LeaderboardScreen() {
   }, [language]);
 
   const rankColor = (i: number) => {
-    if (i === 0) return Colors.gold;
-    if (i === 1) return Colors.silver;
-    if (i === 2) return Colors.bronze;
-    return Colors.textMuted;
+    if (i === 0) return colors.gold;
+    if (i === 1) return colors.silver;
+    if (i === 2) return colors.bronze;
+    return colors.textMuted;
   };
 
   const rankEmoji = (i: number) => {
@@ -70,24 +72,24 @@ export default function LeaderboardScreen() {
   };
 
   const renderItem = ({ item, index }: { item: LeaderboardEntry; index: number }) => (
-    <View style={[styles.row, index < 3 && { borderColor: rankColor(index) }]}>
+    <View style={[styles.row, { backgroundColor: colors.backgroundCard, borderColor: colors.border }, index < 3 && { borderColor: rankColor(index) }]}>
       <Text style={[styles.rank, { color: rankColor(index) }]}>{rankEmoji(index)}</Text>
       <View style={styles.rowInfo}>
-        <Text style={styles.rowName}>{item.username}</Text>
-        <Text style={styles.rowCat} numberOfLines={1}>{getDisplayCategoryName(item)}</Text>
+        <Text style={[styles.rowName, { color: colors.text }]}>{item.username}</Text>
+        <Text style={[styles.rowCat, { color: colors.textMuted }]} numberOfLines={1}>{getDisplayCategoryName(item)}</Text>
       </View>
       <View style={styles.rowRight}>
         <Text style={[styles.rowScore, { color: rankColor(index) }]}>{item.score}</Text>
-        <Text style={styles.rowDate}>{formatDate(item.date)}</Text>
+        <Text style={[styles.rowDate, { color: colors.textMuted }]}>{formatDate(item.date)}</Text>
       </View>
     </View>
   );
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.backgroundCardLight }]}>
             <Text style={styles.backIcon}>‹</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>🏆 {t('leaderboard')}</Text>
@@ -95,14 +97,14 @@ export default function LeaderboardScreen() {
         </View>
 
         {/* Filter tabs */}
-        <View style={styles.tabs}>
+        <View style={[styles.tabs, { backgroundColor: colors.backgroundCardLight }]}>
           {(['all', 'daily', 'best'] as FilterTab[]).map((f) => (
             <TouchableOpacity
               key={f}
-              style={[styles.tab, tab === f && styles.tabActive]}
+              style={[styles.tab, tab === f && { backgroundColor: colors.primary }]}
               onPress={() => setTab(f)}
             >
-              <Text style={[styles.tabText, tab === f && styles.tabTextActive]}>
+              <Text style={[styles.tabText, { color: colors.textMuted }, tab === f && { color: colors.black, fontWeight: Typography.fontWeights.bold }]}>
                 {f === 'all'
                   ? t('allTab')
                   : f === 'daily'
@@ -116,7 +118,7 @@ export default function LeaderboardScreen() {
         {displayed.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🏆</Text>
-            <Text style={styles.emptyText}>{t('noLeaderboard')}</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('noLeaderboard')}</Text>
           </View>
         ) : (
           <FlatList

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../theme';
+import { Typography, Spacing, Radius } from '../theme';
+import { useThemeColors } from '../utils/ThemeContext';
 
 interface Props {
   label: string;
@@ -9,19 +10,20 @@ interface Props {
   color?: string;
 }
 
-const StatCard: React.FC<Props> = ({ label, value, emoji, color = Colors.primary }) => {
+const StatCard: React.FC<Props> = ({ label, value, emoji, color }) => {
+  const colors = useThemeColors();
+  const accentColor = color ?? colors.primary;
   return (
-    <View style={[styles.card, { borderColor: color }]}>
+    <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: accentColor }]}>
       {emoji ? <Text style={styles.emoji}>{emoji}</Text> : null}
-      <Text style={[styles.value, { color }]}>{value}</Text>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.value, { color: accentColor }]}>{value}</Text>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.backgroundCard,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     alignItems: 'center',
@@ -41,7 +43,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: Typography.fontSizes.xs,
-    color: Colors.textSecondary,
     textAlign: 'center',
   },
 });

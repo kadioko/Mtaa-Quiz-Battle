@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
-import { Colors, Radius } from '../theme';
+import { Radius } from '../theme';
+import { useThemeColors } from '../utils/ThemeContext';
 
 interface Props {
   timeLeft: number;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 const TimerBar: React.FC<Props> = ({ timeLeft, totalTime }) => {
+  const colors = useThemeColors();
   const animWidth = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -21,11 +23,11 @@ const TimerBar: React.FC<Props> = ({ timeLeft, totalTime }) => {
 
   const barColor = animWidth.interpolate({
     inputRange: [0, 0.3, 1],
-    outputRange: [Colors.timerLow, Colors.timer, Colors.secondary],
+    outputRange: [colors.timerLow, colors.timer, colors.secondary],
   });
 
   return (
-    <View style={styles.track}>
+    <View style={[styles.track, { backgroundColor: colors.border }]}>
       <Animated.View
         style={[
           styles.bar,
@@ -42,7 +44,6 @@ const TimerBar: React.FC<Props> = ({ timeLeft, totalTime }) => {
 const styles = StyleSheet.create({
   track: {
     height: 8,
-    backgroundColor: Colors.border,
     borderRadius: Radius.full,
     overflow: 'hidden',
     flexDirection: 'row',

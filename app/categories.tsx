@@ -19,6 +19,7 @@ import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
 import { Category } from '../src/types';
+import { useThemeColors } from '../src/utils/ThemeContext';
 
 type DiffFilter = 'all' | 'easy' | 'medium' | 'hard';
 
@@ -28,6 +29,7 @@ const CARD_WIDTH = (width - Spacing.base * 2 - Spacing.sm) / 2;
 export default function CategoriesScreen() {
   const router = useRouter();
   const { language } = useLanguage();
+  const colors = useThemeColors();
   const [search, setSearch] = useState('');
   const [diffFilter, setDiffFilter] = useState<DiffFilter>('all');
   const [playCounts, setPlayCounts] = useState<Record<string, number>>({});
@@ -49,7 +51,7 @@ export default function CategoriesScreen() {
     const playCount = playCounts[item.id] ?? 0;
     return (
       <TouchableOpacity
-        style={[styles.card, { borderColor: item.color }]}
+        style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: item.color }]}
         onPress={() => router.push({ pathname: '/quiz', params: { categoryId: item.id } })}
         activeOpacity={0.82}
       >
@@ -59,12 +61,12 @@ export default function CategoriesScreen() {
         <Text style={[styles.name, { color: item.color }]} numberOfLines={2}>
           {language === 'en' ? item.name_en : item.name}
         </Text>
-        <Text style={styles.desc} numberOfLines={2}>
+        <Text style={[styles.desc, { color: colors.textMuted }]} numberOfLines={2}>
           {language === 'en' ? item.description_en : item.description}
         </Text>
         <View style={styles.cardFooter}>
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{item.questionCount} {t('questions')}</Text>
+          <View style={[styles.countBadge, { backgroundColor: colors.backgroundCardLight }]}>
+            <Text style={[styles.countText, { color: colors.textSecondary }]}>{item.questionCount} {t('questions')}</Text>
           </View>
           {playCount > 0 && (
             <View style={[styles.playedBadge, { backgroundColor: item.color + '22' }]}>
@@ -79,15 +81,15 @@ export default function CategoriesScreen() {
   };
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.backgroundCardLight }]}>
             <Text style={styles.backIcon}>‹</Text>
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>{t('selectCategory')}</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>{t('selectCategory')}</Text>
           </View>
           <View style={{ width: 40 }} />
         </View>
@@ -95,11 +97,11 @@ export default function CategoriesScreen() {
         {/* Search bar */}
         <View style={styles.searchRow}>
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { backgroundColor: colors.backgroundCardLight, borderColor: colors.border, color: colors.text }]}
             value={search}
             onChangeText={setSearch}
             placeholder={language === 'sw' ? 'Tafuta kundi...' : 'Search category...'}
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             clearButtonMode="while-editing"
           />
         </View>
@@ -115,30 +117,32 @@ export default function CategoriesScreen() {
               key={d}
               style={[
                 styles.chip,
+                { backgroundColor: colors.backgroundCardLight, borderColor: colors.border },
                 diffFilter === d && styles.chipActive,
                 diffFilter === d && {
                   backgroundColor:
-                    d === 'easy' ? Colors.secondary + '33' :
-                    d === 'medium' ? Colors.timer + '33' :
-                    d === 'hard' ? Colors.accent + '33' :
-                    Colors.primary + '33',
+                    d === 'easy' ? colors.secondary + '33' :
+                    d === 'medium' ? colors.timer + '33' :
+                    d === 'hard' ? colors.accent + '33' :
+                    colors.primary + '33',
                   borderColor:
-                    d === 'easy' ? Colors.secondary :
-                    d === 'medium' ? Colors.timer :
-                    d === 'hard' ? Colors.accent :
-                    Colors.primary,
+                    d === 'easy' ? colors.secondary :
+                    d === 'medium' ? colors.timer :
+                    d === 'hard' ? colors.accent :
+                    colors.primary,
                 },
               ]}
               onPress={() => setDiffFilter(d)}
             >
               <Text style={[
                 styles.chipText,
+                { color: colors.textMuted },
                 diffFilter === d && {
                   color:
-                    d === 'easy' ? Colors.secondary :
-                    d === 'medium' ? Colors.timer :
-                    d === 'hard' ? Colors.accent :
-                    Colors.primary,
+                    d === 'easy' ? colors.secondary :
+                    d === 'medium' ? colors.timer :
+                    d === 'hard' ? colors.accent :
+                    colors.primary,
                 },
               ]}>
                 {d === 'all'

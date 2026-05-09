@@ -21,6 +21,7 @@ import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
 import StatCard from '../src/components/StatCard';
+import { useThemeColors } from '../src/utils/ThemeContext';
 
 const AVATAR_OPTIONS = [
   '🇹🇿','🦁','🐘','🦒','🦓','🐆','🦅','🌍',
@@ -30,6 +31,7 @@ const AVATAR_OPTIONS = [
 export default function ProfileScreen() {
   const router = useRouter();
   const { language } = useLanguage();
+  const colors = useThemeColors();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [catStats, setCatStats] = useState<Record<string, number>>({});
   const [editModal, setEditModal] = useState(false);
@@ -88,10 +90,10 @@ export default function ProfileScreen() {
   }, [accuracy]);
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.backgroundCardLight }]}>
             <Text style={styles.backIcon}>‹</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>👤 {t('profile')}</Text>
@@ -125,48 +127,48 @@ export default function ProfileScreen() {
               label={t('totalGamesPlayed')}
               value={profile?.totalGamesPlayed ?? 0}
               emoji="🎮"
-              color={Colors.primary}
+              color={colors.primary}
             />
             <StatCard
               label={t('bestScore')}
               value={profile?.bestScore ?? 0}
               emoji="⭐"
-              color={Colors.gold}
+              color={colors.gold}
             />
             <StatCard
               label={t('totalCoins')}
               value={profile?.totalCoins ?? 0}
               emoji="🪙"
-              color={Colors.secondary}
+              color={colors.secondary}
             />
           </View>
 
           {/* Detail cards */}
-          <View style={styles.detailCard}>
+          <View style={[styles.detailCard, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
             <DetailRow
               label={t('accuracy')}
               value={`${accuracy}%`}
               emoji="🎯"
             />
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <DetailRow
               label={t('currentStreak')}
               value={`${profile?.currentStreak ?? 0} ${t('days')}`}
               emoji="🔥"
             />
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <DetailRow
               label={t('longestStreak')}
               value={`${profile?.longestStreak ?? 0} ${t('days')}`}
               emoji="🏅"
             />
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <DetailRow
               label={t('favoriteCategory')}
               value={getFavoriteCategory()}
               emoji="❤️"
             />
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <DetailRow
               label={t('dailyStreakLabel')}
               value={`${profile?.dailyStreak ?? 0} ${t('days')}`}
@@ -175,8 +177,8 @@ export default function ProfileScreen() {
           </View>
 
           {/* Correct vs total */}
-          <View style={styles.progressCard}>
-            <Text style={styles.progressTitle}>
+          <View style={[styles.progressCard, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+            <Text style={[styles.progressTitle, { color: colors.textSecondary }]}>
               {t('correctAnswers')}: {profile?.totalCorrectAnswers ?? 0} / {profile?.totalQuestions ?? 0}
             </Text>
             <View style={styles.progressTrack}>
@@ -188,12 +190,12 @@ export default function ProfileScreen() {
                       inputRange: [0, 100],
                       outputRange: ['0%', '100%'],
                     }),
-                    backgroundColor: accuracy >= 70 ? Colors.secondary : Colors.primary,
+                    backgroundColor: accuracy >= 70 ? colors.secondary : colors.primary,
                   },
                 ]}
               />
             </View>
-            <Text style={styles.progressPct}>{accuracy}%</Text>
+            <Text style={[styles.progressPct, { color: colors.text }]}>{accuracy}%</Text>
           </View>
         </ScrollView>
       </SafeAreaView>

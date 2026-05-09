@@ -16,6 +16,7 @@ import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
 import { isToday } from '../src/utils/gameLogic';
 import PrimaryButton from '../src/components/PrimaryButton';
+import { useThemeColors } from '../src/utils/ThemeContext';
 
 const getMsUntilMidnight = (): number => {
   const now = new Date();
@@ -35,6 +36,7 @@ const formatCountdown = (ms: number): string => {
 export default function DailyScreen() {
   const router = useRouter();
   const { language } = useLanguage();
+  const colors = useThemeColors();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [alreadyPlayed, setAlreadyPlayed] = useState(false);
   const [countdown, setCountdown] = useState(getMsUntilMidnight());
@@ -62,10 +64,10 @@ export default function DailyScreen() {
   const DAILY_CATEGORIES = ['🎵', '⚽', '🗺️', '📜', '🍛', '💬', '🏙️', '🦁', '💰', '🇹🇿'];
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.backgroundCardLight }]}>
             <Text style={styles.backIcon}>‹</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>⚡ {t('dailyChallengeTitle')}</Text>
@@ -78,22 +80,22 @@ export default function DailyScreen() {
         >
           {/* Hero */}
           <LinearGradient
-            colors={alreadyPlayed ? ['#1a1a35', '#1a1a35'] : ['#1DB954', '#0d7a38']}
+            colors={[colors.secondary, colors.secondaryDark]}
             style={styles.hero}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
             <Text style={styles.heroEmoji}>{alreadyPlayed ? '✅' : '⚡'}</Text>
-            <Text style={styles.heroTitle}>
+            <Text style={[styles.heroTitle, { color: '#000000' }]}>
               {alreadyPlayed ? t('dailyCompleted') : t('dailyChallengeTitle')}
             </Text>
-            <Text style={styles.heroSub}>
+            <Text style={[styles.heroSub, { color: 'rgba(0,0,0,0.78)' }]}>
               {alreadyPlayed ? t('dailyCompletedDesc') : t('dailyChallengeDesc')}
             </Text>
           </LinearGradient>
 
           {/* Daily streak */}
-          <View style={styles.streakCard}>
+          <View style={[styles.streakCard, { backgroundColor: colors.backgroundCard, borderColor: colors.streak }]}>
             <Text style={styles.streakEmoji}>🔥</Text>
             <View style={styles.streakInfo}>
               <Text style={styles.streakLabel}>{t('dailyStreakLabel')}</Text>
@@ -108,8 +110,8 @@ export default function DailyScreen() {
                     {
                       backgroundColor:
                         i < (profile?.dailyStreak ?? 0) % 7
-                          ? Colors.streak
-                          : Colors.border,
+                          ? colors.streak
+                          : colors.border,
                     },
                   ]}
                 />
@@ -118,12 +120,12 @@ export default function DailyScreen() {
           </View>
 
           {/* Category icons preview */}
-          <Text style={styles.sectionTitle}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
             {language === 'sw' ? 'Makundi Yote' : 'All Categories'}
           </Text>
           <View style={styles.categoryGrid}>
             {DAILY_CATEGORIES.map((emoji, i) => (
-              <View key={i} style={styles.categoryChip}>
+              <View key={i} style={[styles.categoryChip, { backgroundColor: colors.backgroundCardLight }]}>
                 <Text style={styles.categoryEmoji}>{emoji}</Text>
               </View>
             ))}
@@ -131,15 +133,15 @@ export default function DailyScreen() {
 
           {/* Info cards */}
           <View style={styles.infoGrid}>
-            <View style={styles.infoCard}>
-              <Text style={styles.infoValue}>10</Text>
-              <Text style={styles.infoLabel}>
+            <View style={[styles.infoCard, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+              <Text style={[styles.infoValue, { color: colors.primary }]}>10</Text>
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
                 {language === 'sw' ? 'Maswali' : 'Questions'}
               </Text>
             </View>
-            <View style={styles.infoCard}>
-              <Text style={styles.infoValue}>15s</Text>
-              <Text style={styles.infoLabel}>
+            <View style={[styles.infoCard, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+              <Text style={[styles.infoValue, { color: colors.primary }]}>15s</Text>
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
                 {language === 'sw' ? 'Kwa Kila Swali' : 'Per Question'}
               </Text>
             </View>
@@ -161,8 +163,8 @@ export default function DailyScreen() {
               <PrimaryButton
                 label={language === 'sw' ? 'Cheza Mchezo Mwingine' : 'Play Another Game'}
                 onPress={() => router.push('/categories')}
-                color={Colors.backgroundCardLight}
-                textColor={Colors.text}
+                color={colors.backgroundCardLight}
+                textColor={colors.text}
                 style={{ marginTop: Spacing.base }}
               />
             </View>
@@ -170,8 +172,8 @@ export default function DailyScreen() {
             <PrimaryButton
               label={t('startChallenge')}
               onPress={handleStart}
-              color={Colors.secondary}
-              textColor={Colors.white}
+              color={colors.secondary}
+              textColor={colors.white}
               style={styles.startBtn}
             />
           )}

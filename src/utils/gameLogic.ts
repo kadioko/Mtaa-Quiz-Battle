@@ -1,4 +1,4 @@
-import { Question, QuizResult } from '../types';
+import { Question, QuizResult, QuizReviewItem } from '../types';
 
 export const QUESTION_TIME = 15;
 export const BASE_SCORE = 100;
@@ -73,7 +73,8 @@ export const buildQuizResult = (
   totalQuestions: number,
   maxStreak: number,
   isDaily: boolean,
-  answerMap?: boolean[]
+  answerMap?: boolean[],
+  reviewItems?: QuizReviewItem[]
 ): QuizResult => {
   const coins = calculateCoins(score, correctAnswers, totalQuestions);
   return {
@@ -84,6 +85,7 @@ export const buildQuizResult = (
     correctAnswers,
     totalQuestions,
     answerMap,
+    reviewItems,
     coinsEarned: coins,
     maxStreak,
     accuracy: Math.round((correctAnswers / totalQuestions) * 100),

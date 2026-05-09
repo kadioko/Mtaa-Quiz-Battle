@@ -50,11 +50,28 @@ export interface QuizResult {
   correctAnswers: number;
   totalQuestions: number;
   answerMap?: boolean[];
+  reviewItems?: QuizReviewItem[];
   coinsEarned: number;
   maxStreak: number;
   accuracy: number;
   date: string;
   isDaily: boolean;
+}
+
+export interface QuizReviewItem {
+  questionId: string;
+  question: string;
+  question_en?: string;
+  category: string;
+  selectedAnswer: string | null;
+  selectedAnswer_en?: string | null;
+  correctAnswer: string;
+  correctAnswer_en?: string;
+  explanation: string;
+  explanation_en?: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  wasCorrect: boolean;
+  timedOut: boolean;
 }
 
 export interface UserProfile {

@@ -41,7 +41,7 @@ Remaining work:
 - Add review mode after results so players can inspect missed questions.
 - Improve answer explanation UI with category color and difficulty context.
 - Add better feedback for time-up answers.
-- Consider adaptive difficulty once enough local history exists.
+- Consider adaptive difficulty once enough local history exists. Proposed trigger: wait until a player has at least 30 completed games and 200 answered questions, then use recent category accuracy to bias practice rounds slightly toward weak difficulties without changing Daily Challenge fairness.
 
 ### 3. Content Quality Expansion
 

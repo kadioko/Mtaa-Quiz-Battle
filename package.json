@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "validate:data": "node scripts/validate-data.mjs",
-    "check": "npm run typecheck && npm run validate:data"
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "check": "npm run typecheck && npm run validate:data && npm run check:contrast"
   },
   "dependencies": {
     "@expo/ngrok": "^4.1.3",

@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../theme';
+import { Typography, Spacing, Radius } from '../theme';
+import { useThemeColors } from '../utils/ThemeContext';
 
 export type AnswerState = 'default' | 'correct' | 'wrong' | 'reveal';
 
@@ -15,27 +16,28 @@ interface Props {
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
 const AnswerButton: React.FC<Props> = ({ label, state, onPress, disabled, index }) => {
+  const colors = useThemeColors();
   const getBgColor = () => {
     switch (state) {
-      case 'correct': return Colors.correct;
-      case 'wrong':   return Colors.wrong;
-      case 'reveal':  return Colors.correct;
-      default:        return Colors.backgroundCardLight;
+      case 'correct': return colors.correct;
+      case 'wrong':   return colors.wrong;
+      case 'reveal':  return colors.correct;
+      default:        return colors.backgroundCardLight;
     }
   };
 
   const getBorderColor = () => {
     switch (state) {
-      case 'correct': return Colors.correct;
-      case 'wrong':   return Colors.wrong;
-      case 'reveal':  return Colors.correct;
-      default:        return Colors.border;
+      case 'correct': return colors.correct;
+      case 'wrong':   return colors.wrong;
+      case 'reveal':  return colors.correct;
+      default:        return colors.border;
     }
   };
 
   const getTextColor = () => {
-    if (state === 'default') return Colors.text;
-    return Colors.white;
+    if (state === 'default') return colors.text;
+    return '#000000';
   };
 
   return (
@@ -45,10 +47,14 @@ const AnswerButton: React.FC<Props> = ({ label, state, onPress, disabled, index 
       activeOpacity={0.8}
       style={[
         styles.button,
-        { backgroundColor: getBgColor(), borderColor: getBorderColor() },
+        {
+          backgroundColor: getBgColor(),
+          borderColor: getBorderColor(),
+          opacity: disabled && state === 'default' ? 0.82 : 1,
+        },
       ]}
     >
-      <Text style={[styles.optionLabel, { backgroundColor: getBorderColor() }]}>
+      <Text style={[styles.optionLabel, { backgroundColor: getBorderColor(), color: state === 'default' ? colors.white : '#000000' }]}>
         {OPTION_LABELS[index]}
       </Text>
       <Text style={[styles.text, { color: getTextColor() }]} numberOfLines={3}>
@@ -77,7 +83,6 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     fontSize: Typography.fontSizes.sm,
     fontWeight: Typography.fontWeights.bold,
-    color: Colors.white,
     marginRight: Spacing.md,
     flexShrink: 0,
   },

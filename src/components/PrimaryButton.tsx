@@ -7,7 +7,8 @@ import {
   TextStyle,
   ActivityIndicator,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../theme';
+import { Typography, Spacing, Radius } from '../theme';
+import { useThemeColors } from '../utils/ThemeContext';
 
 interface Props {
   label: string;
@@ -24,15 +25,18 @@ interface Props {
 const PrimaryButton: React.FC<Props> = ({
   label,
   onPress,
-  color = Colors.primary,
-  textColor = Colors.black,
+  color,
+  textColor,
   style,
   textStyle,
   disabled = false,
   loading = false,
   size = 'lg',
 }) => {
+  const colors = useThemeColors();
   const sizeStyle = sizeMap[size as keyof typeof sizeMap];
+  const resolvedColor = color ?? colors.primary;
+  const resolvedTextColor = textColor ?? colors.black;
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -40,15 +44,19 @@ const PrimaryButton: React.FC<Props> = ({
       style={[
         styles.button,
         sizeStyle.button,
-        { backgroundColor: disabled ? Colors.textMuted : color },
+        {
+          backgroundColor: disabled ? colors.borderLight : resolvedColor,
+          shadowColor: colors.black,
+          opacity: disabled ? 0.72 : 1,
+        },
         style,
       ]}
       activeOpacity={0.82}
     >
       {loading ? (
-        <ActivityIndicator color={textColor} />
+        <ActivityIndicator color={resolvedTextColor} />
       ) : (
-        <Text style={[styles.label, sizeStyle.label, { color: textColor }, textStyle]}>
+        <Text style={[styles.label, sizeStyle.label, { color: disabled ? colors.text : resolvedTextColor }, textStyle]}>
           {label}
         </Text>
       )}
@@ -76,7 +84,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,

@@ -5,9 +5,9 @@ import {
   StyleSheet,
   Animated,
   ScrollView,
-  Alert,
   BackHandler,
   TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,9 +30,11 @@ import { Question } from '../src/types';
 import AnswerButton, { AnswerState } from '../src/components/AnswerButton';
 import TimerBar from '../src/components/TimerBar';
 import PrimaryButton from '../src/components/PrimaryButton';
+import { useThemeColors } from '../src/utils/ThemeContext';
 
 const TOTAL_QUESTIONS = 10;
 type QuizStatus = 'loading' | 'ready' | 'empty';
+type AnswerOutcome = 'correct' | 'wrong' | 'timeout' | null;
 
 const playSound = async (type: 'correct' | 'wrong' | 'timeup', enabled: boolean) => {
   if (!enabled) return;
@@ -58,6 +60,7 @@ export default function QuizScreen() {
     isDaily?: string;
   }>();
   const { language } = useLanguage();
+  const colors = useThemeColors();
 
   const [quizStatus, setQuizStatus] = useState<QuizStatus>('loading');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -75,9 +78,14 @@ export default function QuizScreen() {
   const [explanationExpanded, setExplanationExpanded] = useState(true);
   const [bonusText, setBonusText] = useState('');
   const [answerMap, setAnswerMap] = useState<(boolean | null)[]>(Array(TOTAL_QUESTIONS).fill(null));
+  const [selectedAnswers, setSelectedAnswers] = useState<(string | null)[]>(Array(TOTAL_QUESTIONS).fill(null));
+  const [answerOutcome, setAnswerOutcome] = useState<AnswerOutcome>(null);
+  const [paused, setPaused] = useState(false);
+  const [quitConfirmVisible, setQuitConfirmVisible] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const answerMapRef = useRef<(boolean | null)[]>(Array(TOTAL_QUESTIONS).fill(null));
+  const selectedAnswersRef = useRef<(string | null)[]>(Array(TOTAL_QUESTIONS).fill(null));
   const scoreRef = useRef(0);
   const correctCountRef = useRef(0);
   const maxStreakRef = useRef(0);
@@ -92,7 +100,9 @@ export default function QuizScreen() {
   const resetQuizState = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     const freshAnswerMap: (boolean | null)[] = Array(TOTAL_QUESTIONS).fill(null);
+    const freshSelectedAnswers: (string | null)[] = Array(TOTAL_QUESTIONS).fill(null);
     answerMapRef.current = freshAnswerMap;
+    selectedAnswersRef.current = freshSelectedAnswers;
     scoreRef.current = 0;
     correctCountRef.current = 0;
     maxStreakRef.current = 0;
@@ -112,6 +122,10 @@ export default function QuizScreen() {
     setBonusText('');
     setFloatText('');
     setAnswerMap(freshAnswerMap);
+    setSelectedAnswers(freshSelectedAnswers);
+    setAnswerOutcome(null);
+    setPaused(false);
+    setQuitConfirmVisible(false);
   }, []);
 
   const markAnswer = useCallback((index: number, isCorrect: boolean) => {
@@ -119,6 +133,15 @@ export default function QuizScreen() {
       const next = [...prev];
       next[index] = isCorrect;
       answerMapRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const markSelectedAnswer = useCallback((index: number, answer: string | null) => {
+    setSelectedAnswers((prev) => {
+      const next = [...prev];
+      next[index] = answer;
+      selectedAnswersRef.current = next;
       return next;
     });
   }, []);
@@ -173,7 +196,22 @@ export default function QuizScreen() {
         questions.length,
         finalMaxStreak,
         isDaily === 'true',
-        finalAnswerMap.slice(0, questions.length).map((answer) => answer === true)
+        finalAnswerMap.slice(0, questions.length).map((answer) => answer === true),
+        questions.map((question, index) => ({
+          questionId: question.id,
+          question: question.question,
+          question_en: question.question_en,
+          category: question.category,
+          selectedAnswer: selectedAnswersRef.current[index],
+          selectedAnswer_en: selectedAnswersRef.current[index],
+          correctAnswer: question.answer,
+          correctAnswer_en: question.answer_en,
+          explanation: question.explanation,
+          explanation_en: question.explanation_en,
+          difficulty: question.difficulty,
+          wasCorrect: finalAnswerMap[index] === true,
+          timedOut: selectedAnswersRef.current[index] === null && finalAnswerMap[index] === false,
+        }))
       );
 
       const updatedProfile = await StorageService.updateProfileAfterGame(result);
@@ -207,13 +245,15 @@ export default function QuizScreen() {
         params: { resultJson: JSON.stringify(result) },
       });
     },
-    [categoryId, isDaily, questions.length, router]
+    [categoryId, isDaily, questions, router]
   );
 
   const handleTimeUp = useCallback(() => {
     if (answered) return;
     setAnswered(true);
     setShowExplanation(true);
+    setAnswerOutcome('timeout');
+    markSelectedAnswer(currentIndex, null);
     markAnswer(currentIndex, false);
     if (settings.current.vibration) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -231,10 +271,10 @@ export default function QuizScreen() {
       i === correctIdx ? 'reveal' : 'default'
     );
     setAnswerStates(newStates);
-  }, [answered, currentIndex, questions, shuffledOptions, language, markAnswer]);
+  }, [answered, currentIndex, questions, shuffledOptions, language, markAnswer, markSelectedAnswer]);
 
   useEffect(() => {
-    if (questions.length === 0 || answered) return;
+    if (questions.length === 0 || answered || paused) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
@@ -246,13 +286,36 @@ export default function QuizScreen() {
       });
     }, 1000);
     return () => clearInterval(timerRef.current!);
-  }, [questions, currentIndex, answered, handleTimeUp]);
+  }, [questions, currentIndex, answered, paused, handleTimeUp]);
+
+  const requestQuit = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setQuitConfirmVisible(true);
+  }, []);
+
+  const confirmQuit = useCallback(() => {
+    setQuitConfirmVisible(false);
+    setPaused(false);
+    router.replace('/home');
+  }, [router]);
+
+  const resumeQuiz = useCallback(() => {
+    setPaused(false);
+    setQuitConfirmVisible(false);
+  }, []);
+
+  const pauseQuiz = useCallback(() => {
+    if (answered) return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    setPaused(true);
+  }, [answered]);
 
   const handleAnswer = (option: string) => {
     if (answered) return;
     clearInterval(timerRef.current!);
     setAnswered(true);
     setSelectedAnswer(option);
+    markSelectedAnswer(currentIndex, option);
 
     const current = questions[currentIndex];
     const correctAnswer = language === 'en' && current.answer_en
@@ -268,6 +331,7 @@ export default function QuizScreen() {
     setAnswerStates(newStates);
 
     if (isCorrect) {
+      setAnswerOutcome('correct');
       const newStreak = streak + 1;
       setStreak(newStreak);
 
@@ -313,6 +377,7 @@ export default function QuizScreen() {
         ]).start(() => setBonusText(''));
       }
     } else {
+      setAnswerOutcome('wrong');
       markAnswer(currentIndex, false);
       setStreak(0);
       if (settings.current.vibration) {
@@ -342,29 +407,23 @@ export default function QuizScreen() {
     setAnswerStates(['default', 'default', 'default', 'default']);
     setShowExplanation(false);
     setExplanationExpanded(true);
+    setAnswerOutcome(null);
     setTimeLeft(QUESTION_TIME);
   };
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      Alert.alert(
-        language === 'sw' ? 'Acha Mchezo?' : 'Quit Game?',
-        language === 'sw' ? 'Je, unataka kuacha mchezo huu?' : 'Are you sure you want to quit?',
-        [
-          { text: t('cancel'), style: 'cancel' },
-          { text: language === 'sw' ? 'Acha' : 'Quit', onPress: () => router.back(), style: 'destructive' },
-        ]
-      );
+      requestQuit();
       return true;
     });
     return () => sub.remove();
-  }, [router, language]);
+  }, [requestQuit]);
 
   if (quizStatus === 'loading') {
     return (
-      <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
+      <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
         <View style={styles.loading}>
-          <Text style={styles.loadingText}>{t('loading')}</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('loading')}</Text>
         </View>
       </LinearGradient>
     );
@@ -372,24 +431,24 @@ export default function QuizScreen() {
 
   if (quizStatus === 'empty') {
     return (
-      <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
+      <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
         <SafeAreaView style={styles.safe}>
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>?</Text>
-            <Text style={styles.emptyTitle}>{t('quizUnavailable')}</Text>
-            <Text style={styles.emptyText}>{t('quizUnavailableDesc')}</Text>
+            <Text style={[styles.emptyEmoji, { color: colors.primary }]}>?</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('quizUnavailable')}</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('quizUnavailableDesc')}</Text>
             <PrimaryButton
               label={t('chooseCategory')}
               onPress={() => router.replace('/categories')}
-              color={Colors.primary}
-              textColor={Colors.black}
+              color={colors.primary}
+              textColor={colors.black}
               style={styles.emptyButton}
             />
             <PrimaryButton
               label={t('backHome')}
               onPress={() => router.replace('/home')}
-              color={Colors.backgroundCardLight}
-              textColor={Colors.text}
+              color={colors.backgroundCardLight}
+              textColor={colors.text}
               style={styles.emptyButton}
             />
           </View>
@@ -405,36 +464,56 @@ export default function QuizScreen() {
   const explanationText = language === 'en' && current.explanation_en
     ? current.explanation_en
     : current.explanation;
+  const correctAnswer = language === 'en' && current.answer_en
+    ? current.answer_en
+    : current.answer;
+  const category = getCategoryById(categoryId ?? '');
+  const categoryColor = isDaily === 'true' ? colors.secondary : category?.color ?? colors.primary;
+  const difficultyColor =
+    current.difficulty === 'easy'
+      ? colors.secondary
+      : current.difficulty === 'medium'
+      ? colors.timer
+      : colors.accent;
+  const explanationAccent =
+    answerOutcome === 'correct' ? colors.correct : answerOutcome === 'timeout' ? colors.timerLow : colors.wrong;
 
   const progress = (currentIndex + 1) / questions.length;
-  const timerColor = timeLeft <= 5 ? Colors.timerLow : timeLeft <= 10 ? Colors.timer : Colors.secondary;
+  const timerColor = timeLeft <= 5 ? colors.timerLow : timeLeft <= 10 ? colors.timer : colors.secondary;
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A35']} style={styles.gradient}>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
         {/* Top bar */}
         <View style={styles.topBar}>
           <View style={styles.topLeft}>
-            <Text style={styles.questionCounter}>
+            <Text style={[styles.questionCounter, { color: colors.textSecondary }]}>
               {t('question')} {currentIndex + 1}/{questions.length}
             </Text>
           </View>
           <View style={styles.scoreBadgeWrap}>
-            <View style={styles.scoreBadge}>
+            <View style={[styles.scoreBadge, { backgroundColor: colors.backgroundCardLight }]}>
               <Text style={styles.scoreText}>⭐ {score}</Text>
             </View>
             {floatText ? (
               <Animated.Text
                 style={[
                   styles.floatScore,
-                  { opacity: floatOpacity, transform: [{ translateY: floatY }] },
+                  { color: colors.secondary, opacity: floatOpacity, transform: [{ translateY: floatY }] },
                 ]}
               >
                 {floatText}
               </Animated.Text>
             ) : null}
           </View>
-          <View style={[styles.streakBadge, streak >= 3 && styles.streakActive]}>
+          <TouchableOpacity
+            style={[styles.pauseButton, { backgroundColor: colors.backgroundCardLight, borderColor: colors.border }]}
+            onPress={pauseQuiz}
+            activeOpacity={0.78}
+          >
+            <Text style={[styles.pauseText, { color: colors.text }]}>II</Text>
+          </TouchableOpacity>
+          <View style={[styles.streakBadge, { backgroundColor: colors.backgroundCardLight }, streak >= 3 && { backgroundColor: colors.streak + '33', borderColor: colors.streak }]}>
             <Text style={styles.streakText}>🔥 {streak}</Text>
           </View>
         </View>
@@ -446,18 +525,19 @@ export default function QuizScreen() {
               key={i}
               style={[
                 styles.dot,
-                i < currentIndex && answerMap[i] === true && styles.dotCorrect,
-                i < currentIndex && answerMap[i] === false && styles.dotWrong,
-                i === currentIndex && styles.dotCurrent,
-                i > currentIndex && styles.dotFuture,
+                { backgroundColor: colors.border },
+                i < currentIndex && answerMap[i] === true && { backgroundColor: colors.secondary },
+                i < currentIndex && answerMap[i] === false && { backgroundColor: colors.accent },
+                i === currentIndex && { backgroundColor: colors.primary, width: 12, height: 12, borderRadius: 6 },
+                i > currentIndex && { backgroundColor: colors.border, opacity: 0.4 },
               ]}
             />
           ))}
         </View>
 
         {/* Progress bar */}
-        <View style={styles.progressTrack}>
-          <Animated.View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+        <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
+          <Animated.View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${progress * 100}%` }]} />
         </View>
 
         {/* Timer */}
@@ -470,28 +550,19 @@ export default function QuizScreen() {
 
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Question card */}
-          <Animated.View style={[styles.questionCard, { opacity: questionAnim }]}>
+          <Animated.View style={[styles.questionCard, { backgroundColor: colors.backgroundCard, borderColor: colors.border, opacity: questionAnim }]}>
             <View style={styles.difficultyRow}>
               <View style={[
                 styles.difficultyBadge,
                 {
-                  backgroundColor:
-                    current.difficulty === 'easy'
-                      ? Colors.secondary + '33'
-                      : current.difficulty === 'medium'
-                      ? Colors.timer + '33'
-                      : Colors.accent + '33',
+                  backgroundColor: difficultyColor + '33',
+                  borderColor: difficultyColor,
                 },
               ]}>
                 <Text style={[
                   styles.difficultyText,
                   {
-                    color:
-                      current.difficulty === 'easy'
-                        ? Colors.secondary
-                        : current.difficulty === 'medium'
-                        ? Colors.timer
-                        : Colors.accent,
+                    color: difficultyColor,
                   },
                 ]}>
                   {current.difficulty === 'easy'
@@ -502,7 +573,7 @@ export default function QuizScreen() {
                 </Text>
               </View>
             </View>
-            <Text style={styles.questionText}>{questionText}</Text>
+            <Text style={[styles.questionText, { color: colors.text }]}>{questionText}</Text>
           </Animated.View>
 
           {/* Answers */}
@@ -521,30 +592,57 @@ export default function QuizScreen() {
 
           {/* Bonus text */}
           {bonusText ? (
-            <Animated.Text style={[styles.bonusText, { opacity: bonusAnim }]}>
+            <Animated.Text style={[styles.bonusText, { color: colors.primary, opacity: bonusAnim }]}>
               {bonusText}
             </Animated.Text>
           ) : null}
 
           {/* Explanation */}
           {showExplanation && (
-            <View style={styles.explanationCard}>
+            <View style={[styles.explanationCard, { backgroundColor: colors.backgroundCardLight, borderColor: explanationAccent }]}>
               <TouchableOpacity
                 style={styles.explanationHeader}
                 onPress={() => setExplanationExpanded((v) => !v)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.explanationTitle}>
+                <Text style={[styles.explanationTitle, { color: colors.text }]}>
                   {selectedAnswer === (language === 'en' && current.answer_en ? current.answer_en : current.answer)
                     ? `✅ ${t('correct')}`
                     : `❌ ${t('wrong')}`}
                 </Text>
-                <Text style={styles.explanationChevron}>
+                <Text style={[styles.explanationChevron, { color: colors.textMuted }]}>
                   {explanationExpanded ? '▲' : '▼'}
                 </Text>
               </TouchableOpacity>
               {explanationExpanded && (
-                <Text style={styles.explanationText}>{explanationText}</Text>
+                <View>
+                  <View style={styles.explanationMetaRow}>
+                    <View style={[styles.metaPill, { backgroundColor: categoryColor + '22', borderColor: categoryColor }]}>
+                      <Text style={[styles.metaText, { color: categoryColor }]}>
+                        {isDaily === 'true'
+                          ? t('dailyChallenge')
+                          : language === 'en'
+                          ? category?.name_en ?? current.category
+                          : category?.name ?? current.category}
+                      </Text>
+                    </View>
+                    <View style={[styles.metaPill, { backgroundColor: difficultyColor + '22', borderColor: difficultyColor }]}>
+                      <Text style={[styles.metaText, { color: difficultyColor }]}>
+                        {current.difficulty === 'easy'
+                          ? t('easyLevel')
+                          : current.difficulty === 'medium'
+                          ? t('mediumLevel')
+                          : t('hardLevel')}
+                      </Text>
+                    </View>
+                  </View>
+                  {answerOutcome === 'timeout' ? (
+                    <Text style={[styles.correctAnswerText, { color: colors.timerLow }]}>
+                      {language === 'sw' ? 'Muda umeisha. Jibu sahihi: ' : 'Time ran out. Correct answer: '}{correctAnswer}
+                    </Text>
+                  ) : null}
+                  <Text style={[styles.explanationText, { color: colors.textSecondary }]}>{explanationText}</Text>
+                </View>
               )}
             </View>
           )}
@@ -558,13 +656,54 @@ export default function QuizScreen() {
                   : t('nextQuestion')
               }
               onPress={handleNext}
-              color={Colors.primary}
-              textColor={Colors.black}
+              color={colors.primary}
+              textColor={colors.black}
               style={styles.nextBtn}
             />
           )}
         </ScrollView>
       </SafeAreaView>
+
+      <Modal visible={paused || quitConfirmVisible} transparent animationType="fade">
+        <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.pauseCard, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+            <Text style={[styles.pauseTitle, { color: colors.text }]}>
+              {quitConfirmVisible
+                ? language === 'sw' ? 'Acha mchezo?' : 'Quit game?'
+                : language === 'sw' ? 'Mchezo umesimama' : 'Game paused'}
+            </Text>
+            <Text style={[styles.pauseScore, { color: colors.gold }]}>
+              {language === 'sw' ? 'Alama' : 'Score'}: {scoreRef.current}
+            </Text>
+            <Text style={[styles.pauseSub, { color: colors.textSecondary }]}>
+              {t('question')} {currentIndex + 1}/{questions.length} · {language === 'sw' ? 'Mfululizo' : 'Streak'} {streak}
+            </Text>
+            {!quitConfirmVisible ? (
+              <PrimaryButton
+                label={language === 'sw' ? 'Endelea' : 'Resume'}
+                onPress={resumeQuiz}
+                color={colors.secondary}
+                textColor={colors.white}
+                style={styles.modalButton}
+              />
+            ) : null}
+            <PrimaryButton
+              label={quitConfirmVisible ? (language === 'sw' ? 'Ndiyo, acha' : 'Yes, quit') : (language === 'sw' ? 'Acha mchezo' : 'Quit game')}
+              onPress={quitConfirmVisible ? confirmQuit : requestQuit}
+              color={colors.accent}
+              textColor={colors.white}
+              style={styles.modalButton}
+            />
+            <PrimaryButton
+              label={t('cancel')}
+              onPress={resumeQuiz}
+              color={colors.backgroundCardLight}
+              textColor={colors.text}
+              style={styles.modalButton}
+            />
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -639,6 +778,19 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.sm,
     color: Colors.gold,
     fontWeight: Typography.fontWeights.bold,
+  },
+  pauseButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pauseText: {
+    fontSize: Typography.fontSizes.xs,
+    fontWeight: Typography.fontWeights.black,
+    letterSpacing: 0,
   },
   streakBadge: {
     backgroundColor: Colors.backgroundCardLight,
@@ -737,6 +889,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
+    borderWidth: 1,
   },
   difficultyText: {
     fontSize: Typography.fontSizes.xs,
@@ -792,8 +945,61 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: Typography.fontSizes.md * 1.6,
   },
+  explanationMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  metaPill: {
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+  },
+  metaText: {
+    fontSize: Typography.fontSizes.xs,
+    fontWeight: Typography.fontWeights.bold,
+  },
+  correctAnswerText: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: Typography.fontWeights.bold,
+    marginBottom: Spacing.xs,
+  },
 
   nextBtn: {
+    marginTop: Spacing.sm,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  pauseCard: {
+    width: '100%',
+    borderRadius: Radius.xxl,
+    borderWidth: 1,
+    padding: Spacing.xl,
+  },
+  pauseTitle: {
+    fontSize: Typography.fontSizes.xl,
+    fontWeight: Typography.fontWeights.extraBold,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  pauseScore: {
+    fontSize: Typography.fontSizes.xxl,
+    fontWeight: Typography.fontWeights.black,
+    textAlign: 'center',
+  },
+  pauseSub: {
+    fontSize: Typography.fontSizes.md,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.base,
+  },
+  modalButton: {
     marginTop: Spacing.sm,
   },
 });
