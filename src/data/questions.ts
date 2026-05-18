@@ -7232,7 +7232,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q533',
-    category: 'Mchezo wa Soka',
+    category: 'Simba na Yanga',
     difficulty: 'easy',
     question: 'Timu ya taifa ya Tanzania inaitwa nani?',
     options: ['Simba', 'Taifa Stars', 'Young Africans', 'Coastal Union'],
@@ -7245,7 +7245,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q534',
-    category: 'Mchezo wa Soka',
+    category: 'Simba na Yanga',
     difficulty: 'medium',
     question: 'Simba SC ilianzishwa mwaka gani?',
     options: ['1936', '1946', '1956', '1966'],
@@ -7258,7 +7258,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q535',
-    category: 'Mchezo wa Soka',
+    category: 'Simba na Yanga',
     difficulty: 'hard',
     question: 'Taifa Stars ilifikia AFCON mwaka gani kwa mara ya kwanza?',
     options: ['1980', '2000', '2019', '2021'],
@@ -7271,7 +7271,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q536',
-    category: 'Mchezo wa Soka',
+    category: 'Simba na Yanga',
     difficulty: 'easy',
     question: 'Rangi za Young Africans (Yanga) ni zipi?',
     options: ['Nyekundu na nyeupe', 'Njano na kijani', 'Bluu na nyeupe', 'Nyekundu na njano'],
@@ -7284,7 +7284,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q537',
-    category: 'Mchezo wa Soka',
+    category: 'Simba na Yanga',
     difficulty: 'medium',
     question: 'Mchezaji wa Tanzania aliyecheza Premier League ya Uingereza ni nani?',
     options: ['Mbwana Samatta', 'Erasto Nyoni', 'John Bocco', 'Himid Mao'],
@@ -7297,7 +7297,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q538',
-    category: 'Mchezo wa Soka',
+    category: 'Simba na Yanga',
     difficulty: 'easy',
     question: 'Ligi ya soka Tanzania inaitwa nani rasmi?',
     options: ['Tanzania Premier League', 'NBC Premier League', 'Ligi Kuu', 'TSFA League'],
@@ -7310,7 +7310,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q539',
-    category: 'Mchezo wa Soka',
+    category: 'Simba na Yanga',
     difficulty: 'medium',
     question: 'Mgombea mkuu wa darasa la soka Tanzania nje ya Simba na Yanga ni timu ipi?',
     options: ['Azam FC', 'Coastal Union', 'KMC FC', 'Biashara United'],
@@ -7323,7 +7323,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q540',
-    category: 'Mchezo wa Soka',
+    category: 'Simba na Yanga',
     difficulty: 'hard',
     question: 'Kocha aliyeongoza Taifa Stars kwenye AFCON 2019 alikuwa nani?',
     options: ['Kim Poulsen', 'Marcelo Trossero', 'Jan Koops', 'Emmanuel Amuneke'],
@@ -7336,7 +7336,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q541',
-    category: 'Mchezo wa Soka',
+    category: 'Simba na Yanga',
     difficulty: 'medium',
     question: 'Uwanja mkubwa zaidi wa soka Tanzania uko wapi?',
     options: ['National Stadium DSM', 'Mkapa Stadium', 'Azam Complex', 'Arusha Stadium'],
@@ -7349,7 +7349,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q542',
-    category: 'Mchezo wa Soka',
+    category: 'Simba na Yanga',
     difficulty: 'hard',
     question: 'Simba SC ilishinda CAF Champions League mwaka gani?',
     options: ['Haijawahi', '1974', '2001', '2021'],
@@ -7362,7 +7362,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q543',
-    category: 'Vyakula vya Tanzania',
+    category: 'Vyakula vya Bongo',
     difficulty: 'easy',
     question: 'Chipsi Mayai ni mchanganyiko wa nini?',
     options: ['Viazi na nyanya', 'Chipsi za viazi na mayai', 'Mahindi na nyama', 'Uji na mayai'],
@@ -7375,7 +7375,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q544',
-    category: 'Vyakula vya Tanzania',
+    category: 'Vyakula vya Bongo',
     difficulty: 'medium',
     question: 'Mchuzi wa Nazi unaotumika pwani ya Tanzania una kiungo gani kikuu?',
     options: ['Cream', 'Maziwa ya Nazi', 'Siagi', 'Yoghurt'],
@@ -7388,7 +7388,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q545',
-    category: 'Vyakula vya Tanzania',
+    category: 'Vyakula vya Bongo',
     difficulty: 'easy',
     question: 'Kachumbari inaundwa na nini hasa?',
     options: ['Nyanya, vitunguu na matunda', 'Nyanya, vitunguu na pilipili', 'Karoti na mahindi', 'Nyanya na mayai'],
@@ -7401,7 +7401,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q546',
-    category: 'Vyakula vya Tanzania',
+    category: 'Vyakula vya Bongo',
     difficulty: 'medium',
     question: 'Pilau ya Zanzibar inatofautiana na pilau ya kawaida kwa nini?',
     options: ['Inatumia pasta', 'Ina viungo vingi zaidi vya pilipili na karafuu', 'Haina nyama', 'Inapikwa kwa mkaa tu'],
@@ -7414,7 +7414,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q547',
-    category: 'Vyakula vya Tanzania',
+    category: 'Vyakula vya Bongo',
     difficulty: 'hard',
     question: 'Kitoweo cha "Dagaa" kinatoka kwenye nini?',
     options: ['Samaki mdogo wa ziwa', 'Pweza', 'Kamba', 'Ngisi'],
@@ -7427,7 +7427,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q548',
-    category: 'Vyakula vya Tanzania',
+    category: 'Vyakula vya Bongo',
     difficulty: 'easy',
     question: 'Uji wa Tanzania mara nyingi hufanywa kwa unga wa nini?',
     options: ['Ngano', 'Mahindi au mtama', 'Mchele', 'Soya'],
@@ -7440,7 +7440,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q549',
-    category: 'Vyakula vya Tanzania',
+    category: 'Vyakula vya Bongo',
     difficulty: 'medium',
     question: 'Wali wa Nazi unatofautiana na wali wa kawaida kwa nini?',
     options: ['Unatumia mchele wa zamani', 'Unapikwa kwa maziwa ya nazi badala ya maji', 'Una sukari', 'Una nyama ndani'],
@@ -7453,7 +7453,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q550',
-    category: 'Vyakula vya Tanzania',
+    category: 'Vyakula vya Bongo',
     difficulty: 'hard',
     question: 'Mshikaki wa nyama ya ng\'ombe una kiungo gani cha ladha cha kawaida?',
     options: ['Tangawizi na limao', 'Siagi na thyme', 'Pilipili hoho na paprika', 'Coriander na fennel'],
@@ -7466,7 +7466,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q551',
-    category: 'Vyakula vya Tanzania',
+    category: 'Vyakula vya Bongo',
     difficulty: 'easy',
     question: 'Kitafunio cha kawaida kinachouzwa barabarani Dar es Salaam ni kipi?',
     options: ['Samosa', 'Bhajia', 'Mkate wa Kumimina', 'Chipsi Mayai'],
@@ -7479,7 +7479,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q552',
-    category: 'Vyakula vya Tanzania',
+    category: 'Vyakula vya Bongo',
     difficulty: 'medium',
     question: 'Vitumbua vinatengenezwa kwa unga wa nini?',
     options: ['Ngano', 'Mchele', 'Mahindi', 'Uwele'],
@@ -7492,7 +7492,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q553',
-    category: 'Jiografia ya Afrika',
+    category: 'General Knowledge TZ',
     difficulty: 'easy',
     question: 'Nchi gani ndiyo kubwa zaidi Afrika kwa eneo?',
     options: ['Nigeria', 'Algeria', 'Sudan', 'DRC'],
@@ -7505,7 +7505,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q554',
-    category: 'Jiografia ya Afrika',
+    category: 'General Knowledge TZ',
     difficulty: 'medium',
     question: 'Mto mrefu zaidi Afrika ni upi?',
     options: ['Kongo', 'Niger', 'Nile', 'Zambezi'],
@@ -7518,7 +7518,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q555',
-    category: 'Jiografia ya Afrika',
+    category: 'General Knowledge TZ',
     difficulty: 'easy',
     question: 'Ziwa kubwa zaidi Afrika ni ziwa gani?',
     options: ['Ziwa Tanganyika', 'Ziwa Victoria', 'Ziwa Malawi', 'Ziwa Turkana'],
@@ -7531,7 +7531,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q556',
-    category: 'Jiografia ya Afrika',
+    category: 'General Knowledge TZ',
     difficulty: 'medium',
     question: 'Mlima mrefu zaidi Afrika ni upi?',
     options: ['Mlima Kenya', 'Mlima Kilimanjaro', 'Mlima Atlas', 'Mlima Rwenzori'],
@@ -7544,7 +7544,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q557',
-    category: 'Jiografia ya Afrika',
+    category: 'General Knowledge TZ',
     difficulty: 'hard',
     question: 'Mji mkubwa zaidi Afrika kwa watu ni upi?',
     options: ['Cairo', 'Lagos', 'Kinshasa', 'Johannesburg'],
@@ -7557,7 +7557,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q558',
-    category: 'Jiografia ya Afrika',
+    category: 'General Knowledge TZ',
     difficulty: 'medium',
     question: 'Bahari gani inagawanya Afrika na Ulaya?',
     options: ['Atlantiki', 'Bahari ya Hindi', 'Mediterania', 'Bahari Nyekundu'],
@@ -7570,7 +7570,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q559',
-    category: 'Jiografia ya Afrika',
+    category: 'General Knowledge TZ',
     difficulty: 'easy',
     question: 'Nchi ya Afrika inayopakana na nchi nyingi zaidi ni ipi?',
     options: ['Sudan', 'DRC', 'Tanzania', 'Nigeria'],
@@ -7583,7 +7583,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q560',
-    category: 'Jiografia ya Afrika',
+    category: 'General Knowledge TZ',
     difficulty: 'hard',
     question: 'Nchi za SADC ziko ngapi?',
     options: ['12', '14', '16', '18'],
@@ -7596,7 +7596,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q561',
-    category: 'Jiografia ya Afrika',
+    category: 'General Knowledge TZ',
     difficulty: 'medium',
     question: 'Bonde la Ufa la Afrika Mashariki linaenea km ngapi?',
     options: ['1,000', '3,000', '6,000', '9,000'],
@@ -7609,7 +7609,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q562',
-    category: 'Jiografia ya Afrika',
+    category: 'General Knowledge TZ',
     difficulty: 'hard',
     question: 'Jangwa la Sahara linaenea nchi ngapi?',
     options: ['5', '7', '11', '13'],
@@ -7622,7 +7622,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q563',
-    category: 'Sayansi na Teknolojia',
+    category: 'General Knowledge TZ',
     difficulty: 'easy',
     question: 'Sayari ngapi ziko katika mfumo wetu wa jua?',
     options: ['7', '8', '9', '10'],
@@ -7635,7 +7635,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q564',
-    category: 'Sayansi na Teknolojia',
+    category: 'General Knowledge TZ',
     difficulty: 'medium',
     question: 'DNA inasimama kwa nini?',
     options: ['Deoxyribose Nitrogen Acid', 'Deoxyribonucleic Acid', 'Diribonuclear Acid', 'Deoxynuclear Acid'],
@@ -7648,7 +7648,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q565',
-    category: 'Sayansi na Teknolojia',
+    category: 'General Knowledge TZ',
     difficulty: 'easy',
     question: 'Chombo gani kinatumika kupima joto la hewa?',
     options: ['Barometer', 'Thermometer', 'Hygrometer', 'Anemometer'],
@@ -7661,7 +7661,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q566',
-    category: 'Sayansi na Teknolojia',
+    category: 'General Knowledge TZ',
     difficulty: 'medium',
     question: 'Nani alivumbua nadharia ya uhusiano (Theory of Relativity)?',
     options: ['Isaac Newton', 'Albert Einstein', 'Stephen Hawking', 'Nikola Tesla'],
@@ -7674,7 +7674,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q567',
-    category: 'Sayansi na Teknolojia',
+    category: 'General Knowledge TZ',
     difficulty: 'hard',
     question: 'Kiwango cha mwanga husafiri kwa kasi gani kwa sekunde?',
     options: ['100,000 km/s', '200,000 km/s', '300,000 km/s', '400,000 km/s'],
@@ -7687,7 +7687,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q568',
-    category: 'Sayansi na Teknolojia',
+    category: 'General Knowledge TZ',
     difficulty: 'easy',
     question: 'Hewa tunayohitaji kupumua inaitwa nini?',
     options: ['Nitrogen', 'Oxygen', 'Carbon Dioxide', 'Hydrogen'],
@@ -7700,7 +7700,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q569',
-    category: 'Sayansi na Teknolojia',
+    category: 'General Knowledge TZ',
     difficulty: 'medium',
     question: 'Nani aligundua nguvu ya uvutano wa dunia?',
     options: ['Galileo Galilei', 'Isaac Newton', 'Albert Einstein', 'Charles Darwin'],
@@ -7713,7 +7713,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q570',
-    category: 'Sayansi na Teknolojia',
+    category: 'General Knowledge TZ',
     difficulty: 'hard',
     question: 'Nchi gani ilizindua satellite ya kwanza angani?',
     options: ['USA', 'Ufaransa', 'USSR', 'Uingereza'],
@@ -7726,7 +7726,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q571',
-    category: 'Sayansi na Teknolojia',
+    category: 'General Knowledge TZ',
     difficulty: 'medium',
     question: 'Fomula ya E=mc2 inamaanisha nini?',
     options: ['Nishati = Misa x kasi ya sauti2', 'Nishati = Misa x kasi ya mwanga2', 'Nguvu = Misa x kasi2', 'Nguvu = Misa x msogeo'],
@@ -7739,7 +7739,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q572',
-    category: 'Sayansi na Teknolojia',
+    category: 'General Knowledge TZ',
     difficulty: 'hard',
     question: 'Kompyuta ya kwanza ya dijitali ya matumizi ya jumla ilikuwa ipi?',
     options: ['ENIAC', 'UNIVAC', 'IBM 701', 'Colossus'],
@@ -7752,7 +7752,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q573',
-    category: 'Lugha ya Kiswahili',
+    category: 'Methali za Kiswahili',
     difficulty: 'easy',
     question: 'Neno "Habari" linamaanisha nini kwa Kiingereza?',
     options: ['Hello', 'News/How are you', 'Goodbye', 'Thank you'],
@@ -7765,7 +7765,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q574',
-    category: 'Lugha ya Kiswahili',
+    category: 'Methali za Kiswahili',
     difficulty: 'medium',
     question: 'Kiswahili kinatumiwa rasmi na nchi ngapi Afrika Mashariki?',
     options: ['2', '3', '4', '5'],
@@ -7778,7 +7778,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q575',
-    category: 'Lugha ya Kiswahili',
+    category: 'Methali za Kiswahili',
     difficulty: 'easy',
     question: '"Asante sana" inamaanisha nini?',
     options: ['Karibu sana', 'Samahani sana', 'Nashukuru sana', 'Habari sana'],
@@ -7791,7 +7791,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q576',
-    category: 'Lugha ya Kiswahili',
+    category: 'Methali za Kiswahili',
     difficulty: 'hard',
     question: 'Kiswahili kina vitengo vya nje vingi kutoka lugha ipi ya kale?',
     options: ['Kiarabu', 'Kihindu', 'Kiajemi', 'Kireno'],
@@ -7804,7 +7804,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q577',
-    category: 'Lugha ya Kiswahili',
+    category: 'Methali za Kiswahili',
     difficulty: 'medium',
     question: 'Ngeli ya "M-MI" katika Kiswahili inahusu aina gani ya maneno?',
     options: ['Watu', 'Miti na mimea', 'Vitu visivyo hai', 'Mahali'],
@@ -7817,7 +7817,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q578',
-    category: 'Lugha ya Kiswahili',
+    category: 'Methali za Kiswahili',
     difficulty: 'easy',
     question: 'Neno "Baba" kwa Kiswahili linamaanisha nini?',
     options: ['Mama', 'Baba/Father', 'Kaka', 'Babu'],
@@ -7830,7 +7830,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q579',
-    category: 'Lugha ya Kiswahili',
+    category: 'Methali za Kiswahili',
     difficulty: 'hard',
     question: 'Kiswahili kilianza kuenea kwa kasi zaidi kupitia njia ipi ya kibiashara?',
     options: ['Njia ya Hariri', 'Njia ya Pwani ya Bahari ya Hindi', 'Njia ya Trans-Sahara', 'Njia ya Kongo'],
@@ -7843,7 +7843,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q580',
-    category: 'Lugha ya Kiswahili',
+    category: 'Methali za Kiswahili',
     difficulty: 'medium',
     question: 'Kanuni za Kiswahili rasmi zinasimamiwa na taasisi ipi Tanzania?',
     options: ['BAKITA', 'BARAZA', 'Chuo Kikuu DSM', 'TBC'],
@@ -7856,7 +7856,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q581',
-    category: 'Lugha ya Kiswahili',
+    category: 'Methali za Kiswahili',
     difficulty: 'easy',
     question: 'Maneno "pole pole" yanamaanisha nini kwa Kiingereza?',
     options: ['Haraka haraka', 'Polepole/Slowly', 'Mbali mbali', 'Karibu karibu'],
@@ -7869,7 +7869,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q582',
-    category: 'Lugha ya Kiswahili',
+    category: 'Methali za Kiswahili',
     difficulty: 'hard',
     question: 'Kiswahili kina hali ngapi za wakati wa kitenzi?',
     options: ['3', '5', '7', '9'],
@@ -7882,7 +7882,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q583',
-    category: 'Wanyamapori',
+    category: 'Wanyama na Hifadhi',
     difficulty: 'easy',
     question: 'Mbuga kubwa zaidi ya wanyama Tanzania ni ipi?',
     options: ['Serengeti', 'Ngorongoro', 'Selous', 'Mikumi'],
@@ -7895,7 +7895,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q584',
-    category: 'Wanyamapori',
+    category: 'Wanyama na Hifadhi',
     difficulty: 'medium',
     question: 'Mchezo wa kuhama kwa nyumbu unaoitwa "Great Migration" huanzia wapi?',
     options: ['Ngorongoro', 'Masai Mara Kenya', 'Serengeti', 'Tarangire'],
@@ -7908,7 +7908,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q585',
-    category: 'Wanyamapori',
+    category: 'Wanyama na Hifadhi',
     difficulty: 'easy',
     question: 'Mnyama anayeitwa "Fisi" kwa Kiingereza ni nini?',
     options: ['Leopard', 'Hyena', 'Wild Dog', 'Cheetah'],
@@ -7921,7 +7921,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q586',
-    category: 'Wanyamapori',
+    category: 'Wanyama na Hifadhi',
     difficulty: 'medium',
     question: 'Mbuga ya Tarangire inajulikana zaidi kwa wanyama gani?',
     options: ['Simba', 'Twiga', 'Tembo', 'Nyumbu'],
@@ -7934,7 +7934,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q587',
-    category: 'Wanyamapori',
+    category: 'Wanyama na Hifadhi',
     difficulty: 'hard',
     question: 'Korongo la Ngorongoro liliundwa vipi?',
     options: ['Mmomonyoko wa ardhi', 'Mlipuko wa volkeno', 'Mmomonyoko wa barafu', 'Hali ya hewa'],
@@ -7947,7 +7947,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q588',
-    category: 'Wanyamapori',
+    category: 'Wanyama na Hifadhi',
     difficulty: 'easy',
     question: 'Nchi ya Tanzania ina tembo wangapi takriban?',
     options: ['5,000', '10,000', '43,000', '100,000'],
@@ -7960,7 +7960,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q589',
-    category: 'Wanyamapori',
+    category: 'Wanyama na Hifadhi',
     difficulty: 'medium',
     question: 'Serengeti ilitangazwa Hifadhi ya Taifa mwaka gani?',
     options: ['1940', '1951', '1961', '1971'],
@@ -7973,7 +7973,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q590',
-    category: 'Wanyamapori',
+    category: 'Wanyama na Hifadhi',
     difficulty: 'hard',
     question: 'Sehemu ngapi za Tanzania zimepewa hadhi ya UNESCO World Heritage Site kwa wanyamapori?',
     options: ['1', '2', '3', '4'],
@@ -7986,7 +7986,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q591',
-    category: 'Wanyamapori',
+    category: 'Wanyama na Hifadhi',
     difficulty: 'medium',
     question: 'Duma (Cheetah) ni mnyama wa familia gani?',
     options: ['Paka wakubwa (Felidae)', 'Mbwa mwitu (Canidae)', 'Fisi (Hyaenidae)', 'Nguruwe (Suidae)'],
@@ -7999,7 +7999,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q592',
-    category: 'Wanyamapori',
+    category: 'Wanyama na Hifadhi',
     difficulty: 'hard',
     question: 'Tanzania ina hifadhi za taifa ngapi?',
     options: ['12', '16', '22', '30'],
@@ -8012,7 +8012,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q593',
-    category: 'Utamaduni wa Tanzania',
+    category: 'Historia ya Tanzania',
     difficulty: 'easy',
     question: 'Mavazi ya kitamaduni ya wanawake wa pwani Tanzania yanaitwa nini?',
     options: ['Kanga', 'Kitenge', 'Shuka', 'Kikoi'],
@@ -8025,7 +8025,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q594',
-    category: 'Utamaduni wa Tanzania',
+    category: 'Historia ya Tanzania',
     difficulty: 'medium',
     question: 'Sherehe ya "Mwaka Kogwa" husherehekewa na jamii ipi Zanzibar?',
     options: ['Waarabu', 'Waswahili wa Shirazi', 'Wamasai', 'Wachaga'],
@@ -8038,7 +8038,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q595',
-    category: 'Utamaduni wa Tanzania',
+    category: 'Historia ya Tanzania',
     difficulty: 'hard',
     question: 'Sanaa ya "Tinga Tinga" ilianzishwa na nani Tanzania?',
     options: ['Edward Said Tingatinga', 'George Lilanga', 'Jak Katarikawe', 'Elias Jengo'],
@@ -8051,7 +8051,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q596',
-    category: 'Utamaduni wa Tanzania',
+    category: 'Historia ya Tanzania',
     difficulty: 'easy',
     question: 'Mchezo wa bao unachezwa na watu wangapi?',
     options: ['1', '2', '4', '6'],
@@ -8064,7 +8064,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q597',
-    category: 'Utamaduni wa Tanzania',
+    category: 'Historia ya Tanzania',
     difficulty: 'medium',
     question: 'Vazi la wanaume la Kiswahili pwani linaitwa nini?',
     options: ['Kanzu', 'Kikoi', 'Kofia', 'Joho'],
@@ -8077,7 +8077,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q598',
-    category: 'Utamaduni wa Tanzania',
+    category: 'Historia ya Tanzania',
     difficulty: 'hard',
     question: 'Ngoma ya "Beni" inatoka eneo lipi Tanzania?',
     options: ['Pwani', 'Kusini', 'Kaskazini', 'Ziwa'],
@@ -8090,7 +8090,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q599',
-    category: 'Utamaduni wa Tanzania',
+    category: 'Historia ya Tanzania',
     difficulty: 'easy',
     question: 'Ushairi wa "Tenzi" una mpangilio gani wa mistari?',
     options: ['Mistari 2 kwa kila ubeti', 'Mistari 4 kwa kila ubeti', 'Mistari 6 kwa kila ubeti', 'Mistari 8 kwa kila ubeti'],
@@ -8103,7 +8103,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q600',
-    category: 'Utamaduni wa Tanzania',
+    category: 'Historia ya Tanzania',
     difficulty: 'medium',
     question: 'Lugha ya "Makonde" inahusu kabila gani Tanzania?',
     options: ['Makonde wa Mtwara', 'Makonde wa Dodoma', 'Makonde wa Arusha', 'Makonde wa Mwanza'],
@@ -8116,7 +8116,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q601',
-    category: 'Utamaduni wa Tanzania',
+    category: 'Historia ya Tanzania',
     difficulty: 'hard',
     question: 'Kimbunga cha "Unyago" ni sherehe ya kuashiria nini?',
     options: ['Harusi', 'Utu uzima wa msichana', 'Mazishi', 'Mavuno'],
@@ -8129,7 +8129,7 @@ export const questions: Question[] = [
   },
   {
     id: 'q602',
-    category: 'Utamaduni wa Tanzania',
+    category: 'Historia ya Tanzania',
     difficulty: 'easy',
     question: 'Mchezo wa "Bano" unachezwa kwa kutumia nini?',
     options: ['Mawe', 'Mbao', 'Mipira midogo ya kioo au udongo', 'Mashimo ya ardhi'],

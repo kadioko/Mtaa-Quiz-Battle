@@ -60,6 +60,13 @@
         }
       ]
     ],
-    "scheme": "mtaaquiz"
+    "scheme": "mtaaquiz",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "326b16f0-b502-47dc-873f-aaf2ed75e0f8"
+      }
+    },
+    "owner": "kadioko"
   }
 }
