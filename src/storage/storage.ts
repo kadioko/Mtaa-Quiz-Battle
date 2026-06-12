@@ -28,7 +28,15 @@ const KEYS = {
   ONBOARDING_DONE: '@mtaa_onboarding_done',
   CLOUD_USER: '@mtaa_cloud_user',
   LAST_SYNC: '@mtaa_last_sync',
+  WEEKLY: '@mtaa_weekly',
+  EVENTS_DONE: '@mtaa_events_done',
 };
+
+export interface WeeklyStatus {
+  weekKey: string;
+  completed: boolean;
+  bestScore: number;
+}
 
 const DEFAULT_PROFILE: UserProfile = {
   username: 'Mchezaji',
@@ -296,24 +304,28 @@ export const StorageService = {
     const yesterday = new Date(Date.now() - 86400000).toDateString();
 
     let newStreak = profile.currentStreak;
+    let freezeUsedNow = false;
     if (lastPlayed === yesterday) {
       newStreak = profile.currentStreak + 1;
     } else if (lastPlayed !== today) {
-      // Try to apply streak freeze for a missed day
+      // Try to apply streak freeze — only covers exactly one missed day
+      const dayBeforeYesterday = new Date(Date.now() - 2 * 86400000).toDateString();
       const freeze = await StorageService.getStreakFreeze();
-      if (freeze.count > 0 && profile.currentStreak > 0) {
+      if (lastPlayed === dayBeforeYesterday && freeze.count > 0 && profile.currentStreak > 0) {
         await StorageService.saveStreakFreeze({ ...freeze, count: freeze.count - 1 });
+        freezeUsedNow = true;
         newStreak = profile.currentStreak + 1;
       } else {
         newStreak = 1;
       }
     }
 
-    const categoryStats = result.categoryId === 'daily'
+    const NON_CATEGORY_IDS = ['daily', 'practice', 'weekly', 'event'];
+    const categoryStats = NON_CATEGORY_IDS.includes(result.categoryId)
       ? await StorageService.getCategoryStats()
       : await StorageService.updateCategoryStats(result.categoryId);
     const favoriteCategory = Object.entries(categoryStats)
-      .filter(([categoryId]) => categoryId !== 'daily')
+      .filter(([categoryId]) => !NON_CATEGORY_IDS.includes(categoryId))
       .sort((a, b) => b[1] - a[1])[0]?.[0] ?? profile.favoriteCategory;
 
     const updatedProfile: UserProfile = {
@@ -333,13 +345,52 @@ export const StorageService = {
 
     const history = await StorageService.getQuizHistory();
     const existingAchievements = await StorageService.getUnlockedAchievements();
-    const newAchievements = evaluateAchievements(updatedProfile, [result, ...history], existingAchievements);
+    const newAchievements = evaluateAchievements(
+      updatedProfile,
+      [result, ...history],
+      existingAchievements,
+      freezeUsedNow ? { freezeEverUsed: true } : undefined
+    );
     const achievementsUnlocked = newAchievements.length - existingAchievements.length;
     if (achievementsUnlocked > 0) {
       await StorageService.saveUnlockedAchievements(newAchievements);
     }
 
     return { profile: updatedProfile, achievementsUnlocked };
+  },
+
+  // ── Weekly Challenge ────────────────────────────────────────────────────────
+  async getWeeklyStatus(): Promise<WeeklyStatus> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.WEEKLY);
+      return parseStoredValue<WeeklyStatus>(data, { weekKey: '', completed: false, bestScore: 0 });
+    } catch {
+      return { weekKey: '', completed: false, bestScore: 0 };
+    }
+  },
+
+  async markWeeklyCompleted(weekKey: string, score: number): Promise<void> {
+    const current = await StorageService.getWeeklyStatus();
+    const bestScore = current.weekKey === weekKey ? Math.max(current.bestScore, score) : score;
+    await AsyncStorage.setItem(KEYS.WEEKLY, JSON.stringify({ weekKey, completed: true, bestScore }));
+  },
+
+  // ── Live Events ─────────────────────────────────────────────────────────────
+  async getCompletedEventIds(): Promise<string[]> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.EVENTS_DONE);
+      const list = parseStoredValue<string[]>(data, []);
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async markEventCompleted(eventId: string): Promise<void> {
+    const existing = await StorageService.getCompletedEventIds();
+    if (existing.includes(eventId)) return;
+    const updated = [eventId, ...existing].slice(0, 20);
+    await AsyncStorage.setItem(KEYS.EVENTS_DONE, JSON.stringify(updated));
   },
 
   // ── Cloud Auth ──────────────────────────────────────────────────────────────

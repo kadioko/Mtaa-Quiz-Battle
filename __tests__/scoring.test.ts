@@ -206,6 +206,32 @@ describe('evaluateAchievements', () => {
     expect(ids).toContain('all_categories');
   });
 
+  test('streak_3 / streak_7 come from in-game question streaks', () => {
+    const history = [
+      { correctAnswers: 8, totalQuestions: 10, isDaily: false, categoryId: 'c1', maxStreak: 7 },
+    ] as any;
+    const ids = evaluateAchievements(baseProfile, history, []);
+    expect(ids).toContain('streak_3');
+    expect(ids).toContain('streak_7');
+  });
+
+  test('day streaks alone do not unlock question-streak achievements', () => {
+    const ids = evaluateAchievements({ ...baseProfile, longestStreak: 7 }, [], []);
+    expect(ids).not.toContain('streak_3');
+    expect(ids).not.toContain('streak_7');
+  });
+
+  test('practice results do not count toward all_categories', () => {
+    const history = [
+      ...Array.from({ length: 9 }, (_, i) => ({
+        correctAnswers: 5, totalQuestions: 10, isDaily: false, categoryId: `cat${i}`,
+      })),
+      { correctAnswers: 5, totalQuestions: 10, isDaily: false, categoryId: 'practice' },
+    ] as any;
+    const ids = evaluateAchievements(baseProfile, history, []);
+    expect(ids).not.toContain('all_categories');
+  });
+
   test('all_categories not unlocked for daily-only history', () => {
     const history = Array.from({ length: 10 }, (_, i) => ({
       correctAnswers: 5, totalQuestions: 10, isDaily: true, categoryId: `cat${i}`,

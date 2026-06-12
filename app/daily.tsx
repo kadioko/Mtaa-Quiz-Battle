@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../src/storage/storage';
@@ -42,12 +42,15 @@ export default function DailyScreen() {
   const [countdown, setCountdown] = useState(getMsUntilMidnight());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    StorageService.getUserProfile().then((p) => {
-      setProfile(p);
-      setAlreadyPlayed(isToday(p.lastDailyDate) && p.dailyCompleted);
-    });
-  }, [language]);
+  // Refresh on focus so completing the daily immediately updates this screen
+  useFocusEffect(
+    useCallback(() => {
+      StorageService.getUserProfile().then((p) => {
+        setProfile(p);
+        setAlreadyPlayed(isToday(p.lastDailyDate) && p.dailyCompleted);
+      });
+    }, [language])
+  );
 
   useEffect(() => {
     if (!alreadyPlayed) return;
@@ -109,7 +112,8 @@ export default function DailyScreen() {
                     styles.dot,
                     {
                       backgroundColor:
-                        i < (profile?.dailyStreak ?? 0) % 7
+                        // Show 1-7 lit dots; a full week stays fully lit instead of wrapping to 0
+                        i < ((profile?.dailyStreak ?? 0) > 0 ? (((profile!.dailyStreak - 1) % 7) + 1) : 0)
                           ? colors.streak
                           : colors.border,
                     },

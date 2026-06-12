@@ -32,15 +32,15 @@ Mtaa Quiz Battle is a Swahili-first Tanzanian trivia game focused on quick sessi
 
 ### Content Quality
 
-- 502 bilingual questions across 10 categories (q001–q502, ~50 per category ✅ goal reached).
+- 626 bilingual questions across 10 categories (q001–q626).
 - Optional `sourceNote` / `sourceUrl` metadata and `timeSensitive` / `reviewAfter` / `reviewReason` fields.
 - Data validator (`scripts/validate-data.mjs`) checks IDs, categories, translations, options, answers, time-sensitive metadata, and daily challenge determinism.
 - Comprehensive authoring guide (`docs/AUTHORING_GUIDE.md`) with per-category examples and batch injection tooling.
 
 ### Progression & Retention
 
-- **9 player ranks** (Mgeni → Hadithi) based on total coins — shown as a banner with progress bar on profile.
-- **17 achievements** auto-evaluated after every game (streaks, perfect rounds, accuracy, daily consistency, coins, category coverage).
+- **10 player ranks** (Mgeni → Gwiji wa Bongo) based on total coins — shown as a banner with progress bar on profile.
+- **27 achievements** auto-evaluated after every game (streaks, perfect rounds, accuracy, daily consistency, coins, category coverage, sprint, versus, challenges, practice).
 - **Category mastery** — per-category accuracy bars on profile computed from full quiz history.
 - **Recent game history** — last 10 games displayed as cards on profile.
 - Coins earned every game (score-based + accuracy bonus); daily login reward scales with consecutive-day streak.
@@ -76,9 +76,40 @@ Mtaa Quiz Battle is a Swahili-first Tanzanian trivia game focused on quick sessi
 - Review any `timeSensitive` questions whose `reviewAfter` date has passed (`npm run admin:review -- --stale`).
 - Next content push (if desired): start at `q503` with `inject-batch6.mjs`.
 
+### Multiplayer & Social (v1.1)
+
+- **Versus 2–4 players** — same-device pass-and-play with handover screens and podium results.
+- **Friend Challenges** — cross-device async multiplayer via 6-char share codes (Supabase REST `challenges` + `challenge_attempts` tables). Same questions for all participants, ranked standings.
+- **Regional league (Mikoa)** — players pick their mkoa in Profile (31 regions); cloud scores aggregate into a regional leaderboard tab.
+
+### Modes & Retention (v1.1)
+
+- **Weekly Challenge** — week-seeded, medium/hard-biased 10 questions, once per week, Home banner.
+- **Practice Mistakes** — self-cleaning pool of questions whose most recent answer was wrong.
+- Smarter streak freeze (covers exactly one missed day), achievement trigger fixes, focus-refresh on Home/Daily.
+
+### Tech Hardening (v1.1)
+
+- `SoundService` with preloaded effects — single swap point for the expo-av → expo-audio migration.
+- Notification cold-start deep links; accessibility roles/labels on core interactive components.
+- Global leaderboard filter parity; region column on `leaderboard_entries`.
+
+---
+
+### Live Ops & Monetisation (v1.1)
+
+- **Remote question delivery** — `question_packs` table + `QuestionSyncService` (validate → cache → merge). New content ships without app releases; daily/weekly remain bundled-only for determinism.
+- **Live event windows** — `events` table; LIVE banner on Home during the window, seeded once-per-event quiz, scores on the global leaderboard under the event name.
+- **Coin bundle IAPs** (200/600/1500, consumable) and **rewarded-ad coin top-ups** in the shop.
+
 ---
 
 ## Active / Next
+
+1. **Replace placeholder IDs** — AdMob ad units (incl. new `free-coins`) and IAP product IDs (`mtaa_coins_200/600/1500`, remove-ads) in store consoles.
+2. **expo-audio migration** — run `npx expo install expo-audio`, then swap the implementation inside `src/services/SoundService.ts` only.
+3. **Ops maturity** — Sentry crash reporting, CI on push (`npm run check`), EAS Update for OTA fixes.
+4. **Growth** — referral rewards on the challenge-code system, challenge deep links, anti-cheat Edge Function before prize events.
 
 ### Store Release Preparation
 

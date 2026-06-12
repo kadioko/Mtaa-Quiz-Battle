@@ -237,7 +237,7 @@ export default function SettingsScreen() {
           {/* Notifications */}
           {Platform.OS !== 'web' && (
             <>
-              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>� {language === 'sw' ? 'Arifa' : 'Notifications'}</Text>
+              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>🔔 {language === 'sw' ? 'Arifa' : 'Notifications'}</Text>
               <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
                 <View style={styles.settingRow}>
                   <Text style={styles.settingEmoji}>📅</Text>

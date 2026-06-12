@@ -14,6 +14,7 @@ import { StorageService } from '../src/storage/storage';
 import { CloudService } from '../src/services/CloudService';
 import { LeaderboardEntry, CloudLeaderboardEntry } from '../src/types';
 import { getCategoryByName } from '../src/data/categories';
+import { getRegionById } from '../src/data/regions';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
@@ -21,7 +22,7 @@ import { formatDate } from '../src/utils/gameLogic';
 import { useThemeColors } from '../src/utils/ThemeContext';
 
 type FilterTab = 'all' | 'daily' | 'best';
-type SourceTab = 'local' | 'global';
+type SourceTab = 'local' | 'global' | 'mikoa';
 
 export default function LeaderboardScreen() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function LeaderboardScreen() {
 
   const loadCloud = useCallback(async () => {
     setCloudLoading(true);
-    const rows = await CloudService.fetchLeaderboard({ limit: 50 });
+    const rows = await CloudService.fetchLeaderboard({ limit: 200 });
     setCloudEntries(rows);
     setCloudLoading(false);
   }, []);
@@ -47,8 +48,29 @@ export default function LeaderboardScreen() {
   }, [language, cloudAvailable, loadCloud]);
 
   useEffect(() => {
-    if (source === 'global' && cloudAvailable) loadCloud();
+    if ((source === 'global' || source === 'mikoa') && cloudAvailable) loadCloud();
   }, [source, cloudAvailable, loadCloud]);
+
+  // Regional league: aggregate cloud scores by region
+  const regionStandings = (() => {
+    const byRegion = new Map<string, { total: number; players: Set<string>; entries: number }>();
+    cloudEntries.forEach((e) => {
+      if (!e.region) return;
+      const bucket = byRegion.get(e.region) ?? { total: 0, players: new Set<string>(), entries: 0 };
+      bucket.total += e.score;
+      bucket.players.add(e.userId || e.displayName);
+      bucket.entries += 1;
+      byRegion.set(e.region, bucket);
+    });
+    return Array.from(byRegion.entries())
+      .map(([regionId, stats]) => ({
+        regionId,
+        region: getRegionById(regionId),
+        total: stats.total,
+        players: stats.players.size,
+      }))
+      .sort((a, b) => b.total - a.total);
+  })();
 
   const displayed = (() => {
     if (source === 'global') return [];
@@ -66,6 +88,21 @@ export default function LeaderboardScreen() {
       });
     }
     return entries;
+  })();
+
+  // Apply the same All/Daily/Best filters to global cloud entries
+  const displayedCloud = (() => {
+    if (tab === 'daily') return cloudEntries.filter((e) => e.isDaily);
+    if (tab === 'best') {
+      const seen = new Set<string>();
+      return cloudEntries.filter((e) => {
+        const key = e.userId || e.displayName;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+    return cloudEntries;
   })();
 
   const rankColor = (i: number) => {
@@ -142,22 +179,22 @@ export default function LeaderboardScreen() {
         {/* Source toggle: Local / Global */}
         {cloudAvailable && (
           <View style={[styles.sourceTabs, { backgroundColor: colors.backgroundCardLight }]}>
-            {(['local', 'global'] as SourceTab[]).map((s) => (
+            {(['local', 'global', 'mikoa'] as SourceTab[]).map((s) => (
               <TouchableOpacity
                 key={s}
                 style={[styles.sourceTab, source === s && { backgroundColor: colors.primary }]}
                 onPress={() => setSource(s)}
               >
                 <Text style={[styles.sourceTabText, { color: colors.textMuted }, source === s && { color: colors.black, fontWeight: Typography.fontWeights.bold }]}>
-                  {s === 'local' ? `📱 ${t('cloudLocal')}` : `🌐 ${t('cloudGlobal')}`}
+                  {s === 'local' ? `📱 ${t('cloudLocal')}` : s === 'global' ? `🌐 ${t('cloudGlobal')}` : '🗺️ Mikoa'}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
 
-        {/* Filter tabs (local only) */}
-        {source === 'local' && (
+        {/* Filter tabs (local + global) */}
+        {source !== 'mikoa' && (
           <View style={[styles.tabs, { backgroundColor: colors.backgroundCardLight }]}>
             {(['all', 'daily', 'best'] as FilterTab[]).map((f) => (
               <TouchableOpacity
@@ -173,12 +210,53 @@ export default function LeaderboardScreen() {
           </View>
         )}
 
-        {source === 'global' ? (
+        {source === 'mikoa' ? (
           cloudLoading ? (
             <View style={styles.empty}>
               <ActivityIndicator color={colors.primary} size="large" />
             </View>
-          ) : cloudEntries.length === 0 ? (
+          ) : regionStandings.length === 0 ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyEmoji}>🗺️</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {language === 'sw'
+                  ? 'Hakuna alama za mikoa bado. Chagua mkoa wako kwenye Profaili kisha cheza!'
+                  : 'No regional scores yet. Pick your region in Profile, then play!'}
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={regionStandings}
+              keyExtractor={(item) => item.regionId}
+              contentContainerStyle={styles.list}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item, index }) => (
+                <View style={[styles.row, { backgroundColor: colors.backgroundCard, borderColor: colors.border }, index < 3 && { borderColor: rankColor(index) }]}>
+                  <Text style={[styles.rank, { color: rankColor(index) }]}>{rankEmoji(index)}</Text>
+                  <View style={styles.rowInfo}>
+                    <Text style={[styles.rowName, { color: colors.text }]}>
+                      {item.region?.emoji ?? '📍'} {item.region?.name ?? item.regionId}
+                    </Text>
+                    <Text style={[styles.rowCat, { color: colors.textMuted }]}>
+                      {item.players} {language === 'sw' ? 'wachezaji' : 'players'}
+                    </Text>
+                  </View>
+                  <View style={styles.rowRight}>
+                    <Text style={[styles.rowScore, { color: rankColor(index) }]}>{item.total}</Text>
+                    <Text style={[styles.rowDate, { color: colors.textMuted }]}>
+                      {language === 'sw' ? 'jumla' : 'total pts'}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            />
+          )
+        ) : source === 'global' ? (
+          cloudLoading ? (
+            <View style={styles.empty}>
+              <ActivityIndicator color={colors.primary} size="large" />
+            </View>
+          ) : displayedCloud.length === 0 ? (
             <View style={styles.empty}>
               <Text style={styles.emptyEmoji}>🌐</Text>
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -193,7 +271,7 @@ export default function LeaderboardScreen() {
             </View>
           ) : (
             <FlatList
-              data={cloudEntries}
+              data={displayedCloud}
               renderItem={renderCloudItem}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.list}

@@ -16,8 +16,14 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 | **Result** | `result.tsx` | Animated score counter, new-record banner, per-question answer breakdown, share card |
 | **Leaderboard** | `leaderboard.tsx` | All / Daily / Best filter tabs, top-50 scores |
 | **Profile** | `profile.tsx` | Rank banner, achievements grid, category mastery bars, recent game history, avatar picker, stats |
-| **Settings** | `settings.tsx` | Sound, vibration, light/dark mode, language toggle, version info |
+| **Settings** | `settings.tsx` | Sound, music, vibration, light/dark mode, language toggle, notifications, premium |
 | **Daily Challenge** | `daily.tsx` | Date-seeded daily quiz, streak tracking, live midnight countdown when done |
+| **Sprint** | `sprint.tsx` | 60-second rapid-fire mode with best-score tracking |
+| **Versus** | `versus.tsx` | Pass-and-play for **2–4 players** on one phone, handover screens, podium results |
+| **Friend Challenge** | `challenge.tsx` | **Cross-device async multiplayer** — create/join by 6-char code, ranked standings (Supabase) |
+| **Shop** | `shop.tsx` | Coin-powered shop (streak freezes), premium options |
+| **Sign In** | `signin.tsx` | Magic-link email sign-in for cloud sync |
+| **Onboarding** | `onboarding.tsx` | First-launch tutorial |
 
 ---
 
@@ -25,7 +31,8 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 
 ### Gameplay
 
-- **502 questions** across 10 categories in Swahili (+ full English translations)
+- **626 questions** across 10 categories in Swahili (+ full English translations)
+- **7 game modes**: Classic, Daily, Weekly Challenge, Sprint, Versus (2–4 players), Friend Challenge (cross-device), Practice Mistakes
 - **Difficulty levels**: Easy / Medium / Hard — each with a score **multiplier** (×1 / ×1.5 / ×2)
 - **Scoring**: Base 100 + Speed bonus (up to +50) + Streak bonus (+30 at streak ≥ 3) × difficulty multiplier
 - **Adaptive difficulty** — after 30 games + 200 answered questions, question selection biases toward the player's weak difficulty tiers per category
@@ -55,7 +62,7 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 
 ### Player Ranks
 
-9 levels unlocked by total coin count:
+10 levels unlocked by total coin count:
 
 | Level | Title (sw) | Title (en) | Coins needed |
 | --- | --- | --- | --- |
@@ -68,10 +75,11 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 | 7 | Simba wa Mtaa 🦁 | Street Lion | 2 000 |
 | 8 | Mfalme 👑 | King | 3 500 |
 | 9 | Hadithi 🌟 | Legend | 5 000 |
+| 10 | Gwiji wa Bongo 🐐 | Grandmaster | 8 000 |
 
 The profile screen shows a rank banner with a progress bar toward the next rank and coins needed.
 
-### Achievements (17 total)
+### Achievements (27 total)
 
 Automatically unlocked after each game, stored in AsyncStorage:
 
@@ -79,17 +87,23 @@ Automatically unlocked after each game, stored in AsyncStorage:
 | --- | --- |
 | Mchezo wa Kwanza 🎮 | Play 1 game |
 | Mchezaji 10 🔟 | Play 10 games |
-| Mchezaji 50 / 100 | Play 50 / 100 games |
+| Mchezaji 50 / 100 / 250 | Play 50 / 100 / 250 games |
 | Mfululizo 3 🔥 / 7 🔥🔥 | Get a question streak of 3 / 7 |
 | Mfululizo 30 ⚡ | Maintain a 30-day play streak |
 | Raundi Kamili ⭐ | Perfect round (10/10) |
 | Raundi 5 Kamili 🌟 | 5 perfect rounds |
-| Usahihi 80% � / 90% 💎 | 80% / 90% overall accuracy (min 20 questions) |
+| Usahihi 80% 🎯 / 90% 💎 | 80% / 90% overall accuracy (min 20 questions) |
 | Wiki ya Kila Siku 📅 | 7-day daily streak |
 | Mwezi wa Kila Siku 🗓️ | 30-day daily streak |
-| Sarafu 100 🪙 / 500 💰 | Collect 100 / 500 coins |
+| Sarafu 100 🪙 / 500 💰 / 1000 🏦 | Collect 100 / 500 / 1000 coins |
 | Mtaalamu 🗺️ | Play in all 10 categories |
 | Mwepesi ⚡ | Earn 10 speed bonuses |
+| Mbio za Kwanza 🏃 / Mbio 50 💨 / Mbio 100 🚀 | Sprint: first run / 50 / 100 questions answered |
+| Mtoa Vidokezo 💡 | Use hints 20 times |
+| Shujaa wa Versus 🥊 | Win a Versus match |
+| Barafu Imetumika 🧊 | A Streak Freeze protects your streak |
+| Makosa Yamesahihishwa 🧠 | Perfect score in Practice Mistakes |
+| Mshindani 🏁 | Play a Friend Challenge |
 
 ### Category Mastery
 
@@ -108,8 +122,18 @@ Profile shows an accuracy bar per category (sorted by accuracy), with games play
 
 ### Leaderboard
 
-- Filter tabs: **All** / **Daily** / **Best** (one entry per player)
-- Top-50 entries sorted by score
+- Source tabs: **📱 Local** / **🌐 Global** (Supabase) / **🗺️ Mikoa** (regional league)
+- Filter tabs: **All** / **Daily** / **Best** (one entry per player) — applied to local and global
+- Regional league aggregates every player's cloud scores by their chosen mkoa (all 31 regions supported)
+- Local top-50 entries sorted by score
+
+### Cloud Features (optional, Supabase REST)
+
+- Global leaderboard, cross-device progress sync, magic-link sign-in
+- **Friend Challenges** — async cross-device multiplayer by share code
+- **Regional league** — pick your mkoa in Profile, compete Dar vs Mwanza vs Arusha…
+- Push notifications with deep links (daily reminder → daily challenge)
+- All optional: app is fully playable offline; see `docs/CLOUD_SETUP.md`
 
 ### Categories
 
@@ -125,7 +149,7 @@ Profile shows an accuracy bar per category (sorted by accuracy), with games play
 
 ### Technical
 
-- **Offline-first** — zero backend, all state in AsyncStorage
+- **Offline-first** — all state in AsyncStorage; optional Supabase REST backend for cloud features (no SDK dependency)
 - **Expo Router v3** file-based navigation
 - **TypeScript** strict mode throughout
 - **Theme system** — light/dark tokens via `useThemeColors()`, all screens themed
@@ -165,7 +189,7 @@ npm run web              # Web preview
 npm run typecheck        # TypeScript strict check
 npm run validate:data    # Question data integrity
 npm run check:contrast   # WCAG contrast ratios
-npm test                 # 84 Jest tests (5 suites)
+npm test                 # 87 Jest tests (5 suites)
 npm run check            # All four checks in one command (CI gate)
 ```
 
@@ -194,7 +218,7 @@ See `docs/RELEASE_CHECKLIST.md` for the full pre-release process.
 
 ## 🧪 Tests
 
-84 tests across 5 suites in `__tests__/`:
+87 tests across 5 suites in `__tests__/`:
 
 | Suite | What it tests |
 | --- | --- |
@@ -229,8 +253,16 @@ Mtaa Quiz Battle/
 │   │   ├── StatCard.tsx
 │   │   └── TimerBar.tsx
 │   ├── data/
-│   │   ├── questions.ts          # 502 bilingual questions (q001–q502)
-│   │   └── categories.ts         # 10 category definitions (counts auto-calculated)
+│   │   ├── questions.ts          # 626 bilingual questions (q001–q626) + seeded daily/weekly selectors
+│   │   ├── categories.ts         # 10 category definitions (counts auto-calculated)
+│   │   └── regions.ts            # 31 Tanzanian regions for the regional league
+│   ├── services/
+│   │   ├── CloudService.ts       # Supabase REST: leaderboard, sync, auth, challenges
+│   │   ├── SoundService.ts       # Preloaded sound effects (single swap point for expo-audio)
+│   │   ├── MusicService.ts       # Background music
+│   │   ├── NotificationService.ts# Daily reminders + deep links
+│   │   ├── AdService.ts          # Rewarded ads (AdMob)
+│   │   └── IAPService.ts         # In-app purchases
 │   ├── storage/
 │   │   └── storage.ts            # StorageService: profile, settings, leaderboard,
 │   │                             #   history, category stats, achievements
@@ -362,4 +394,4 @@ accuracyBonus:         ≥80% correct → +10  |  ≥60% → +5  |  <60% → 0
 
 ---
 
-Built with ❤️ for Tanzania 🇹🇿 | v1.0.0
+Built with ❤️ for Tanzania 🇹🇿 | v1.1.0 — see [CHANGELOG.md](CHANGELOG.md)

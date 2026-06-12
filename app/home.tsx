@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,13 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../src/storage/storage';
+import { CloudService } from '../src/services/CloudService';
+import { CloudEvent } from '../src/types';
+import { getWeekKey } from '../src/data/questions';
 import { UserProfile, DailyReward } from '../src/types';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
@@ -45,9 +48,44 @@ export default function HomeScreen() {
   const [todayCoins, setTodayCoins] = useState(0);
   const [rewardStreak, setRewardStreak] = useState(1);
   const [streakReset, setStreakReset] = useState(false);
+  const [mistakeCount, setMistakeCount] = useState(0);
+  const [weeklyDone, setWeeklyDone] = useState(false);
+  const [liveEvent, setLiveEvent] = useState<CloudEvent | null>(null);
+  const [eventDone, setEventDone] = useState(false);
 
   const loadProfile = useCallback(async () => {
     const p = await StorageService.getUserProfile();
+
+    // Count questions whose most recent answer was wrong (Practice Mistakes banner).
+    // History is newest-first, so the first time we see a question is its latest outcome.
+    const history = await StorageService.getQuizHistory();
+    const seen = new Set<string>();
+    let missedCount = 0;
+    for (const r of history) {
+      for (const item of r.reviewItems ?? []) {
+        if (seen.has(item.questionId)) continue;
+        seen.add(item.questionId);
+        if (!item.wasCorrect) missedCount += 1;
+      }
+    }
+    setMistakeCount(missedCount);
+
+    const weekly = await StorageService.getWeeklyStatus();
+    setWeeklyDone(weekly.completed && weekly.weekKey === getWeekKey());
+
+    // Live event check (best-effort, silent offline)
+    if (CloudService.isAvailable()) {
+      CloudService.fetchActiveEvent()
+        .then(async (event) => {
+          setLiveEvent(event);
+          if (event) {
+            const done = await StorageService.getCompletedEventIds();
+            setEventDone(done.includes(event.id));
+          }
+        })
+        .catch(() => {});
+    }
+
     let nextProfile = p;
     setDailyDone(p.dailyCompleted && p.lastDailyDate === new Date().toDateString());
 
@@ -72,9 +110,12 @@ export default function HomeScreen() {
     setProfile(nextProfile);
   }, []);
 
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+  // Refresh coins, streaks, and the practice banner every time Home regains focus
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile])
+  );
 
   const navItems = [
     { icon: '🎯', label: t('playNow'), route: '/categories', color: Colors.primary },
@@ -164,6 +205,8 @@ export default function HomeScreen() {
                 style={[styles.navCard, { backgroundColor: colors.backgroundCard, borderColor: item.color }]}
                 onPress={() => router.push(item.route as any)}
                 activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
               >
                 <Text style={styles.navIcon}>{item.icon}</Text>
                 <Text style={[styles.navLabel, { color: item.color }]}>{item.label}</Text>
@@ -197,6 +240,19 @@ export default function HomeScreen() {
               </Text>
               <Text style={[styles.modeSub, { color: colors.textMuted }]}>
                 {language === 'sw' ? 'Watu 2' : '2 players'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeCard, { backgroundColor: colors.backgroundCard, borderColor: colors.secondary }]}
+              onPress={() => router.push('/challenge')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modeEmoji}>🏁</Text>
+              <Text style={[styles.modeLabel, { color: colors.secondary }]}>
+                {language === 'sw' ? 'Changamoto' : 'Challenge'}
+              </Text>
+              <Text style={[styles.modeSub, { color: colors.textMuted }]}>
+                {language === 'sw' ? 'Simu tofauti' : 'Cross-device'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -248,6 +304,92 @@ export default function HomeScreen() {
               )}
             </LinearGradient>
           </TouchableOpacity>
+
+          {/* LIVE event banner */}
+          {liveEvent && (
+            <TouchableOpacity
+              style={styles.dailyBanner}
+              onPress={() =>
+                router.push({
+                  pathname: '/quiz',
+                  params: {
+                    mode: 'event',
+                    eventId: liveEvent.id,
+                    eventSeed: liveEvent.seed,
+                    eventName: liveEvent.name,
+                    eventNameEn: liveEvent.name_en,
+                  },
+                })
+              }
+              activeOpacity={0.85}
+              disabled={eventDone}
+            >
+              <LinearGradient
+                colors={eventDone ? [colors.backgroundCard, colors.backgroundCardLight] : ['#FF1744', '#D500F9']}
+                style={styles.dailyGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <View style={styles.dailyLeft}>
+                  <Text style={styles.dailyIcon}>{eventDone ? '✅' : liveEvent.emoji}</Text>
+                  <View>
+                    <Text style={[styles.dailyTitle, eventDone && { color: colors.textSecondary }]}>
+                      {!eventDone && '🔴 LIVE · '}{language === 'en' ? liveEvent.name_en : liveEvent.name}
+                    </Text>
+                    <Text style={[styles.dailySub, eventDone && { color: colors.textMuted }]}>
+                      {eventDone
+                        ? (language === 'sw' ? 'Umeshashiriki — angalia ubao wa wachezaji!' : 'Already played — check the leaderboard!')
+                        : (language === 'sw' ? 'Tukio maalum linaendelea sasa hivi!' : 'Special event happening right now!')}
+                    </Text>
+                  </View>
+                </View>
+                {!eventDone && <Text style={styles.dailyArrow}>›</Text>}
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+
+          {/* Weekly challenge banner */}
+          <TouchableOpacity
+            style={[styles.practiceBanner, { backgroundColor: colors.backgroundCard, borderColor: weeklyDone ? colors.border : '#E040FB' }]}
+            onPress={() => router.push({ pathname: '/quiz', params: { mode: 'weekly' } })}
+            activeOpacity={0.85}
+            disabled={weeklyDone}
+          >
+            <View style={styles.dailyLeft}>
+              <Text style={styles.dailyIcon}>{weeklyDone ? '✅' : '🗓️'}</Text>
+              <View>
+                <Text style={[styles.practiceTitle, { color: colors.text }]}>
+                  {language === 'sw' ? 'Changamoto ya Wiki' : 'Weekly Challenge'}
+                </Text>
+                <Text style={[styles.practiceSub, { color: colors.textMuted }]}>
+                  {weeklyDone
+                    ? (language === 'sw' ? 'Imekamilika — rudi wiki ijayo!' : 'Done — come back next week!')
+                    : (language === 'sw' ? 'Maswali magumu 10, mara moja kwa wiki' : '10 tougher questions, once a week')}
+                </Text>
+              </View>
+            </View>
+            {!weeklyDone && <Text style={[styles.dailyArrow, { color: '#E040FB' }]}>›</Text>}
+          </TouchableOpacity>
+
+          {/* Practice mistakes banner */}
+          {mistakeCount > 0 && (
+            <TouchableOpacity
+              style={[styles.practiceBanner, { backgroundColor: colors.backgroundCard, borderColor: colors.accent }]}
+              onPress={() => router.push({ pathname: '/quiz', params: { mode: 'practice' } })}
+              activeOpacity={0.85}
+            >
+              <View style={styles.dailyLeft}>
+                <Text style={styles.dailyIcon}>🔁</Text>
+                <View>
+                  <Text style={[styles.practiceTitle, { color: colors.text }]}>{t('practiceMistakes')}</Text>
+                  <Text style={[styles.practiceSub, { color: colors.textMuted }]}>
+                    {t('practiceMistakesDesc')} · {mistakeCount}
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.dailyArrow, { color: colors.accent }]}>›</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </SafeAreaView>
 
@@ -388,11 +530,13 @@ const styles = StyleSheet.create({
 
   modesRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.sm,
     marginBottom: Spacing.base,
   },
   modeCard: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '46%',
     borderRadius: Radius.xl,
     borderWidth: 1,
     padding: Spacing.base,
@@ -436,6 +580,22 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: Colors.white,
     fontWeight: Typography.fontWeights.bold,
+  },
+  practiceBanner: {
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    marginBottom: Spacing.base,
+    padding: Spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  practiceTitle: {
+    fontSize: Typography.fontSizes.base,
+    fontWeight: Typography.fontWeights.bold,
+  },
+  practiceSub: {
+    fontSize: Typography.fontSizes.sm,
   },
   doneBadge: {
     backgroundColor: Colors.secondary + '33',

@@ -18,8 +18,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { useLanguage } from '../src/utils/LanguageContext';
 import { useThemeColors } from '../src/utils/ThemeContext';
-import { STREAK_FREEZE_COST, evaluateAchievements } from '../src/utils/gameLogic';
+import { STREAK_FREEZE_COST } from '../src/utils/gameLogic';
 import { StorageService } from '../src/storage/storage';
+import { IAPService, COIN_BUNDLES } from '../src/services/IAPService';
+import { showRewardedAd, adsAvailable } from '../src/services/AdService';
+import { Platform } from 'react-native';
+
+const AD_COIN_REWARD = 20;
 
 const MAX_FREEZE = 5;
 
@@ -31,6 +36,8 @@ export default function ShopScreen() {
   const [coins, setCoins] = useState(0);
   const [freezeCount, setFreezeCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [adLoading, setAdLoading] = useState(false);
+  const [bundleLoading, setBundleLoading] = useState<string | null>(null);
 
   const load = async () => {
     const profile = await StorageService.getUserProfile();
@@ -68,11 +75,42 @@ export default function ShopScreen() {
         '❄️',
         language === 'sw' ? 'Barafu ya Mfululizo imenunuliwa!' : 'Streak Freeze purchased!'
       );
-      // Check achievements
+      // Note: the freeze_used achievement unlocks when a freeze is actually
+      // consumed (see StorageService.updateProfileAfterGame), not on purchase.
+    }
+  };
+
+  const handleWatchAd = async () => {
+    if (adLoading) return;
+    setAdLoading(true);
+    const reward = await showRewardedAd('free-coins');
+    if (reward) {
       const profile = await StorageService.getUserProfile();
-      const existing = await StorageService.getUnlockedAchievements();
-      const updated = evaluateAchievements(profile, [], existing, { freezeEverUsed: true });
-      if (updated.length !== existing.length) await StorageService.saveUnlockedAchievements(updated);
+      const newCoins = profile.totalCoins + AD_COIN_REWARD;
+      await StorageService.saveUserProfile({ ...profile, totalCoins: newCoins });
+      setCoins(newCoins);
+      Alert.alert('🎉', language === 'sw' ? `Umepata sarafu ${AD_COIN_REWARD}!` : `You earned ${AD_COIN_REWARD} coins!`);
+    } else {
+      Alert.alert('', language === 'sw' ? 'Tangazo halipatikani kwa sasa. Jaribu tena baadaye.' : 'No ad available right now. Try again later.');
+    }
+    setAdLoading(false);
+  };
+
+  const handleBuyBundle = async (bundleId: 'small' | 'medium' | 'large') => {
+    if (bundleLoading) return;
+    setBundleLoading(bundleId);
+    const started = await IAPService.purchaseCoinBundle(bundleId);
+    setBundleLoading(null);
+    if (started) {
+      // Coins are credited by the purchase listener once the store confirms.
+      setTimeout(load, 2500);
+    } else {
+      Alert.alert(
+        '',
+        language === 'sw'
+          ? 'Ununuzi haukukamilika. Duka halipatikani kwenye kifaa hiki.'
+          : 'Purchase did not complete. The store is unavailable on this device.'
+      );
     }
   };
 
@@ -149,6 +187,73 @@ export default function ShopScreen() {
             </View>
           </View>
 
+          {/* Free coins via rewarded ad */}
+          {Platform.OS !== 'web' && adsAvailable() && (
+            <>
+              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
+                {language === 'sw' ? 'Sarafu za Bure' : 'Free Coins'}
+              </Text>
+              <View style={[styles.itemCard, { backgroundColor: colors.backgroundCard, borderColor: colors.secondary }]}>
+                <View style={styles.itemTop}>
+                  <Text style={styles.itemEmoji}>📺</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.itemTitle, { color: colors.text }]}>
+                      {language === 'sw' ? 'Tazama Tangazo' : 'Watch an Ad'}
+                    </Text>
+                    <Text style={[styles.itemDesc, { color: colors.textSecondary }]}>
+                      {language === 'sw'
+                        ? `Tazama tangazo fupi upate sarafu ${AD_COIN_REWARD} bure.`
+                        : `Watch a short ad and earn ${AD_COIN_REWARD} free coins.`}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.buyBtn, { backgroundColor: colors.secondary }, adLoading && { opacity: 0.5 }]}
+                    onPress={handleWatchAd}
+                    disabled={adLoading}
+                    accessibilityRole="button"
+                    accessibilityLabel={language === 'sw' ? 'Tazama tangazo upate sarafu' : 'Watch ad for coins'}
+                  >
+                    <Text style={[styles.buyBtnText, { color: colors.white }]}>
+                      {adLoading ? '⏳' : `+${AD_COIN_REWARD}🪙`}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* Coin bundles (IAP) */}
+          {Platform.OS !== 'web' && (
+            <>
+              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
+                {language === 'sw' ? 'Vifurushi vya Sarafu' : 'Coin Bundles'}
+              </Text>
+              <View style={styles.bundleRow}>
+                {COIN_BUNDLES.map((b) => (
+                  <TouchableOpacity
+                    key={b.id}
+                    style={[styles.bundleCard, { backgroundColor: colors.backgroundCard, borderColor: colors.gold }, bundleLoading === b.id && { opacity: 0.5 }]}
+                    onPress={() => handleBuyBundle(b.id)}
+                    disabled={bundleLoading !== null}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${b.coins} ${language === 'sw' ? 'sarafu' : 'coins'}`}
+                  >
+                    <Text style={styles.bundleEmoji}>{b.emoji}</Text>
+                    <Text style={[styles.bundleCoins, { color: colors.gold }]}>{b.coins}</Text>
+                    <Text style={[styles.bundleLabel, { color: colors.textMuted }]}>
+                      {bundleLoading === b.id ? '⏳' : (language === 'sw' ? 'Nunua' : 'Buy')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={[styles.helpText, { color: colors.textMuted, marginTop: 0, marginBottom: Spacing.base }]}>
+                {language === 'sw'
+                  ? 'Bei huonyeshwa na duka lako (Google Play / App Store).'
+                  : 'Prices are shown by your store (Google Play / App Store).'}
+              </Text>
+            </>
+          )}
+
           <Text style={[styles.helpText, { color: colors.textMuted }]}>
             {language === 'sw'
               ? '💡 Pata sarafu kwa kucheza mchezo, kumaliza raundi kamili, au kutumia changamoto ya kila siku.'
@@ -182,4 +287,9 @@ const styles = StyleSheet.create({
   buyBtn: { borderRadius: Radius.md, paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm },
   buyBtnText: { fontSize: Typography.fontSizes.md, fontWeight: Typography.fontWeights.bold },
   helpText: { fontSize: Typography.fontSizes.sm, textAlign: 'center', lineHeight: Typography.fontSizes.sm * 1.6, marginTop: Spacing.base },
+  bundleRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm },
+  bundleCard: { flex: 1, borderRadius: Radius.xl, borderWidth: 1, padding: Spacing.base, alignItems: 'center', gap: 4 },
+  bundleEmoji: { fontSize: 28 },
+  bundleCoins: { fontSize: Typography.fontSizes.lg, fontWeight: Typography.fontWeights.extraBold },
+  bundleLabel: { fontSize: Typography.fontSizes.xs, fontWeight: Typography.fontWeights.semiBold },
 });

@@ -12,12 +12,12 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av';
 import { getCategoryById } from '../src/data/categories';
 import { HapticService } from '../src/utils/haptics';
 import { MusicService } from '../src/services/MusicService';
+import { SoundService } from '../src/services/SoundService';
 import { CloudService } from '../src/services/CloudService';
-import { getDailyQuestions, getRandomQuestionsByCategory } from '../src/data/questions';
+import { getDailyQuestions, getRandomQuestionsByCategory, getQuestionsByIds, getWeeklyQuestions, getWeekKey, getEventQuestions } from '../src/data/questions';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
@@ -42,29 +42,23 @@ const TOTAL_QUESTIONS = 10;
 type QuizStatus = 'loading' | 'ready' | 'empty';
 type AnswerOutcome = 'correct' | 'wrong' | 'timeout' | null;
 
-const playSound = async (type: 'correct' | 'wrong' | 'timeup', enabled: boolean) => {
-  if (!enabled) return;
-  try {
-    const sources: Record<string, number> = {
-      correct: require('../assets/sounds/correct.mp3'),
-      wrong: require('../assets/sounds/wrong.mp3'),
-      timeup: require('../assets/sounds/timeup.mp3'),
-    };
-    const { sound } = await Audio.Sound.createAsync(sources[type] as number, { shouldPlay: true, volume: 0.7 });
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if ('didJustFinish' in status && status.didJustFinish) sound.unloadAsync();
-    });
-  } catch {
-    // Sound files optional — silently fail if missing
-  }
-};
+const playSound = (type: 'correct' | 'wrong' | 'timeup', enabled: boolean) =>
+  SoundService.play(type, enabled);
 
 export default function QuizScreen() {
   const router = useRouter();
-  const { categoryId, isDaily } = useLocalSearchParams<{
+  const { categoryId, isDaily, mode, eventId, eventSeed, eventName, eventNameEn } = useLocalSearchParams<{
     categoryId: string;
     isDaily?: string;
+    mode?: string;
+    eventId?: string;
+    eventSeed?: string;
+    eventName?: string;
+    eventNameEn?: string;
   }>();
+  const isPractice = mode === 'practice';
+  const isWeekly = mode === 'weekly';
+  const isEvent = mode === 'event' && Boolean(eventId && eventSeed);
   const { language } = useLanguage();
   const colors = useThemeColors();
 
@@ -171,7 +165,26 @@ export default function QuizScreen() {
 
     const load = async () => {
       let qs: Question[] = [];
-      if (isDaily === 'true') {
+      if (isPractice) {
+        // Build a quiz from questions whose MOST RECENT answer was wrong.
+        // Once you answer a question correctly it leaves the practice pool.
+        const history = await StorageService.getQuizHistory();
+        const missedIds: string[] = [];
+        const seen = new Set<string>();
+        for (const result of history) {
+          for (const item of result.reviewItems ?? []) {
+            if (seen.has(item.questionId)) continue; // newest outcome already recorded
+            seen.add(item.questionId);
+            if (!item.wasCorrect) missedIds.push(item.questionId);
+          }
+        }
+        const pool = getQuestionsByIds(missedIds.slice(0, 40));
+        qs = pool.sort(() => Math.random() - 0.5).slice(0, TOTAL_QUESTIONS);
+      } else if (isEvent) {
+        qs = getEventQuestions(eventSeed ?? '', TOTAL_QUESTIONS);
+      } else if (isWeekly) {
+        qs = getWeeklyQuestions(TOTAL_QUESTIONS);
+      } else if (isDaily === 'true') {
         qs = getDailyQuestions(TOTAL_QUESTIONS);
       } else {
         const category = getCategoryById(categoryId ?? '');
@@ -187,12 +200,12 @@ export default function QuizScreen() {
       setQuestions(qs);
       setQuizStatus(qs.length > 0 ? 'ready' : 'empty');
       if (qs.length > 0) {
-        MusicService.play(isDaily === 'true' ? 'default' : (categoryId ?? 'default'));
+        MusicService.play(isDaily === 'true' || isPractice || isWeekly || isEvent ? 'default' : (categoryId ?? 'default'));
       }
     };
     load();
     return () => { MusicService.stop(); };
-  }, [categoryId, isDaily, resetQuizState]);
+  }, [categoryId, isDaily, isPractice, isWeekly, isEvent, eventSeed, resetQuizState]);
 
   useEffect(() => {
     if (questions.length > 0) {
@@ -208,7 +221,13 @@ export default function QuizScreen() {
       finalMaxStreak: number,
       finalAnswerMap: (boolean | null)[]
     ) => {
-      const cat = isDaily === 'true'
+      const cat = isEvent
+        ? { id: 'event', name: (language === 'en' ? eventNameEn : eventName) ?? eventName ?? 'Live Event' }
+        : isPractice
+        ? { id: 'practice', name: language === 'en' ? 'Practice Mistakes' : 'Rudia Makosa' }
+        : isWeekly
+        ? { id: 'weekly', name: 'Weekly Challenge' }
+        : isDaily === 'true'
         ? { id: 'daily', name: 'Daily Challenge' }
         : {
             id: categoryId ?? '',
@@ -224,13 +243,24 @@ export default function QuizScreen() {
         finalMaxStreak,
         isDaily === 'true',
         finalAnswerMap.slice(0, questions.length).map((answer) => answer === true),
-        questions.map((question, index) => ({
+        questions.map((question, index) => {
+          // The stored answer is in the language the player used — map it to both
+          const raw = selectedAnswersRef.current[index];
+          let selectedSw = raw;
+          let selectedEn = raw;
+          if (raw && question.options_en) {
+            const enIdx = question.options_en.indexOf(raw);
+            const swIdx = question.options.indexOf(raw);
+            if (enIdx >= 0) selectedSw = question.options[enIdx] ?? raw;
+            else if (swIdx >= 0) selectedEn = question.options_en[swIdx] ?? raw;
+          }
+          return {
           questionId: question.id,
           question: question.question,
           question_en: question.question_en,
           category: question.category,
-          selectedAnswer: selectedAnswersRef.current[index],
-          selectedAnswer_en: selectedAnswersRef.current[index],
+          selectedAnswer: selectedSw,
+          selectedAnswer_en: selectedEn,
           correctAnswer: question.answer,
           correctAnswer_en: question.answer_en,
           explanation: question.explanation,
@@ -238,36 +268,49 @@ export default function QuizScreen() {
           difficulty: question.difficulty,
           wasCorrect: finalAnswerMap[index] === true,
           timedOut: selectedAnswersRef.current[index] === null && finalAnswerMap[index] === false,
-        }))
+          };
+        })
       );
 
       const { profile: updatedProfile, achievementsUnlocked } = await StorageService.updateProfileAfterGame(result);
       if (achievementsUnlocked > 0) HapticService.achievementUnlock(settings.current.vibration);
       await StorageService.addQuizResult(result);
-      await StorageService.addLeaderboardEntry({
-        id: result.id,
-        username: updatedProfile.username,
-        score: finalScore,
-        categoryName: cat.name,
-        date: result.date,
-        correctAnswers: finalCorrect,
-        isDaily: isDaily === 'true',
-      });
-      // Best-effort cloud submission (silent on failure)
-      CloudService.submitScore({
-        displayName: updatedProfile.username,
-        score: finalScore,
-        categoryName: cat.name,
-        categoryName_en: getCategoryById(categoryId ?? '')?.name_en,
-        correctAnswers: finalCorrect,
-        totalQuestions: questions.length,
-        isDaily: isDaily === 'true',
-      }).catch(() => {});
+      // Practice rounds don't compete on leaderboards
+      if (!isPractice) {
+        await StorageService.addLeaderboardEntry({
+          id: result.id,
+          username: updatedProfile.username,
+          score: finalScore,
+          categoryName: cat.name,
+          date: result.date,
+          correctAnswers: finalCorrect,
+          isDaily: isDaily === 'true',
+        });
+        // Best-effort cloud submission (silent on failure)
+        CloudService.submitScore({
+          displayName: updatedProfile.username,
+          score: finalScore,
+          categoryName: cat.name,
+          categoryName_en: getCategoryById(categoryId ?? '')?.name_en,
+          correctAnswers: finalCorrect,
+          totalQuestions: questions.length,
+          isDaily: isDaily === 'true',
+        }).catch(() => {});
+      }
+
+      if (isWeekly) {
+        await StorageService.markWeeklyCompleted(getWeekKey(), finalScore);
+      }
+      if (isEvent && eventId) {
+        await StorageService.markEventCompleted(eventId);
+      }
 
       if (isDaily === 'true') {
         const profile = await StorageService.getUserProfile();
         const today = new Date().toDateString();
-        const dailyStreak = profile.lastDailyDate === new Date(Date.now() - 86400000).toDateString()
+        const dailyStreak = profile.lastDailyDate === today
+          ? profile.dailyStreak // already completed today — don't reset the streak
+          : profile.lastDailyDate === new Date(Date.now() - 86400000).toDateString()
           ? profile.dailyStreak + 1
           : 1;
         await StorageService.saveUserProfile({
@@ -283,7 +326,7 @@ export default function QuizScreen() {
         params: { resultJson: JSON.stringify(result) },
       });
     },
-    [categoryId, isDaily, questions, router]
+    [categoryId, isDaily, isPractice, isWeekly, isEvent, eventId, eventName, eventNameEn, language, questions, router]
   );
 
   const handleTimeUp = useCallback(() => {
@@ -326,6 +369,8 @@ export default function QuizScreen() {
 
   const requestQuit = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    // Mark as paused so the timer effect restarts when the dialog is dismissed
+    setPaused(true);
     setQuitConfirmVisible(true);
   }, []);
 
@@ -519,8 +564,12 @@ export default function QuizScreen() {
         <SafeAreaView style={styles.safe}>
           <View style={styles.emptyState}>
             <Text style={[styles.emptyEmoji, { color: colors.primary }]}>?</Text>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('quizUnavailable')}</Text>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('quizUnavailableDesc')}</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              {isPractice ? t('practiceMistakes') : t('quizUnavailable')}
+            </Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              {isPractice ? t('noMistakesYet') : t('quizUnavailableDesc')}
+            </Text>
             <PrimaryButton
               label={t('chooseCategory')}
               onPress={() => router.replace('/categories')}
@@ -595,7 +644,7 @@ export default function QuizScreen() {
             onPress={pauseQuiz}
             activeOpacity={0.78}
           >
-            <Text style={[styles.pauseText, { color: colors.text }]}>II</Text>
+            <Text style={[styles.pauseText, { color: colors.text }]}>⏸</Text>
           </TouchableOpacity>
           <View style={[styles.streakBadge, { backgroundColor: colors.backgroundCardLight }, streak >= 3 && { backgroundColor: colors.streak + '33', borderColor: colors.streak }]}>
             <Text style={styles.streakText}>🔥 {streak}</Text>
@@ -722,7 +771,9 @@ export default function QuizScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.explanationTitle, { color: colors.text }]}>
-                  {selectedAnswer === (language === 'en' && current.answer_en ? current.answer_en : current.answer)
+                  {answerOutcome === 'timeout'
+                    ? `⏱ ${language === 'sw' ? 'Muda Umeisha' : "Time's Up"}`
+                    : answerOutcome === 'correct'
                     ? `✅ ${t('correct')}`
                     : `❌ ${t('wrong')}`}
                 </Text>

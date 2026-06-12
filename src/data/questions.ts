@@ -8140,10 +8140,345 @@ export const questions: Question[] = [
     explanation: 'Bano inachezwa kwa mipira midogo ya kioo au udongo inayoitwa "bano".',
     explanation_en: 'Bano is played with small glass or clay marbles called "bano".',
   },
+  // ─── Maswali Mapya (q603+) ───────────────────────────────────────
+  {
+    id: 'q603',
+    category: 'Vyakula vya Bongo',
+    difficulty: 'easy',
+    question: 'Ugali hupikwa kwa kutumia unga gani zaidi Tanzania?',
+    question_en: 'Ugali is most commonly made from which flour in Tanzania?',
+    options: ['Unga wa ngano', 'Unga wa mahindi', 'Unga wa mchele', 'Unga wa muhogo'],
+    options_en: ['Wheat flour', 'Maize flour', 'Rice flour', 'Cassava flour'],
+    answer: 'Unga wa mahindi',
+    answer_en: 'Maize flour',
+    explanation: 'Ugali wa kawaida Tanzania hupikwa kwa unga wa mahindi, ingawa pia unaweza kupikwa kwa muhogo au mtama.',
+    explanation_en: 'Standard ugali in Tanzania is made from maize flour, though cassava or millet versions also exist.',
+  },
+  {
+    id: 'q604',
+    category: 'Vyakula vya Bongo',
+    difficulty: 'easy',
+    question: '"Mshikaki" ni chakula cha aina gani?',
+    question_en: 'What kind of food is "mshikaki"?',
+    options: ['Nyama ya kuchoma kwenye vijiti', 'Samaki wa kukaanga', 'Wali wa nazi', 'Supu ya ndizi'],
+    options_en: ['Grilled meat on skewers', 'Fried fish', 'Coconut rice', 'Banana soup'],
+    answer: 'Nyama ya kuchoma kwenye vijiti',
+    answer_en: 'Grilled meat on skewers',
+    explanation: 'Mshikaki ni vipande vya nyama vilivyochomwa kwenye vijiti, maarufu sana mitaani hasa jioni.',
+    explanation_en: 'Mshikaki is marinated meat grilled on skewers, a hugely popular street food in the evenings.',
+  },
+  {
+    id: 'q605',
+    category: 'Vyakula vya Bongo',
+    difficulty: 'medium',
+    question: '"Urojo" ni chakula maarufu kinachojulikana zaidi kutoka wapi?',
+    question_en: 'The famous dish "urojo" is best known from where?',
+    options: ['Mbeya', 'Zanzibar', 'Kigoma', 'Arusha'],
+    options_en: ['Mbeya', 'Zanzibar', 'Kigoma', 'Arusha'],
+    answer: 'Zanzibar',
+    answer_en: 'Zanzibar',
+    explanation: 'Urojo, maarufu kama "Zanzibar mix", ni supu ya viungo mbalimbali inayotokea Zanzibar.',
+    explanation_en: 'Urojo, known as "Zanzibar mix", is a tangy soup with assorted toppings originating from Zanzibar.',
+  },
+  {
+    id: 'q606',
+    category: 'Vyakula vya Bongo',
+    difficulty: 'medium',
+    question: '"Vitumbua" hupikwa kwa unga gani?',
+    question_en: 'What flour is used to make "vitumbua"?',
+    options: ['Unga wa mchele', 'Unga wa ngano', 'Unga wa mahindi', 'Unga wa ulezi'],
+    options_en: ['Rice flour', 'Wheat flour', 'Maize flour', 'Millet flour'],
+    answer: 'Unga wa mchele',
+    answer_en: 'Rice flour',
+    explanation: 'Vitumbua ni vitafunwa vya asubuhi vinavyopikwa kwa unga wa mchele na nazi.',
+    explanation_en: 'Vitumbua are breakfast rice cakes made from rice flour and coconut milk.',
+  },
+  {
+    id: 'q607',
+    category: 'Mitaa ya Dar',
+    difficulty: 'easy',
+    question: 'Soko kubwa maarufu zaidi la Dar es Salaam liko mtaa gani?',
+    question_en: 'The most famous large market in Dar es Salaam is in which area?',
+    options: ['Kariakoo', 'Masaki', 'Mbezi', 'Sinza'],
+    options_en: ['Kariakoo', 'Masaki', 'Mbezi', 'Sinza'],
+    answer: 'Kariakoo',
+    answer_en: 'Kariakoo',
+    explanation: 'Soko la Kariakoo ndilo soko kubwa na maarufu zaidi Dar es Salaam na Afrika Mashariki.',
+    explanation_en: 'Kariakoo market is the largest and most famous market in Dar es Salaam and East Africa.',
+  },
+  {
+    id: 'q608',
+    category: 'Mitaa ya Dar',
+    difficulty: 'hard',
+    question: 'Jina "Kariakoo" linatokana na nini?',
+    question_en: 'The name "Kariakoo" originates from what?',
+    options: ['Jina la chifu wa zamani', '"Carrier Corps" ya Vita vya Kwanza vya Dunia', 'Mti maarufu wa eneo hilo', 'Neno la Kiarabu la soko'],
+    options_en: ['The name of an old chief', 'The WWI "Carrier Corps"', 'A famous local tree', 'An Arabic word for market'],
+    answer: '"Carrier Corps" ya Vita vya Kwanza vya Dunia',
+    answer_en: 'The WWI "Carrier Corps"',
+    explanation: 'Eneo hilo lilikuwa kambi ya wapagazi wa "Carrier Corps" wakati wa Vita vya Kwanza vya Dunia, na jina likabadilika kuwa Kariakoo.',
+    explanation_en: 'The area housed the WWI "Carrier Corps" porters\' camp, and the name was localized to Kariakoo.',
+  },
+  {
+    id: 'q609',
+    category: 'Mitaa ya Dar',
+    difficulty: 'medium',
+    question: 'Mtaa wa Mwenge Dar es Salaam unajulikana zaidi kwa biashara gani?',
+    question_en: 'Mwenge in Dar es Salaam is best known for which trade?',
+    options: ['Vinyago na sanaa za mikono', 'Samaki', 'Magari', 'Nguo za mitumba'],
+    options_en: ['Wood carvings and handicrafts', 'Fish', 'Cars', 'Second-hand clothes'],
+    answer: 'Vinyago na sanaa za mikono',
+    answer_en: 'Wood carvings and handicrafts',
+    explanation: 'Soko la vinyago la Mwenge ni maarufu kwa sanaa za Makonde na zawadi za watalii.',
+    explanation_en: 'The Mwenge carvers\' market is famous for Makonde art and tourist souvenirs.',
+  },
+  {
+    id: 'q610',
+    category: 'Bongo Fleva',
+    difficulty: 'easy',
+    question: 'Lebo ya muziki ya Diamond Platnumz inaitwaje?',
+    question_en: 'What is the name of Diamond Platnumz\'s record label?',
+    options: ['WCB Wasafi', 'Konde Gang', 'Tip Top Connection', 'Motown'],
+    options_en: ['WCB Wasafi', 'Konde Gang', 'Tip Top Connection', 'Motown'],
+    answer: 'WCB Wasafi',
+    answer_en: 'WCB Wasafi',
+    explanation: 'Diamond Platnumz alianzisha WCB (Wasafi Classic Baby) inayojulikana kama WCB Wasafi.',
+    explanation_en: 'Diamond Platnumz founded WCB (Wasafi Classic Baby), commonly known as WCB Wasafi.',
+  },
+  {
+    id: 'q611',
+    category: 'Bongo Fleva',
+    difficulty: 'medium',
+    question: 'Lebo ya "Konde Gang" ilianzishwa na msanii gani?',
+    question_en: 'The "Konde Gang" label was founded by which artist?',
+    options: ['Harmonize', 'Rayvanny', 'Mbosso', 'Marioo'],
+    options_en: ['Harmonize', 'Rayvanny', 'Mbosso', 'Marioo'],
+    answer: 'Harmonize',
+    answer_en: 'Harmonize',
+    explanation: 'Harmonize alianzisha Konde Music Worldwide (Konde Gang) baada ya kuondoka WCB Wasafi.',
+    explanation_en: 'Harmonize founded Konde Music Worldwide (Konde Gang) after leaving WCB Wasafi.',
+  },
+  {
+    id: 'q612',
+    category: 'Bongo Fleva',
+    difficulty: 'medium',
+    question: 'Neno "Bongo" katika "Bongo Fleva" lina maana gani?',
+    question_en: 'What does the word "Bongo" in "Bongo Fleva" mean?',
+    options: ['Ubongo / akili', 'Ngoma', 'Mtaa', 'Furaha'],
+    options_en: ['Brain / wits', 'Drum', 'Street', 'Joy'],
+    answer: 'Ubongo / akili',
+    answer_en: 'Brain / wits',
+    explanation: '"Bongo" linatokana na "ubongo" — unahitaji akili kuishi Dar es Salaam, hivyo jiji likapata jina hilo.',
+    explanation_en: '"Bongo" comes from "ubongo" (brain) — you need wits to survive in Dar es Salaam, hence the city\'s nickname.',
+  },
+  {
+    id: 'q613',
+    category: 'Simba na Yanga',
+    difficulty: 'medium',
+    question: 'Simba SC wanajulikana kwa jina gani la utani?',
+    question_en: 'What is Simba SC\'s famous nickname?',
+    options: ['Wekundu wa Msimbazi', 'Vijana wa Jangwani', 'Mamba wa Pwani', 'Tembo wa Kariakoo'],
+    options_en: ['Wekundu wa Msimbazi (Msimbazi Reds)', 'Vijana wa Jangwani (Jangwani Youth)', 'Coast Crocodiles', 'Kariakoo Elephants'],
+    answer: 'Wekundu wa Msimbazi',
+    answer_en: 'Wekundu wa Msimbazi (Msimbazi Reds)',
+    explanation: 'Simba SC hujulikana kama "Wekundu wa Msimbazi" kutokana na rangi nyekundu na makao yao mtaa wa Msimbazi.',
+    explanation_en: 'Simba SC are known as "Wekundu wa Msimbazi" (the Msimbazi Reds) for their red colors and Msimbazi Street home.',
+  },
+  {
+    id: 'q614',
+    category: 'Simba na Yanga',
+    difficulty: 'medium',
+    question: 'Yanga (Young Africans SC) ilianzishwa mwaka gani?',
+    question_en: 'In what year was Yanga (Young Africans SC) founded?',
+    options: ['1935', '1945', '1956', '1929'],
+    options_en: ['1935', '1945', '1956', '1929'],
+    answer: '1935',
+    answer_en: '1935',
+    explanation: 'Young Africans SC ilianzishwa mwaka 1935, na ni miongoni mwa klabu kongwe zaidi Afrika Mashariki.',
+    explanation_en: 'Young Africans SC was founded in 1935 and is among the oldest clubs in East Africa.',
+  },
+  {
+    id: 'q615',
+    category: 'Simba na Yanga',
+    difficulty: 'hard',
+    question: 'Mchezo kati ya Simba na Yanga hujulikana kama derby gani?',
+    question_en: 'The match between Simba and Yanga is known as which derby?',
+    options: ['Kariakoo Derby', 'Pwani Derby', 'Uhuru Derby', 'Msimbazi Derby'],
+    options_en: ['Kariakoo Derby', 'Coastal Derby', 'Uhuru Derby', 'Msimbazi Derby'],
+    answer: 'Kariakoo Derby',
+    answer_en: 'Kariakoo Derby',
+    explanation: 'Mechi ya Simba dhidi ya Yanga hujulikana kama "Kariakoo Derby" kwa kuwa klabu zote mbili zina asili ya Kariakoo, Dar es Salaam.',
+    explanation_en: 'The Simba vs Yanga clash is called the "Kariakoo Derby" since both clubs trace their roots to Kariakoo, Dar es Salaam.',
+  },
+  {
+    id: 'q616',
+    category: 'Methali za Kiswahili',
+    difficulty: 'easy',
+    question: '"Haraka haraka haina ..." — kamilisha methali.',
+    question_en: 'Complete the proverb: "Haraka haraka haina ..."',
+    options: ['Baraka', 'Faida', 'Mwisho', 'Salama'],
+    options_en: ['Baraka (blessings)', 'Faida (profit)', 'Mwisho (an end)', 'Salama (safety)'],
+    answer: 'Baraka',
+    answer_en: 'Baraka (blessings)',
+    explanation: '"Haraka haraka haina baraka" — kufanya mambo kwa pupa hakuleti mafanikio.',
+    explanation_en: '"Hurry hurry has no blessings" — rushing things does not bring success.',
+  },
+  {
+    id: 'q617',
+    category: 'Methali za Kiswahili',
+    difficulty: 'medium',
+    question: '"Asiyesikia la mkuu ..." — kamilisha methali.',
+    question_en: 'Complete the proverb: "Asiyesikia la mkuu ..."',
+    options: ['Huvunjika guu', 'Hupotea njiani', 'Hulia peke yake', 'Huishia mbali'],
+    options_en: ['Huvunjika guu (breaks a leg)', 'Hupotea njiani (gets lost)', 'Hulia peke yake (cries alone)', 'Huishia mbali (ends up far)'],
+    answer: 'Huvunjika guu',
+    answer_en: 'Huvunjika guu (breaks a leg)',
+    explanation: 'Methali hii inafundisha kuwa asiyesikiliza ushauri wa wakubwa hupata matatizo.',
+    explanation_en: 'This proverb teaches that whoever ignores elders\' advice runs into trouble.',
+  },
+  {
+    id: 'q618',
+    category: 'Methali za Kiswahili',
+    difficulty: 'medium',
+    question: '"Chema chajiuza, kibaya ..." — kamilisha methali.',
+    question_en: 'Complete the proverb: "Chema chajiuza, kibaya ..."',
+    options: ['Chajitembeza', 'Chajificha', 'Chaoza', 'Chatupwa'],
+    options_en: ['Chajitembeza (advertises itself)', 'Chajificha (hides itself)', 'Chaoza (rots)', 'Chatupwa (is thrown away)'],
+    answer: 'Chajitembeza',
+    answer_en: 'Chajitembeza (advertises itself)',
+    explanation: 'Kitu kizuri hujiuza chenyewe; kibaya lazima kitangazwe sana. Ubora hauhitaji kelele.',
+    explanation_en: 'A good thing sells itself; a bad one must advertise. Quality needs no noise.',
+  },
+  {
+    id: 'q619',
+    category: 'Methali za Kiswahili',
+    difficulty: 'easy',
+    question: 'Methali "Akiba haiozi" ina maana gani?',
+    question_en: 'What does the proverb "Akiba haiozi" mean?',
+    options: ['Kuweka akiba ni jambo jema', 'Chakula huharibika haraka', 'Pesa huleta matatizo', 'Usile kabla ya kazi'],
+    options_en: ['Saving is always worthwhile', 'Food spoils quickly', 'Money brings problems', 'Don\'t eat before working'],
+    answer: 'Kuweka akiba ni jambo jema',
+    answer_en: 'Saving is always worthwhile',
+    explanation: '"Akiba haiozi" — ulichoweka akiba hakipotei; siku moja kitakufaa.',
+    explanation_en: '"Savings never rot" — what you save is never wasted; one day it will serve you.',
+  },
+  {
+    id: 'q620',
+    category: 'Wanyama na Hifadhi',
+    difficulty: 'easy',
+    question: 'Hifadhi ya Serengeti inajulikana duniani kwa tukio gani?',
+    question_en: 'Serengeti National Park is world-famous for which event?',
+    options: ['Uhamiaji mkubwa wa nyumbu', 'Mlipuko wa volkano', 'Maporomoko ya maji', 'Theluji ya milimani'],
+    options_en: ['The great wildebeest migration', 'Volcanic eruptions', 'Waterfalls', 'Mountain snow'],
+    answer: 'Uhamiaji mkubwa wa nyumbu',
+    answer_en: 'The great wildebeest migration',
+    explanation: 'Serengeti hushuhudia uhamiaji wa zaidi ya nyumbu milioni moja kila mwaka — moja ya maajabu ya asili duniani.',
+    explanation_en: 'The Serengeti hosts the annual migration of over a million wildebeest — one of the natural wonders of the world.',
+  },
+  {
+    id: 'q621',
+    category: 'Wanyama na Hifadhi',
+    difficulty: 'medium',
+    question: 'Bonde la Ngorongoro ni nini hasa kijiolojia?',
+    question_en: 'Geologically, what exactly is the Ngorongoro Crater?',
+    options: ['Kasoko kubwa la volkano (caldera)', 'Bonde la ufa', 'Ziwa lililokauka', 'Mlima uliomomonyoka'],
+    options_en: ['A volcanic caldera', 'A rift valley', 'A dried lake', 'An eroded mountain'],
+    answer: 'Kasoko kubwa la volkano (caldera)',
+    answer_en: 'A volcanic caldera',
+    explanation: 'Ngorongoro ni caldera kubwa zaidi duniani isiyojaa maji na iliyo nzima, iliyotokana na volkano iliyoporomoka.',
+    explanation_en: 'Ngorongoro is the world\'s largest intact, unflooded caldera, formed when a giant volcano collapsed.',
+  },
+  {
+    id: 'q622',
+    category: 'Wanyama na Hifadhi',
+    difficulty: 'medium',
+    question: 'Hifadhi ya Taifa ya Nyerere ilijulikana zamani kwa jina gani?',
+    question_en: 'Nyerere National Park was formerly known by what name?',
+    options: ['Selous Game Reserve', 'Mikumi', 'Ruaha', 'Katavi'],
+    options_en: ['Selous Game Reserve', 'Mikumi', 'Ruaha', 'Katavi'],
+    answer: 'Selous Game Reserve',
+    answer_en: 'Selous Game Reserve',
+    explanation: 'Sehemu kubwa ya Selous Game Reserve ilibadilishwa kuwa Hifadhi ya Taifa ya Nyerere mwaka 2019.',
+    explanation_en: 'A large part of the Selous Game Reserve became Nyerere National Park in 2019.',
+  },
+  {
+    id: 'q623',
+    category: 'Biashara na Hustle',
+    difficulty: 'easy',
+    question: '"Machinga" ni neno linalomaanisha nani?',
+    question_en: 'The word "machinga" refers to whom?',
+    options: ['Wafanyabiashara wadogo wa mitaani', 'Madereva wa daladala', 'Wavuvi', 'Wakulima'],
+    options_en: ['Street vendors / hawkers', 'Daladala drivers', 'Fishermen', 'Farmers'],
+    answer: 'Wafanyabiashara wadogo wa mitaani',
+    answer_en: 'Street vendors / hawkers',
+    explanation: 'Machinga ni wafanyabiashara wadogo wanaouza bidhaa mitaani na ni sehemu kubwa ya uchumi wa mijini Tanzania.',
+    explanation_en: 'Machinga are small-scale street vendors, a major part of Tanzania\'s urban economy.',
+  },
+  {
+    id: 'q624',
+    category: 'Biashara na Hustle',
+    difficulty: 'easy',
+    question: '"Bodaboda" ni biashara ya aina gani?',
+    question_en: 'What kind of business is "bodaboda"?',
+    options: ['Usafiri wa pikipiki', 'Uuzaji wa samaki', 'Kilimo cha mbogamboga', 'Ususi wa nywele'],
+    options_en: ['Motorcycle taxi transport', 'Fish selling', 'Vegetable farming', 'Hair braiding'],
+    answer: 'Usafiri wa pikipiki',
+    answer_en: 'Motorcycle taxi transport',
+    explanation: 'Bodaboda ni usafiri wa abiria kwa pikipiki, biashara inayoajiri vijana wengi Tanzania.',
+    explanation_en: 'Bodaboda is passenger transport by motorcycle, a business employing many young Tanzanians.',
+  },
+  {
+    id: 'q625',
+    category: 'General Knowledge TZ',
+    difficulty: 'easy',
+    question: 'Tanganyika ilipata uhuru wake tarehe gani?',
+    question_en: 'On what date did Tanganyika gain independence?',
+    options: ['9 Desemba 1961', '26 Aprili 1964', '1 Januari 1960', '9 Desemba 1963'],
+    options_en: ['9 December 1961', '26 April 1964', '1 January 1960', '9 December 1963'],
+    answer: '9 Desemba 1961',
+    answer_en: '9 December 1961',
+    explanation: 'Tanganyika ilipata uhuru kutoka kwa Uingereza tarehe 9 Desemba 1961 chini ya Mwalimu Julius Nyerere.',
+    explanation_en: 'Tanganyika gained independence from Britain on 9 December 1961 under Mwalimu Julius Nyerere.',
+  },
+  {
+    id: 'q626',
+    category: 'General Knowledge TZ',
+    difficulty: 'medium',
+    question: 'Jina "Tanzania" lilitokana na muungano wa nini?',
+    question_en: 'The name "Tanzania" came from the union of what?',
+    options: ['Tanganyika na Zanzibar', 'Tanga na Zanzibar', 'Tabora na Zanzibar', 'Tanganyika na Zambia'],
+    options_en: ['Tanganyika and Zanzibar', 'Tanga and Zanzibar', 'Tabora and Zanzibar', 'Tanganyika and Zambia'],
+    answer: 'Tanganyika na Zanzibar',
+    answer_en: 'Tanganyika and Zanzibar',
+    explanation: 'Tarehe 26 Aprili 1964, Tanganyika na Zanzibar ziliungana na kuunda Jamhuri ya Muungano wa Tanzania.',
+    explanation_en: 'On 26 April 1964, Tanganyika and Zanzibar united to form the United Republic of Tanzania.',
+  },
 ];
 
+// ── Remote questions (delivered via Supabase, cached locally) ───────────────
+// Daily/weekly challenges intentionally use ONLY the bundled set so every
+// device gets identical questions regardless of sync state.
+
+let remoteQuestions: Question[] = [];
+
+export const setRemoteQuestions = (qs: Question[]): void => {
+  const bundledIds = new Set(questions.map((q) => q.id));
+  remoteQuestions = qs.filter((q) => !bundledIds.has(q.id));
+};
+
+export const getRemoteQuestionCount = (): number => remoteQuestions.length;
+
+/** Bundled + remote questions combined. */
+export const getAllQuestions = (): Question[] =>
+  remoteQuestions.length > 0 ? [...questions, ...remoteQuestions] : questions;
+
 export const getQuestionsByCategory = (category: string): Question[] =>
-  questions.filter((q) => q.category === category);
+  getAllQuestions().filter((q) => q.category === category);
+
+export const getQuestionsByIds = (ids: string[]): Question[] => {
+  const wanted = new Set(ids);
+  return getAllQuestions().filter((q) => wanted.has(q.id));
+};
 
 const hashString = (value: string): number => {
   let hash = 2166136261;
@@ -8172,11 +8507,39 @@ const shuffleWithRandom = <T,>(items: T[], random = Math.random): T[] => {
 };
 
 export const getRandomQuestions = (count: number = 10): Question[] => {
-  return shuffleWithRandom(questions).slice(0, count);
+  return shuffleWithRandom(getAllQuestions()).slice(0, count);
 };
 
 export const getRandomQuestionsByCategory = (category: string, count: number = 10): Question[] => {
   return shuffleWithRandom(getQuestionsByCategory(category)).slice(0, count);
+};
+
+/** Deterministic question set for a live event (bundled questions only). */
+export const getEventQuestions = (seed: string, count: number = 10): Question[] => {
+  const random = createSeededRandom(`event-${seed}`);
+  return shuffleWithRandom(questions, random).slice(0, count);
+};
+
+/** Stable key for the current week (weeks start on Monday). */
+export const getWeekKey = (date: Date = new Date()): string => {
+  const daysSinceEpoch = Math.floor(date.getTime() / 86400000);
+  return `week-${Math.floor((daysSinceEpoch + 3) / 7)}`;
+};
+
+/**
+ * Weekly challenge set: same 10 questions for everyone all week,
+ * biased toward medium/hard for a tougher test than the daily.
+ */
+export const getWeeklyQuestions = (count: number = 10, date: Date = new Date()): Question[] => {
+  const random = createSeededRandom(getWeekKey(date));
+  const hardPool = shuffleWithRandom(questions.filter((q) => q.difficulty !== 'easy'), random);
+  const set = hardPool.slice(0, count);
+  if (set.length < count) {
+    const ids = new Set(set.map((q) => q.id));
+    const filler = shuffleWithRandom(questions.filter((q) => !ids.has(q.id)), random);
+    set.push(...filler.slice(0, count - set.length));
+  }
+  return set;
 };
 
 export const getDailyQuestions = (count: number = 10, date: Date = new Date()): Question[] => {
@@ -8187,7 +8550,8 @@ export const getDailyQuestions = (count: number = 10, date: Date = new Date()): 
 
   shuffleWithRandom(categoryNames, random).forEach((categoryName) => {
     if (dailySet.length >= count) return;
-    const categoryQuestions = getQuestionsByCategory(categoryName);
+    // Bundled questions only — keeps the daily set identical on every device
+    const categoryQuestions = questions.filter((q) => q.category === categoryName);
     const [question] = shuffleWithRandom(categoryQuestions, random);
     if (question) dailySet.push(question);
   });

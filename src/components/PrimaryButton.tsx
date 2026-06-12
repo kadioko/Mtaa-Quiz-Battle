@@ -41,6 +41,9 @@ const PrimaryButton: React.FC<Props> = ({
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       style={[
         styles.button,
         sizeStyle.button,

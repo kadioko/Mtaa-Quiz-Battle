@@ -10,7 +10,7 @@ Check off each item in order. Do not submit until all boxes are ticked.
 - [ ] `npm run typecheck` exits with 0 errors
 - [ ] `npm run validate:data` exits with 0 errors (no missing fields, no bad IDs)
 - [ ] `npm run check:contrast` exits with 0 contrast violations
-- [ ] `npm test -- --forceExit` — all tests pass (84 tests, 5 suites)
+- [ ] `npm test -- --forceExit` — all tests pass (87 tests, 5 suites)
 - [ ] No `console.log` / `console.warn` left in production code (grep: `console\.log`)
 - [ ] No hardcoded TODO/FIXME in source files shipped to users
 
@@ -68,7 +68,9 @@ eas build --platform all --profile preview
 ```
 - [ ] Android APK builds without errors
 - [ ] iOS IPA builds without errors (or simulator build passes)
-- [ ] Install APK on a physical Android device and smoke-test all 10 screens
+- [ ] Install APK on a physical Android device and smoke-test all 15 screens (incl. sprint, versus, challenge, shop, signin)
+- [ ] Versus: complete a 3-player match end-to-end (handover + podium)
+- [ ] Friend Challenge: create on one device, join with the code on another, verify standings
 - [ ] Verify adaptive difficulty activates after required game count
 - [ ] Verify daily challenge changes date at midnight
 - [ ] Verify profile shows rank, achievements, mastery, history cards
@@ -107,7 +109,17 @@ eas build --platform all --profile production
 - [ ] Bundle ID registered in App Store Connect
 - [ ] Provisioning profile valid and not expired
 - [ ] Age rating questionnaire completed (4+)
-- [ ] In-app purchases: **None** — confirm toggle is off
+- [ ] In-app purchases declared (Remove Ads; coin bundles if enabled) with localized descriptions
+
+---
+
+## 7b. Cloud Backend (if cloud features enabled)
+
+- [ ] All tables from `docs/CLOUD_SETUP.md` created, including `challenges`, `challenge_attempts`, and the `leaderboard_entries.region` column
+- [ ] RLS policies applied to every table
+- [ ] `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` set as EAS secrets
+- [ ] Push worker cron configured (GitHub Actions or equivalent)
+- [ ] Smoke-test: submit a score, fetch global + Mikoa leaderboards, create/join a challenge
 
 ---
 
@@ -115,7 +127,7 @@ eas build --platform all --profile production
 
 - [ ] `npm run validate:data` reports 0 errors across all questions
 - [ ] All `timeSensitive: true` questions have `sourceNote` and `sourceUrl`
-- [ ] No duplicate question IDs (`q001`–`q222`)
+- [ ] No duplicate question IDs (`q001`–`q626`)
 - [ ] Each category has ≥ 10 questions (validator enforces this)
 - [ ] `reviewAfter` dates checked — remove or update any past-due reviews
 

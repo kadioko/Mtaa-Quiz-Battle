@@ -27,24 +27,26 @@ const AD_UNITS = {
   android: {
     'extra-life':   'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX',
     'double-coins': 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX',
+    'free-coins':   'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX',
   },
   ios: {
     'extra-life':   'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX',
     'double-coins': 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX',
+    'free-coins':   'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX',
   },
 };
 
 // Use test IDs in non-production environments
 const IS_TEST = __DEV__;
 
-function getAdUnitId(type: 'extra-life' | 'double-coins'): string {
+function getAdUnitId(type: AdRewardType): string {
   if (IS_TEST) return TestIds.REWARDED;
   return Platform.OS === 'ios'
     ? AD_UNITS.ios[type]
     : AD_UNITS.android[type];
 }
 
-export type AdRewardType = 'extra-life' | 'double-coins';
+export type AdRewardType = 'extra-life' | 'double-coins' | 'free-coins';
 
 export interface AdReward {
   type: 'currency' | string;

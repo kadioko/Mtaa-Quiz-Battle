@@ -29,8 +29,12 @@ create table public.leaderboard_entries (
   correct_answers int not null default 0,
   total_questions int not null default 10,
   is_daily    boolean not null default false,
+  region      text,
   created_at  timestamptz not null default now()
 );
+
+-- If upgrading an existing project, add the region column:
+-- alter table public.leaderboard_entries add column region text;
 
 -- Allow anyone to read, authenticated or anon users to insert
 alter table public.leaderboard_entries enable row level security;
@@ -66,6 +70,88 @@ create table public.push_tokens (
 alter table public.push_tokens enable row level security;
 create policy "Insert" on public.push_tokens for insert with check (true);
 create policy "Update own" on public.push_tokens for update using (true);
+
+-- Friend challenges (cross-device async multiplayer)
+create table public.challenges (
+  id            uuid primary key default gen_random_uuid(),
+  code          text not null unique,
+  creator_name  text not null,
+  category_id   text not null,
+  category_name text not null,
+  question_ids  text not null default '[]',  -- JSON array of question ids
+  created_at    timestamptz not null default now()
+);
+
+alter table public.challenges enable row level security;
+create policy "Public read" on public.challenges for select using (true);
+create policy "Anon insert" on public.challenges for insert with check (true);
+
+-- One row per player attempt on a challenge
+create table public.challenge_attempts (
+  id              uuid primary key default gen_random_uuid(),
+  code            text not null references public.challenges(code),
+  user_id         text not null,
+  player_name     text not null,
+  score           int not null default 0,
+  correct_answers int not null default 0,
+  total_questions int not null default 10,
+  created_at      timestamptz not null default now()
+);
+
+create index challenge_attempts_code_idx on public.challenge_attempts(code);
+alter table public.challenge_attempts enable row level security;
+create policy "Public read" on public.challenge_attempts for select using (true);
+create policy "Anon insert" on public.challenge_attempts for insert with check (true);
+
+-- Remote question packs (publish new questions without an app release)
+create table public.question_packs (
+  id             uuid primary key default gen_random_uuid(),
+  name           text not null,
+  version        int not null default 1,
+  questions_json text not null default '[]',  -- JSON array of Question objects
+  active         boolean not null default false,
+  created_at     timestamptz not null default now()
+);
+
+alter table public.question_packs enable row level security;
+create policy "Public read" on public.question_packs for select using (true);
+-- No anon insert: publish packs from the Supabase dashboard or service key only.
+
+-- Live event windows (time-boxed challenges)
+create table public.events (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,          -- Swahili name, e.g. 'Ijumaa ya Moto'
+  name_en     text not null,          -- English name
+  emoji       text not null default '🔥',
+  seed        text not null,          -- deterministic question seed
+  starts_at   timestamptz not null,
+  ends_at     timestamptz not null,
+  created_at  timestamptz not null default now()
+);
+
+alter table public.events enable row level security;
+create policy "Public read" on public.events for select using (true);
+-- No anon insert: create events from the dashboard or service key only.
+```
+
+**Publishing a question pack** (SQL editor):
+```sql
+insert into public.question_packs (name, version, active, questions_json) values (
+  'July 2026 pack', 1, true,
+  '[{"id":"r001","category":"Bongo Fleva","question":"...","question_en":"...",
+     "options":["a","b","c","d"],"options_en":["a","b","c","d"],
+     "answer":"a","answer_en":"a","explanation":"...","explanation_en":"...",
+     "difficulty":"medium"}]'
+);
+```
+Questions are validated client-side; invalid entries are skipped silently. Use `r###` IDs to avoid clashing with bundled `q###` IDs. Remote questions appear in classic, sprint, versus, and challenge modes — daily/weekly stay bundled-only for cross-device determinism.
+
+**Creating a live event** (SQL editor):
+```sql
+insert into public.events (name, name_en, emoji, seed, starts_at, ends_at) values (
+  'Ijumaa ya Moto', 'Friday Fire', '🔥', 'fire-2026-26',
+  '2026-06-19 16:00:00+00', '2026-06-19 20:00:00+00'
+);
 ```
 
 ### 1b. Auth — Magic Link

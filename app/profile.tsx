@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../src/storage/storage';
 import { CloudService } from '../src/services/CloudService';
 import { UserProfile, AchievementId, Achievement, CategoryMastery, QuizResult, CloudUser } from '../src/types';
+import { REGIONS, getRegionById } from '../src/data/regions';
 import { categories } from '../src/data/categories';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
@@ -50,6 +51,7 @@ export default function ProfileScreen() {
   const [editModal, setEditModal] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [avatarModal, setAvatarModal] = useState(false);
+  const [regionModal, setRegionModal] = useState(false);
   const [cloudUser, setCloudUser] = useState<CloudUser | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'ok' | 'fail'>('idle');
@@ -109,6 +111,14 @@ export default function ProfileScreen() {
     setAvatarModal(false);
   };
 
+  const saveRegion = async (regionId: string) => {
+    if (!profile) return;
+    const updated = { ...profile, region: regionId };
+    setProfile(updated);
+    await StorageService.saveUserProfile(updated);
+    setRegionModal(false);
+  };
+
   const getFavoriteCategory = (): string => {
     const knownCategoryIds = new Set(categories.map((category) => category.id));
     const favoriteEntry = Object.entries(catStats)
@@ -165,6 +175,18 @@ export default function ProfileScreen() {
             <View style={styles.streakBadge}>
               <Text style={styles.streakText}>🔥 {profile?.dailyStreak ?? 0} {t('days')}</Text>
             </View>
+            <TouchableOpacity
+              onPress={() => setRegionModal(true)}
+              style={[styles.regionBadge, { backgroundColor: colors.backgroundCardLight, borderColor: colors.border }]}
+              accessibilityRole="button"
+              accessibilityLabel={language === 'sw' ? 'Chagua mkoa wako' : 'Choose your region'}
+            >
+              <Text style={[styles.regionBadgeText, { color: colors.textSecondary }]}>
+                {profile?.region
+                  ? `${getRegionById(profile.region)?.emoji ?? '📍'} ${getRegionById(profile.region)?.name ?? profile.region}`
+                  : `📍 ${language === 'sw' ? 'Chagua Mkoa Wako' : 'Pick Your Region'}`} ✏️
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* ── Rank Banner ── */}
@@ -408,6 +430,36 @@ export default function ProfileScreen() {
       </Modal>
 
       {/* Username edit modal */}
+      <Modal visible={regionModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { maxHeight: '75%' }]}>
+            <Text style={styles.modalTitle}>
+              {language === 'sw' ? 'Chagua Mkoa Wako' : 'Choose Your Region'}
+            </Text>
+            <ScrollView style={{ width: '100%' }} showsVerticalScrollIndicator={false}>
+              {REGIONS.map((r) => (
+                <TouchableOpacity
+                  key={r.id}
+                  style={[
+                    styles.regionOption,
+                    { borderColor: colors.border },
+                    profile?.region === r.id && { borderColor: colors.primary, backgroundColor: colors.primary + '22' },
+                  ]}
+                  onPress={() => saveRegion(r.id)}
+                >
+                  <Text style={[styles.regionOptionText, { color: profile?.region === r.id ? colors.primary : colors.text }]}>
+                    {r.emoji} {r.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={styles.avatarCancelBtn} onPress={() => setRegionModal(false)}>
+              <Text style={styles.avatarCancelText}>{language === 'sw' ? 'Ghairi' : 'Cancel'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={editModal} transparent animationType="fade">
         <KeyboardAvoidingView
           style={styles.modalOverlay}
@@ -568,6 +620,28 @@ const styles = StyleSheet.create({
     color: Colors.streak,
     fontWeight: Typography.fontWeights.bold,
     fontSize: Typography.fontSizes.sm,
+  },
+  regionBadge: {
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.xs,
+    borderWidth: 1,
+    marginTop: Spacing.xs,
+  },
+  regionBadgeText: {
+    fontWeight: Typography.fontWeights.semiBold,
+    fontSize: Typography.fontSizes.sm,
+  },
+  regionOption: {
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.base,
+    marginBottom: Spacing.xs,
+  },
+  regionOptionText: {
+    fontSize: Typography.fontSizes.md,
+    fontWeight: Typography.fontWeights.medium,
   },
   statsRow: {
     flexDirection: 'row',

@@ -133,7 +133,11 @@ export type AchievementId =
   | 'sprint_100'
   | 'hint_master'
   | 'versus_win'
-  | 'freeze_used';
+  | 'freeze_used'
+  | 'coins_1000'
+  | 'games_250'
+  | 'practice_perfect'
+  | 'challenge_played';
 
 export interface Achievement {
   id: AchievementId;
@@ -173,6 +177,7 @@ export interface UserProfile {
   lastDailyDate: string;
   dailyCompleted: boolean;
   avatar: string;
+  region?: string;
   achievements?: AchievementId[];
   cloudUserId?: string;
   cloudEmail?: string;
@@ -198,6 +203,38 @@ export interface CloudLeaderboardEntry {
   correctAnswers: number;
   totalQuestions: number;
   isDaily: boolean;
+  region?: string;
+  createdAt: string;
+}
+
+export interface CloudEvent {
+  id: string;
+  name: string;
+  name_en: string;
+  emoji: string;
+  seed: string;
+  startsAt: string;
+  endsAt: string;
+}
+
+export interface CloudChallenge {
+  id: string;
+  code: string;
+  creatorName: string;
+  categoryId: string;
+  categoryName: string;
+  questionIds: string[];
+  createdAt: string;
+}
+
+export interface ChallengeAttempt {
+  id: string;
+  code: string;
+  userId: string;
+  playerName: string;
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
   createdAt: string;
 }
 

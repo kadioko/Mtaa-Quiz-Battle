@@ -10,10 +10,10 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av';
 import { HapticService } from '../src/utils/haptics';
 import { MusicService } from '../src/services/MusicService';
-import { questions } from '../src/data/questions';
+import { SoundService } from '../src/services/SoundService';
+import { getAllQuestions } from '../src/data/questions';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { useLanguage } from '../src/utils/LanguageContext';
 import { useThemeColors } from '../src/utils/ThemeContext';
@@ -30,20 +30,8 @@ import PrimaryButton from '../src/components/PrimaryButton';
 
 type Phase = 'countdown' | 'playing' | 'finished';
 
-const playSound = async (type: 'correct' | 'wrong' | 'timeup', enabled: boolean) => {
-  if (!enabled) return;
-  try {
-    const sources: Record<string, number> = {
-      correct: require('../assets/sounds/correct.mp3'),
-      wrong: require('../assets/sounds/wrong.mp3'),
-      timeup: require('../assets/sounds/timeup.mp3'),
-    };
-    const { sound } = await Audio.Sound.createAsync(sources[type] as number, { shouldPlay: true, volume: 0.7 });
-    sound.setOnPlaybackStatusUpdate((s) => {
-      if ('didJustFinish' in s && s.didJustFinish) sound.unloadAsync();
-    });
-  } catch {}
-};
+const playSound = (type: 'correct' | 'wrong' | 'timeup', enabled: boolean) =>
+  SoundService.play(type, enabled);
 
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -96,7 +84,7 @@ export default function SprintScreen() {
     StorageService.getSprintHistory().then((h) => {
       if (h.length > 0) setBestScore(Math.max(...h.map((r) => r.score)));
     });
-    setPool(shuffleArray(questions));
+    setPool(shuffleArray(getAllQuestions()));
     return () => { MusicService.stop(); };
   }, []);
 
@@ -267,7 +255,7 @@ export default function SprintScreen() {
                 scoreRef.current = 0; correctRef.current = 0; streakRef.current = 0;
                 maxStreakRef.current = 0; totalRef.current = 0;
                 setPoolIndex(0);
-                setPool(shuffleArray(questions));
+                setPool(shuffleArray(getAllQuestions()));
                 setResult(null);
               }}
               color={colors.primary}

@@ -45,6 +45,9 @@ const AnswerButton: React.FC<Props> = ({ label, state, onPress, disabled, index 
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={`${OPTION_LABELS[index]}. ${label}`}
+      accessibilityState={{ disabled, selected: state === 'correct' || state === 'wrong' }}
       style={[
         styles.button,
         {

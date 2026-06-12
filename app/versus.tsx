@@ -1,7 +1,7 @@
 /**
- * Versus — Local pass-and-play 1v1 mode.
- * Player 1 answers 10 questions, then Player 2 answers the same 10 questions.
- * Highest score wins. Both see the same shuffled options (re-shuffled for P2 to keep it fair).
+ * Versus — Local pass-and-play mode for 2-4 players.
+ * Each player answers the same 10 questions in turn (options re-shuffled
+ * per player to keep it fair). Highest score wins; podium at the end.
  */
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
@@ -11,16 +11,15 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av';
 import { HapticService } from '../src/utils/haptics';
+import { SoundService } from '../src/services/SoundService';
 import { getCategoryById, categories } from '../src/data/categories';
 import { getRandomQuestions, getRandomQuestionsByCategory } from '../src/data/questions';
-import { Colors, Typography, Spacing, Radius } from '../src/theme';
+import { Typography, Spacing, Radius } from '../src/theme';
 import { useLanguage } from '../src/utils/LanguageContext';
 import { useThemeColors } from '../src/utils/ThemeContext';
 import { QUESTION_TIME, shuffleOptions, calculateScore, evaluateAchievements } from '../src/utils/gameLogic';
@@ -31,32 +30,13 @@ import TimerBar from '../src/components/TimerBar';
 import PrimaryButton from '../src/components/PrimaryButton';
 
 const VERSUS_QUESTIONS = 10;
+const MAX_PLAYERS = 4;
+const PLAYER_ICONS = ['🟣', '🟠', '🟢', '🔵'];
 
-type VersusPhase = 'setup' | 'p1-playing' | 'handover' | 'p2-playing' | 'results';
+type VersusPhase = 'setup' | 'playing' | 'handover' | 'results';
 
-const playSound = async (type: 'correct' | 'wrong' | 'timeup', enabled: boolean) => {
-  if (!enabled) return;
-  try {
-    const sources: Record<string, number> = {
-      correct: require('../assets/sounds/correct.mp3'),
-      wrong: require('../assets/sounds/wrong.mp3'),
-      timeup: require('../assets/sounds/timeup.mp3'),
-    };
-    const { sound } = await Audio.Sound.createAsync(sources[type] as number, { shouldPlay: true, volume: 0.7 });
-    sound.setOnPlaybackStatusUpdate((s) => {
-      if ('didJustFinish' in s && s.didJustFinish) sound.unloadAsync();
-    });
-  } catch {}
-};
-
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+const playSound = (type: 'correct' | 'wrong' | 'timeup', enabled: boolean) =>
+  SoundService.play(type, enabled);
 
 export default function VersusScreen() {
   const router = useRouter();
@@ -65,8 +45,8 @@ export default function VersusScreen() {
   const colors = useThemeColors();
 
   const [phase, setPhase] = useState<VersusPhase>('setup');
-  const [p1Name, setP1Name] = useState('');
-  const [p2Name, setP2Name] = useState('');
+  const [playerCount, setPlayerCount] = useState(2);
+  const [playerNames, setPlayerNames] = useState<string[]>(['', '', '', '']);
   const [selectedCatId, setSelectedCatId] = useState(catParam ?? categories[0].id);
   const [questions, setQuestions] = useState<Question[]>([]);
 
@@ -76,11 +56,9 @@ export default function VersusScreen() {
   const [answered, setAnswered] = useState(false);
   const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
 
-  const p1ScoreRef = useRef(0);
-  const p2ScoreRef = useRef(0);
-  const p1CorrectRef = useRef(0);
-  const p2CorrectRef = useRef(0);
-  const currentPlayerRef = useRef<1 | 2>(1);
+  const scoresRef = useRef<number[]>([0, 0, 0, 0]);
+  const correctsRef = useRef<number[]>([0, 0, 0, 0]);
+  const currentPlayerRef = useRef(0); // 0-based index
   const streakRef = useRef(0);
 
   const [displayScore, setDisplayScore] = useState(0);
@@ -95,14 +73,20 @@ export default function VersusScreen() {
     });
   }, []);
 
+  const defaultName = useCallback(
+    (i: number) => `${language === 'sw' ? 'Mchezaji' : 'Player'} ${i + 1}`,
+    [language]
+  );
+  const nameOf = useCallback(
+    (i: number) => playerNames[i]?.trim() || defaultName(i),
+    [playerNames, defaultName]
+  );
+
   const loadQuestions = useCallback(() => {
     const cat = getCategoryById(selectedCatId);
-    let qs: Question[];
-    if (cat) {
-      qs = getRandomQuestionsByCategory(cat.name, VERSUS_QUESTIONS);
-    } else {
-      qs = getRandomQuestions(VERSUS_QUESTIONS);
-    }
+    const qs = cat
+      ? getRandomQuestionsByCategory(cat.name, VERSUS_QUESTIONS)
+      : getRandomQuestions(VERSUS_QUESTIONS);
     setQuestions(qs);
   }, [selectedCatId]);
 
@@ -114,6 +98,10 @@ export default function VersusScreen() {
 
   const stopTimer = () => { if (timerRef.current) clearInterval(timerRef.current); };
 
+  // Keep a ref to the latest handleTimeUp — startTimer's interval closure would
+  // otherwise capture the first-render version (with empty questions) and crash.
+  const handleTimeUpRef = useRef<() => void>(() => {});
+
   const startTimer = useCallback(() => {
     stopTimer();
     setTimeLeft(QUESTION_TIME);
@@ -121,7 +109,7 @@ export default function VersusScreen() {
       setTimeLeft((t) => {
         if (t <= 1) {
           clearInterval(timerRef.current!);
-          handleTimeUp();
+          handleTimeUpRef.current();
           return 0;
         }
         return t - 1;
@@ -130,11 +118,11 @@ export default function VersusScreen() {
   }, []);
 
   useEffect(() => {
-    if (phase === 'p1-playing' || phase === 'p2-playing') {
+    if (phase === 'playing') {
       startTimer();
     }
     return () => stopTimer();
-  }, [phase, currentIndex]);
+  }, [phase, currentIndex, startTimer]);
 
   const handleTimeUp = () => {
     if (answered) return;
@@ -148,6 +136,7 @@ export default function VersusScreen() {
     HapticService.timeUp(settings.current.vibration);
     playSound('timeup', settings.current.sound);
   };
+  handleTimeUpRef.current = handleTimeUp;
 
   const handleAnswer = (option: string) => {
     if (answered) return;
@@ -161,18 +150,14 @@ export default function VersusScreen() {
       if (opt === option && !isCorrect) return 'wrong';
       return 'default';
     }));
+    const p = currentPlayerRef.current;
     if (isCorrect) {
       streakRef.current += 1;
       setDisplayStreak(streakRef.current);
       const { points } = calculateScore(timeLeft, QUESTION_TIME, streakRef.current, current.difficulty);
-      if (currentPlayerRef.current === 1) {
-        p1ScoreRef.current += points;
-        p1CorrectRef.current += 1;
-      } else {
-        p2ScoreRef.current += points;
-        p2CorrectRef.current += 1;
-      }
-      setDisplayScore(currentPlayerRef.current === 1 ? p1ScoreRef.current : p2ScoreRef.current);
+      scoresRef.current[p] += points;
+      correctsRef.current[p] += 1;
+      setDisplayScore(scoresRef.current[p]);
       HapticService.correctAnswer(settings.current.vibration);
       if ([3, 5, 10].includes(streakRef.current)) HapticService.streakMilestone(settings.current.vibration);
       playSound('correct', settings.current.sound);
@@ -187,13 +172,13 @@ export default function VersusScreen() {
   const handleNext = () => {
     const nextIndex = currentIndex + 1;
     if (nextIndex >= questions.length) {
-      if (phase === 'p1-playing') {
+      if (currentPlayerRef.current < playerCount - 1) {
         setPhase('handover');
         setCurrentIndex(0);
         setDisplayScore(0);
         setDisplayStreak(0);
         streakRef.current = 0;
-        currentPlayerRef.current = 2;
+        currentPlayerRef.current += 1;
       } else {
         finishVersus();
       }
@@ -204,34 +189,53 @@ export default function VersusScreen() {
     setAnswerStates(['default', 'default', 'default', 'default']);
   };
 
-  const startP2 = () => {
-    setPhase('p2-playing');
+  const startMatch = () => {
+    loadQuestions();
+    scoresRef.current = [0, 0, 0, 0];
+    correctsRef.current = [0, 0, 0, 0];
+    currentPlayerRef.current = 0;
+    streakRef.current = 0;
+    setCurrentIndex(0);
+    setDisplayScore(0);
+    setDisplayStreak(0);
+    setAnswered(false);
+    setAnswerStates(['default', 'default', 'default', 'default']);
+    setPhase('playing');
   };
+
+  /** Players ranked by score (descending), keeping original index. */
+  const ranking = () =>
+    Array.from({ length: playerCount }, (_, i) => ({
+      index: i,
+      name: nameOf(i),
+      score: scoresRef.current[i],
+      correct: correctsRef.current[i],
+    })).sort((a, b) => b.score - a.score);
 
   const finishVersus = async () => {
     setPhase('results');
+    const ranked = ranking();
+    const isDraw = ranked.length >= 2 && ranked[0].score === ranked[1].score;
     const cat = getCategoryById(selectedCatId);
-    let winnerId: 'player1' | 'player2' | 'draw' = 'draw';
-    if (p1ScoreRef.current > p2ScoreRef.current) winnerId = 'player1';
-    else if (p2ScoreRef.current > p1ScoreRef.current) winnerId = 'player2';
 
+    // Persist top two for history compatibility (VersusResult is 2-player shaped)
     const versusResult: VersusResult = {
       id: `versus_${Date.now()}`,
-      player1Name: p1Name || (language === 'sw' ? 'Mchezaji 1' : 'Player 1'),
-      player2Name: p2Name || (language === 'sw' ? 'Mchezaji 2' : 'Player 2'),
-      player1Score: p1ScoreRef.current,
-      player2Score: p2ScoreRef.current,
-      player1Correct: p1CorrectRef.current,
-      player2Correct: p2CorrectRef.current,
+      player1Name: ranked[0].name,
+      player2Name: ranked[1]?.name ?? '',
+      player1Score: ranked[0].score,
+      player2Score: ranked[1]?.score ?? 0,
+      player1Correct: ranked[0].correct,
+      player2Correct: ranked[1]?.correct ?? 0,
       totalQuestions: VERSUS_QUESTIONS,
       categoryId: selectedCatId,
       categoryName: cat?.name ?? 'Mixed',
-      winnerId,
+      winnerId: isDraw ? 'draw' : 'player1',
       date: new Date().toISOString(),
     };
     await StorageService.addVersusResult(versusResult);
 
-    if (winnerId !== 'draw') {
+    if (!isDraw) {
       const existing = await StorageService.getUnlockedAchievements();
       const profile = await StorageService.getUserProfile();
       const updated = evaluateAchievements(profile, [], existing, { versusWins: 1 });
@@ -248,30 +252,53 @@ export default function VersusScreen() {
             <TouchableOpacity onPress={() => router.replace('/home')} style={styles.backBtn}>
               <Text style={[styles.backText, { color: colors.textMuted }]}>← {language === 'sw' ? 'Nyumbani' : 'Home'}</Text>
             </TouchableOpacity>
-            <Text style={[styles.title, { color: colors.text }]}>🥊 {language === 'sw' ? 'Versus' : 'Versus'}</Text>
+            <Text style={[styles.title, { color: colors.text }]}>🥊 Versus</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              {language === 'sw' ? 'Pambana na rafiki yako kwenye kifaa kimoja!' : 'Battle a friend on the same device!'}
+              {language === 'sw' ? 'Pambana na marafiki kwenye kifaa kimoja!' : 'Battle your friends on the same device!'}
             </Text>
+
+            {/* Player count */}
+            <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+              <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
+                {language === 'sw' ? 'Wachezaji Wangapi?' : 'How Many Players?'}
+              </Text>
+              <View style={styles.countRow}>
+                {[2, 3, 4].map((n) => (
+                  <TouchableOpacity
+                    key={n}
+                    style={[
+                      styles.countChip,
+                      { backgroundColor: colors.backgroundCardLight, borderColor: colors.border },
+                      playerCount === n && { backgroundColor: colors.primary + '33', borderColor: colors.primary },
+                    ]}
+                    onPress={() => setPlayerCount(n)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${n} ${language === 'sw' ? 'wachezaji' : 'players'}`}
+                  >
+                    <Text style={[styles.countChipText, { color: playerCount === n ? colors.primary : colors.textSecondary }]}>
+                      {n} 👤
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
 
             {/* Player names */}
             <View style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
               <Text style={[styles.cardLabel, { color: colors.textMuted }]}>{language === 'sw' ? 'Majina ya Wachezaji' : 'Player Names'}</Text>
-              <TextInput
-                style={[styles.nameInput, { color: colors.text, backgroundColor: colors.backgroundCardLight, borderColor: colors.border }]}
-                placeholder={language === 'sw' ? 'Mchezaji 1...' : 'Player 1...'}
-                placeholderTextColor={colors.textMuted}
-                value={p1Name}
-                onChangeText={setP1Name}
-                maxLength={16}
-              />
-              <TextInput
-                style={[styles.nameInput, { color: colors.text, backgroundColor: colors.backgroundCardLight, borderColor: colors.border }]}
-                placeholder={language === 'sw' ? 'Mchezaji 2...' : 'Player 2...'}
-                placeholderTextColor={colors.textMuted}
-                value={p2Name}
-                onChangeText={setP2Name}
-                maxLength={16}
-              />
+              {Array.from({ length: playerCount }, (_, i) => (
+                <TextInput
+                  key={i}
+                  style={[styles.nameInput, { color: colors.text, backgroundColor: colors.backgroundCardLight, borderColor: colors.border }]}
+                  placeholder={`${PLAYER_ICONS[i]} ${defaultName(i)}...`}
+                  placeholderTextColor={colors.textMuted}
+                  value={playerNames[i]}
+                  onChangeText={(text) =>
+                    setPlayerNames((prev) => prev.map((n, j) => (j === i ? text : n)))
+                  }
+                  maxLength={16}
+                />
+              ))}
             </View>
 
             {/* Category picker */}
@@ -299,17 +326,7 @@ export default function VersusScreen() {
 
             <PrimaryButton
               label={language === 'sw' ? '⚔️ Anza Mchezo' : '⚔️ Start Match'}
-              onPress={() => {
-                loadQuestions();
-                currentPlayerRef.current = 1;
-                p1ScoreRef.current = 0; p2ScoreRef.current = 0;
-                p1CorrectRef.current = 0; p2CorrectRef.current = 0;
-                setCurrentIndex(0);
-                setDisplayScore(0);
-                setDisplayStreak(0);
-                streakRef.current = 0;
-                setPhase('p1-playing');
-              }}
+              onPress={startMatch}
               color={colors.primary}
               textColor={colors.black}
               style={styles.startBtn}
@@ -322,27 +339,29 @@ export default function VersusScreen() {
 
   // ── Handover screen ───────────────────────────────────────────────────────
   if (phase === 'handover') {
-    const p1 = p1Name || (language === 'sw' ? 'Mchezaji 1' : 'Player 1');
-    const p2 = p2Name || (language === 'sw' ? 'Mchezaji 2' : 'Player 2');
+    const prevPlayer = currentPlayerRef.current - 1;
+    const nextPlayer = currentPlayerRef.current;
     return (
       <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
         <View style={styles.handoverCenter}>
           <Text style={[styles.handoverEmoji]}>🔄</Text>
           <Text style={[styles.handoverTitle, { color: colors.text }]}>
-            {p1} {language === 'sw' ? 'amekwisha!' : 'is done!'}
+            {nameOf(prevPlayer)} {language === 'sw' ? 'amekwisha!' : 'is done!'}
           </Text>
           <Text style={[styles.handoverScore, { color: colors.gold }]}>
-            {language === 'sw' ? 'Alama' : 'Score'}: {p1ScoreRef.current}
+            {language === 'sw' ? 'Alama' : 'Score'}: {scoresRef.current[prevPlayer]}
           </Text>
           <Text style={[styles.handoverSub, { color: colors.textSecondary }]}>
-            {language === 'sw' ? `Sasa ${p2} acheze!` : `Now it's ${p2}'s turn!`}
+            {language === 'sw' ? `Sasa ${nameOf(nextPlayer)} acheze!` : `Now it's ${nameOf(nextPlayer)}'s turn!`}
           </Text>
           <Text style={[styles.handoverHint, { color: colors.textMuted }]}>
-            {language === 'sw' ? '(Kabla ya kubonyeza, mpe mchezaji 2 simu)' : '(Hand the device to Player 2 before tapping)'}
+            {language === 'sw'
+              ? `(Kabla ya kubonyeza, mpe ${nameOf(nextPlayer)} simu)`
+              : `(Hand the device to ${nameOf(nextPlayer)} before tapping)`}
           </Text>
           <PrimaryButton
-            label={language === 'sw' ? `▶ Anza Zamu ya ${p2}` : `▶ Start ${p2}'s turn`}
-            onPress={startP2}
+            label={language === 'sw' ? `▶ Anza Zamu ya ${nameOf(nextPlayer)}` : `▶ Start ${nameOf(nextPlayer)}'s turn`}
+            onPress={() => setPhase('playing')}
             color={colors.secondary}
             textColor={colors.white}
             style={styles.startBtn}
@@ -354,42 +373,49 @@ export default function VersusScreen() {
 
   // ── Results screen ────────────────────────────────────────────────────────
   if (phase === 'results') {
-    const p1 = p1Name || (language === 'sw' ? 'Mchezaji 1' : 'Player 1');
-    const p2 = p2Name || (language === 'sw' ? 'Mchezaji 2' : 'Player 2');
-    const p1Wins = p1ScoreRef.current > p2ScoreRef.current;
-    const p2Wins = p2ScoreRef.current > p1ScoreRef.current;
-    const draw = !p1Wins && !p2Wins;
+    const ranked = ranking();
+    const isDraw = ranked.length >= 2 && ranked[0].score === ranked[1].score;
+    const medals = ['🥇', '🥈', '🥉', '4️⃣'];
     return (
       <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
         <SafeAreaView style={styles.safe}>
           <ScrollView contentContainerStyle={styles.scroll}>
             <Text style={[styles.title, { color: colors.text }]}>
-              {draw ? '🤝' : '🏆'} {language === 'sw' ? 'Matokeo ya Versus' : 'Versus Results'}
+              {isDraw ? '🤝' : '🏆'} {language === 'sw' ? 'Matokeo ya Versus' : 'Versus Results'}
             </Text>
             <Text style={[styles.winnerText, { color: colors.primary }]}>
-              {draw
+              {isDraw
                 ? (language === 'sw' ? 'Sare!' : "It's a draw!")
-                : `${p1Wins ? p1 : p2} ${language === 'sw' ? 'ameshinda!' : 'wins!'} 🎉`}
+                : `${ranked[0].name} ${language === 'sw' ? 'ameshinda!' : 'wins!'} 🎉`}
             </Text>
 
-            <View style={styles.versusRow}>
-              <PlayerCard name={p1} score={p1ScoreRef.current} correct={p1CorrectRef.current} total={VERSUS_QUESTIONS} winner={p1Wins} colors={colors} language={language} />
-              <Text style={[styles.vsText, { color: colors.textMuted }]}>VS</Text>
-              <PlayerCard name={p2} score={p2ScoreRef.current} correct={p2CorrectRef.current} total={VERSUS_QUESTIONS} winner={p2Wins} colors={colors} language={language} />
-            </View>
+            {ranked.map((p, rank) => (
+              <View
+                key={p.index}
+                style={[
+                  styles.podiumRow,
+                  { backgroundColor: colors.backgroundCard, borderColor: colors.border },
+                  rank === 0 && !isDraw && { borderColor: colors.gold, borderWidth: 2 },
+                ]}
+              >
+                <Text style={styles.podiumMedal}>{isDraw && rank < 2 ? '🤝' : medals[rank]}</Text>
+                <View style={styles.podiumInfo}>
+                  <Text style={[styles.podiumName, { color: colors.text }]} numberOfLines={1}>
+                    {PLAYER_ICONS[p.index]} {p.name}
+                  </Text>
+                  <Text style={[styles.podiumCorrect, { color: colors.textSecondary }]}>
+                    {p.correct}/{VERSUS_QUESTIONS} {language === 'sw' ? 'sahihi' : 'correct'}
+                  </Text>
+                </View>
+                <Text style={[styles.podiumScore, { color: rank === 0 ? colors.gold : colors.textSecondary }]}>
+                  {p.score}
+                </Text>
+              </View>
+            ))}
 
             <PrimaryButton
               label={language === 'sw' ? '🔁 Mchezo Mpya' : '🔁 New Match'}
-              onPress={() => {
-                p1ScoreRef.current = 0; p2ScoreRef.current = 0;
-                p1CorrectRef.current = 0; p2CorrectRef.current = 0;
-                currentPlayerRef.current = 1;
-                setCurrentIndex(0);
-                setDisplayScore(0);
-                setDisplayStreak(0);
-                streakRef.current = 0;
-                setPhase('setup');
-              }}
+              onPress={() => setPhase('setup')}
               color={colors.primary}
               textColor={colors.black}
               style={styles.startBtn}
@@ -407,16 +433,15 @@ export default function VersusScreen() {
     );
   }
 
-  // ── Playing screen (shared for both players) ──────────────────────────────
-  const currentPlayer = currentPlayerRef.current;
-  const playerName = currentPlayer === 1
-    ? (p1Name || (language === 'sw' ? 'Mchezaji 1' : 'Player 1'))
-    : (p2Name || (language === 'sw' ? 'Mchezaji 2' : 'Player 2'));
+  // ── Playing screen (shared for all players) ───────────────────────────────
+  const playerIdx = currentPlayerRef.current;
+  const playerName = nameOf(playerIdx);
 
   const current = questions[currentIndex];
   if (!current) return null;
   const questionText = language === 'en' && current.question_en ? current.question_en : current.question;
   const timerColor = timeLeft <= 5 ? colors.timerLow : timeLeft <= 10 ? colors.timer : colors.secondary;
+  const isLastPlayer = playerIdx >= playerCount - 1;
 
   return (
     <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
@@ -424,7 +449,7 @@ export default function VersusScreen() {
         {/* Top bar */}
         <View style={styles.topBar}>
           <Text style={[styles.playerBadge, { color: colors.primary, backgroundColor: colors.primary + '22' }]}>
-            {currentPlayer === 1 ? '🟣' : '🟠'} {playerName}
+            {PLAYER_ICONS[playerIdx]} {playerName}
           </Text>
           <View style={[styles.scoreBadge, { backgroundColor: colors.backgroundCardLight }]}>
             <Text style={[styles.scoreText, { color: colors.gold }]}>⭐ {displayScore}</Text>
@@ -436,7 +461,7 @@ export default function VersusScreen() {
 
         <View style={styles.progressInfo}>
           <Text style={[styles.qCounter, { color: colors.textMuted }]}>
-            {language === 'sw' ? 'Swali' : 'Q'} {currentIndex + 1}/{VERSUS_QUESTIONS}
+            {language === 'sw' ? 'Swali' : 'Q'} {currentIndex + 1}/{VERSUS_QUESTIONS} · {playerIdx + 1}/{playerCount}
           </Text>
         </View>
 
@@ -452,7 +477,7 @@ export default function VersusScreen() {
           <View style={styles.options}>
             {options.map((opt, idx) => (
               <AnswerButton
-                key={`${currentIndex}-${currentPlayer}-${idx}`}
+                key={`${currentIndex}-${playerIdx}-${idx}`}
                 label={opt}
                 state={answerStates[idx]}
                 onPress={() => handleAnswer(opt)}
@@ -464,7 +489,9 @@ export default function VersusScreen() {
           {answered && (
             <PrimaryButton
               label={currentIndex + 1 >= VERSUS_QUESTIONS
-                ? (currentPlayer === 1 ? (language === 'sw' ? 'Mpe Mchezaji 2 →' : 'Hand to Player 2 →') : (language === 'sw' ? 'Ona Matokeo' : 'See Results'))
+                ? (!isLastPlayer
+                    ? (language === 'sw' ? `Mpe ${nameOf(playerIdx + 1)} →` : `Hand to ${nameOf(playerIdx + 1)} →`)
+                    : (language === 'sw' ? 'Ona Matokeo' : 'See Results'))
                 : (language === 'sw' ? 'Swali Lijalo →' : 'Next →')}
               onPress={handleNext}
               color={colors.primary}
@@ -478,21 +505,6 @@ export default function VersusScreen() {
   );
 }
 
-function PlayerCard({ name, score, correct, total, winner, colors, language }: {
-  name: string; score: number; correct: number; total: number; winner: boolean; colors: any; language: string;
-}) {
-  return (
-    <View style={[styles.playerCard, { backgroundColor: colors.backgroundCard, borderColor: winner ? colors.secondary : colors.border }]}>
-      {winner && <Text style={styles.trophyIcon}>🏆</Text>}
-      <Text style={[styles.playerCardName, { color: colors.text }]} numberOfLines={1}>{name}</Text>
-      <Text style={[styles.playerCardScore, { color: colors.gold }]}>{score}</Text>
-      <Text style={[styles.playerCardCorrect, { color: colors.textSecondary }]}>
-        {correct}/{total} {language === 'sw' ? 'sahihi' : 'correct'}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safe: { flex: 1 },
@@ -503,6 +515,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: Typography.fontSizes.md, textAlign: 'center', marginBottom: Spacing.xl },
   card: { borderRadius: Radius.xl, borderWidth: 1, padding: Spacing.base, marginBottom: Spacing.base, gap: Spacing.sm },
   cardLabel: { fontSize: Typography.fontSizes.xs, fontWeight: Typography.fontWeights.semiBold, textTransform: 'uppercase', letterSpacing: 0.8 },
+  countRow: { flexDirection: 'row', gap: Spacing.sm },
+  countChip: { flex: 1, borderRadius: Radius.lg, borderWidth: 1, paddingVertical: Spacing.sm, alignItems: 'center' },
+  countChipText: { fontSize: Typography.fontSizes.md, fontWeight: Typography.fontWeights.bold },
   nameInput: { borderRadius: Radius.md, borderWidth: 1, paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, fontSize: Typography.fontSizes.md },
   catScroll: { marginTop: Spacing.xs },
   catChip: { borderRadius: Radius.full, borderWidth: 1, paddingHorizontal: Spacing.base, paddingVertical: Spacing.xs, marginRight: Spacing.xs, alignItems: 'center', gap: 2 },
@@ -516,13 +531,12 @@ const styles = StyleSheet.create({
   handoverSub: { fontSize: Typography.fontSizes.lg, textAlign: 'center' },
   handoverHint: { fontSize: Typography.fontSizes.sm, textAlign: 'center', fontStyle: 'italic', marginBottom: Spacing.base },
   winnerText: { fontSize: Typography.fontSizes.xl, fontWeight: Typography.fontWeights.bold, textAlign: 'center', marginBottom: Spacing.xl },
-  versusRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xl },
-  vsText: { fontSize: Typography.fontSizes.xl, fontWeight: Typography.fontWeights.black },
-  playerCard: { flex: 1, borderRadius: Radius.xl, borderWidth: 2, padding: Spacing.base, alignItems: 'center', gap: Spacing.xs },
-  trophyIcon: { fontSize: 28 },
-  playerCardName: { fontSize: Typography.fontSizes.md, fontWeight: Typography.fontWeights.bold, textAlign: 'center' },
-  playerCardScore: { fontSize: Typography.fontSizes.xxl, fontWeight: Typography.fontWeights.extraBold },
-  playerCardCorrect: { fontSize: Typography.fontSizes.sm },
+  podiumRow: { flexDirection: 'row', alignItems: 'center', borderRadius: Radius.xl, borderWidth: 1, padding: Spacing.base, marginBottom: Spacing.sm, gap: Spacing.md },
+  podiumMedal: { fontSize: 28 },
+  podiumInfo: { flex: 1 },
+  podiumName: { fontSize: Typography.fontSizes.md, fontWeight: Typography.fontWeights.bold },
+  podiumCorrect: { fontSize: Typography.fontSizes.sm },
+  podiumScore: { fontSize: Typography.fontSizes.xl, fontWeight: Typography.fontWeights.extraBold },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.base, paddingTop: Spacing.sm, paddingBottom: Spacing.xs, gap: Spacing.sm },
   playerBadge: { flex: 1, fontSize: Typography.fontSizes.sm, fontWeight: Typography.fontWeights.bold, borderRadius: Radius.full, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
   scoreBadge: { borderRadius: Radius.full, paddingHorizontal: Spacing.sm, paddingVertical: 4 },

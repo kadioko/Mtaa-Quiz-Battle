@@ -31,6 +31,32 @@ const IOS_PRODUCT_ID     = 'com.mtaaquiz.battle.removeads';
 const PRODUCT_ID = Platform.OS === 'ios' ? IOS_PRODUCT_ID : ANDROID_PRODUCT_ID;
 const STORAGE_KEY = '@mtaa_remove_ads_purchased';
 
+// ── Coin bundles (consumable IAPs) ────────────────────────────────────────────
+// Register these product IDs in Play Console / App Store Connect.
+export interface CoinBundle {
+  id: 'small' | 'medium' | 'large';
+  productId: string;
+  coins: number;
+  emoji: string;
+}
+
+export const COIN_BUNDLES: CoinBundle[] = [
+  { id: 'small',  productId: Platform.OS === 'ios' ? 'com.mtaaquiz.battle.coins200'  : 'mtaa_coins_200',  coins: 200,  emoji: '🪙' },
+  { id: 'medium', productId: Platform.OS === 'ios' ? 'com.mtaaquiz.battle.coins600'  : 'mtaa_coins_600',  coins: 600,  emoji: '💰' },
+  { id: 'large',  productId: Platform.OS === 'ios' ? 'com.mtaaquiz.battle.coins1500' : 'mtaa_coins_1500', coins: 1500, emoji: '🏦' },
+];
+
+const coinBundleByProductId = (productId: string): CoinBundle | undefined =>
+  COIN_BUNDLES.find((b) => b.productId === productId);
+
+/** Credit purchased coins to the local profile. */
+async function creditCoins(amount: number): Promise<void> {
+  // Lazy import avoids a circular dependency at module load
+  const { StorageService } = await import('../storage/storage');
+  const profile = await StorageService.getUserProfile();
+  await StorageService.saveUserProfile({ ...profile, totalCoins: profile.totalCoins + amount });
+}
+
 export const IAPService = {
   /**
    * Connect to the store and register the purchase listener.
@@ -43,9 +69,18 @@ export const IAPService = {
       InAppPurchases.setPurchaseListener(({ responseCode, results }) => {
         if (responseCode !== InAppPurchases.IAPResponseCode.OK || !results) return;
         for (const purchase of results) {
-          if (purchase.productId === PRODUCT_ID && !purchase.acknowledged) {
+          if (purchase.acknowledged) continue;
+          if (purchase.productId === PRODUCT_ID) {
+            // Non-consumable: Remove Ads
             InAppPurchases.finishTransactionAsync(purchase, true).catch(() => {});
             IAPService._setPurchased(true).catch(() => {});
+          } else {
+            const bundle = coinBundleByProductId(purchase.productId);
+            if (bundle) {
+              // Consumable: finish with consume=true so it can be bought again
+              InAppPurchases.finishTransactionAsync(purchase, true).catch(() => {});
+              creditCoins(bundle.coins).catch(() => {});
+            }
           }
         }
       });
@@ -84,6 +119,22 @@ export const IAPService = {
     if (Platform.OS === 'web') return false;
     try {
       await InAppPurchases.purchaseItemAsync(PRODUCT_ID);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Initiate purchase of a consumable coin bundle.
+   * Coins are credited by the purchase listener when the store confirms.
+   */
+  async purchaseCoinBundle(bundleId: CoinBundle['id']): Promise<boolean> {
+    if (Platform.OS === 'web') return false;
+    const bundle = COIN_BUNDLES.find((b) => b.id === bundleId);
+    if (!bundle) return false;
+    try {
+      await InAppPurchases.purchaseItemAsync(bundle.productId);
       return true;
     } catch {
       return false;

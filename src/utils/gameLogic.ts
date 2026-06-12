@@ -238,6 +238,7 @@ export const RANKS: PlayerRank[] = [
   { level: 7, title: 'Simba wa Mtaa',title_en: 'Street Lion',    emoji: '🦁', minCoins: 2000, color: '#FF7043' },
   { level: 8, title: 'Mfalme',       title_en: 'King',           emoji: '👑', minCoins: 3500, color: '#FFD700' },
   { level: 9, title: 'Hadithi',      title_en: 'Legend',         emoji: '🌟', minCoins: 5000, color: '#F5A623' },
+  { level: 10, title: 'Gwiji wa Bongo', title_en: 'Grandmaster', emoji: '🐐', minCoins: 8000, color: '#E040FB' },
 ];
 
 export const getPlayerRank = (totalCoins: number): PlayerRank => {
@@ -280,13 +281,17 @@ export const ACHIEVEMENT_CATALOG: Achievement[] = [
   { id: 'hint_master',   emoji: '💡', unlocked: false, title: 'Mtoa Vidokezo',    title_en: 'Hint Master',       description: 'Tumia vidokezo mara 20',              description_en: 'Use hints 20 times' },
   { id: 'versus_win',    emoji: '🥊', unlocked: false, title: 'Shujaa wa Versus', title_en: 'Versus Champion',   description: 'Shinda mchezo wa Versus',             description_en: 'Win a Versus match' },
   { id: 'freeze_used',   emoji: '🧊', unlocked: false, title: 'Barafu Imetumika', title_en: 'Freeze Used',       description: 'Tumia Streak Freeze kulinda mfululizo', description_en: 'Use a Streak Freeze to protect your streak' },
+  { id: 'coins_1000',    emoji: '🏦', unlocked: false, title: 'Sarafu 1000',      title_en: '1000 Coins',        description: 'Kusanya sarafu 1000',                 description_en: 'Collect 1000 coins' },
+  { id: 'games_250',     emoji: '🎖️', unlocked: false, title: 'Mchezaji 250',     title_en: 'Played 250',        description: 'Cheza michezo 250',                   description_en: 'Play 250 games' },
+  { id: 'practice_perfect', emoji: '🧠', unlocked: false, title: 'Makosa Yamesahihishwa', title_en: 'Redemption', description: 'Pata alama zote kwenye Rudia Makosa', description_en: 'Get a perfect score in Practice Mistakes' },
+  { id: 'challenge_played', emoji: '🏁', unlocked: false, title: 'Mshindani',     title_en: 'Challenger',        description: 'Cheza Changamoto ya Marafiki',        description_en: 'Play a Friend Challenge' },
 ];
 
 export const evaluateAchievements = (
   profile: { totalGamesPlayed: number; totalCoins: number; currentStreak: number; longestStreak: number; dailyStreak: number; totalCorrectAnswers: number; totalQuestions: number },
   history: QuizResult[],
   existing: AchievementId[],
-  extras?: { sprintTotal?: number; hintsUsed?: number; versusWins?: number; freezeEverUsed?: boolean }
+  extras?: { sprintTotal?: number; hintsUsed?: number; versusWins?: number; freezeEverUsed?: boolean; challengePlayed?: boolean }
 ): AchievementId[] => {
   const unlocked = new Set(existing);
   const add = (id: AchievementId) => unlocked.add(id);
@@ -301,13 +306,17 @@ export const evaluateAchievements = (
   if (totalGames >= 10) add('games_10');
   if (totalGames >= 50) add('games_50');
   if (totalGames >= 100) add('games_100');
+  if (totalGames >= 250) add('games_250');
 
-  if (profile.longestStreak >= 3) add('streak_3');
-  if (profile.longestStreak >= 7) add('streak_7');
+  // streak_3 / streak_7 are *question* streaks (within a game), not day streaks
+  const bestQuestionStreak = history.reduce((max, r) => Math.max(max, r.maxStreak ?? 0), 0);
+  if (bestQuestionStreak >= 3) add('streak_3');
+  if (bestQuestionStreak >= 7) add('streak_7');
   if (profile.currentStreak >= 30 || profile.longestStreak >= 30) add('streak_30');
 
   if (totalCoins >= 100) add('coins_100');
   if (totalCoins >= 500) add('coins_500');
+  if (totalCoins >= 1000) add('coins_1000');
 
   if (overallAccuracy >= 0.8 && profile.totalQuestions >= 20) add('accuracy_80');
   if (overallAccuracy >= 0.9 && profile.totalQuestions >= 20) add('accuracy_90');
@@ -319,14 +328,25 @@ export const evaluateAchievements = (
   if (perfectRounds >= 1) add('perfect_round');
   if (perfectRounds >= 5) add('perfect_5');
 
-  const playedCategories = new Set(history.filter((r) => !r.isDaily).map((r) => r.categoryId));
+  const NON_CATEGORY_IDS = new Set(['practice', 'weekly', 'event']);
+  const playedCategories = new Set(
+    history
+      .filter((r) => !r.isDaily && !NON_CATEGORY_IDS.has(r.categoryId))
+      .map((r) => r.categoryId)
+  );
   if (playedCategories.size >= 10) add('all_categories');
 
   const speedBonusGames = history.filter((r) => r.score > r.totalQuestions * 120).length;
   if (speedBonusGames >= 10) add('speed_demon');
 
+  const perfectPractice = history.some(
+    (r) => r.categoryId === 'practice' && r.totalQuestions >= 5 && r.correctAnswers === r.totalQuestions
+  );
+  if (perfectPractice) add('practice_perfect');
+
   if (extras) {
-    const { sprintTotal = 0, hintsUsed = 0, versusWins = 0, freezeEverUsed = false } = extras;
+    const { sprintTotal = 0, hintsUsed = 0, versusWins = 0, freezeEverUsed = false, challengePlayed = false } = extras;
+    if (challengePlayed) add('challenge_played');
     if (sprintTotal >= 1) add('sprint_debut');
     if (sprintTotal >= 50) add('sprint_50');
     if (sprintTotal >= 100) add('sprint_100');

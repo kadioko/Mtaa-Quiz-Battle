@@ -7,6 +7,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { LanguageProvider } from '../src/utils/LanguageContext';
 import { ThemeProvider, useTheme } from '../src/utils/ThemeContext';
 import { NotificationService } from '../src/services/NotificationService';
+import { SoundService } from '../src/services/SoundService';
+import { QuestionSyncService } from '../src/services/QuestionSyncService';
 import { IAPService } from '../src/services/IAPService';
 import { CloudService } from '../src/services/CloudService';
 import { StorageService } from '../src/storage/storage';
@@ -16,6 +18,12 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
+
+    // Preload sound effects so answers play with zero latency
+    SoundService.preload().catch(() => {});
+
+    // Remote questions: cached first, then background refresh
+    QuestionSyncService.initialize().catch(() => {});
 
     // Register service worker for offline PWA (web only)
     if (Platform.OS === 'web' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
@@ -71,6 +79,14 @@ function RootStack() {
     const subscription = NotificationService.addResponseListener((screen) => {
       if (screen === 'daily') router.push('/daily');
     });
+    // Cold start: app launched by tapping a notification
+    if (Platform.OS !== 'web') {
+      NotificationService.getInitialNotificationScreen()
+        .then((screen) => {
+          if (screen === 'daily') router.push('/daily');
+        })
+        .catch(() => {});
+    }
     return () => subscription.remove();
   }, [router]);
 
@@ -90,6 +106,7 @@ function RootStack() {
         <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="sprint" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="versus" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="challenge" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="shop" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="signin" options={{ animation: 'slide_from_bottom' }} />
       </Stack>

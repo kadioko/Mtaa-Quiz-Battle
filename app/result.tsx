@@ -124,8 +124,8 @@ export default function ResultScreen() {
     const acc = result.accuracy;
     const streak = result.maxStreak;
     const shareText = language === 'sw'
-      ? `Nimepata ${result.score} alama kwenye "${cat}" katika Mtaa Quiz Battle!\nUsahihi: ${acc}% | Mfululizo: ${streak}\nUnaweza kunizidi? 🎯��`
-      : `I scored ${result.score} pts on "${cat}" in Mtaa Quiz Battle!\nAccuracy: ${acc}% | Streak: ${streak}\nCan you beat me? 🎯��`;
+      ? `Nimepata ${result.score} alama kwenye "${cat}" katika Mtaa Quiz Battle!\nUsahihi: ${acc}% | Mfululizo: ${streak}\nUnaweza kunizidi? 🎯🔥`
+      : `I scored ${result.score} pts on "${cat}" in Mtaa Quiz Battle!\nAccuracy: ${acc}% | Streak: ${streak}\nCan you beat me? 🎯🔥`;
     await Share.share({ message: shareText });
   };
 

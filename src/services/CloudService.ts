@@ -27,6 +27,9 @@ import { StorageService } from '../storage/storage';
 import {
   CloudUser,
   CloudLeaderboardEntry,
+  CloudChallenge,
+  CloudEvent,
+  ChallengeAttempt,
   SyncPayload,
   UserProfile,
   AchievementId,
@@ -210,10 +213,13 @@ export const CloudService = {
     correctAnswers: number;
     totalQuestions: number;
     isDaily: boolean;
+    region?: string;
   }): Promise<boolean> {
     if (!isConfigured()) return false;
     const user = await StorageService.getCloudUser() ?? await CloudService.getOrCreateAnonUser(entry.displayName);
     const token = await CloudService.getValidToken();
+    // Default the region from the local profile if not provided
+    const region = entry.region ?? (await StorageService.getUserProfile()).region;
 
     const result = await supaFetch(
       'leaderboard_entries',
@@ -228,6 +234,7 @@ export const CloudService = {
           correct_answers: entry.correctAnswers,
           total_questions: entry.totalQuestions,
           is_daily: entry.isDaily,
+          region: region ?? null,
         }),
       },
       token
@@ -263,6 +270,7 @@ export const CloudService = {
       correctAnswers: Number(r.correct_answers ?? 0),
       totalQuestions: Number(r.total_questions ?? 10),
       isDaily: Boolean(r.is_daily),
+      region: r.region ? String(r.region) : undefined,
       createdAt: String(r.created_at ?? ''),
     }));
   },
@@ -401,6 +409,181 @@ export const CloudService = {
       accessToken
     );
     return result !== null;
+  },
+
+  // ── Challenges (cross-device async multiplayer) ───────────────────────────
+  //
+  // Tables required (see docs/CLOUD_SETUP.md):
+  //   challenges (id, code, creator_name, category_id, category_name,
+  //     question_ids, created_at)
+  //   challenge_attempts (id, code, user_id, player_name, score,
+  //     correct_answers, total_questions, created_at)
+
+  /**
+   * Create a challenge: stores the exact question set under a short shareable
+   * code. Returns the code, or null on failure.
+   */
+  async createChallenge(input: {
+    creatorName: string;
+    categoryId: string;
+    categoryName: string;
+    questionIds: string[];
+  }): Promise<string | null> {
+    if (!isConfigured()) return null;
+    const token = await CloudService.getValidToken();
+    // 6-char code without ambiguous characters (0/O, 1/I/L)
+    const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    const code = Array.from({ length: 6 }, () =>
+      alphabet[Math.floor(Math.random() * alphabet.length)]
+    ).join('');
+
+    const result = await supaFetch(
+      'challenges',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          code,
+          creator_name: input.creatorName,
+          category_id: input.categoryId,
+          category_name: input.categoryName,
+          question_ids: JSON.stringify(input.questionIds),
+        }),
+      },
+      token
+    );
+    return result !== null ? code : null;
+  },
+
+  /** Look up a challenge by its share code. */
+  async fetchChallenge(code: string): Promise<CloudChallenge | null> {
+    if (!isConfigured()) return null;
+    const token = await CloudService.getValidToken();
+    const rows = await supaFetch<Record<string, unknown>[]>(
+      `challenges?code=eq.${encodeURIComponent(code.trim().toUpperCase())}&select=*&limit=1`,
+      { method: 'GET' },
+      token
+    );
+    if (!rows || rows.length === 0) return null;
+    const r = rows[0];
+    let questionIds: string[] = [];
+    try {
+      const parsed = JSON.parse(String(r.question_ids ?? '[]'));
+      if (Array.isArray(parsed)) questionIds = parsed.map(String);
+    } catch {}
+    return {
+      id: String(r.id),
+      code: String(r.code),
+      creatorName: String(r.creator_name ?? 'Player'),
+      categoryId: String(r.category_id ?? ''),
+      categoryName: String(r.category_name ?? ''),
+      questionIds,
+      createdAt: String(r.created_at ?? ''),
+    };
+  },
+
+  /** Submit a player's result for a challenge. */
+  async submitChallengeAttempt(input: {
+    code: string;
+    playerName: string;
+    score: number;
+    correctAnswers: number;
+    totalQuestions: number;
+  }): Promise<boolean> {
+    if (!isConfigured()) return false;
+    const user = await StorageService.getCloudUser() ?? await CloudService.getOrCreateAnonUser(input.playerName);
+    const token = await CloudService.getValidToken();
+    const result = await supaFetch(
+      'challenge_attempts',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          code: input.code.trim().toUpperCase(),
+          user_id: user.id,
+          player_name: input.playerName,
+          score: input.score,
+          correct_answers: input.correctAnswers,
+          total_questions: input.totalQuestions,
+        }),
+      },
+      token
+    );
+    return result !== null;
+  },
+
+  // ── Live Events ───────────────────────────────────────────────────────────
+
+  /**
+   * Fetch the currently running live event, if any.
+   * Table: events (id, name, name_en, emoji, seed, starts_at, ends_at)
+   */
+  async fetchActiveEvent(): Promise<CloudEvent | null> {
+    if (!isConfigured()) return null;
+    const now = encodeURIComponent(new Date().toISOString());
+    const token = await CloudService.getValidToken();
+    const rows = await supaFetch<Record<string, unknown>[]>(
+      `events?starts_at=lte.${now}&ends_at=gte.${now}&select=*&order=starts_at.desc&limit=1`,
+      { method: 'GET' },
+      token
+    );
+    if (!rows || rows.length === 0) return null;
+    const r = rows[0];
+    return {
+      id: String(r.id),
+      name: String(r.name ?? 'Event'),
+      name_en: String(r.name_en ?? r.name ?? 'Event'),
+      emoji: String(r.emoji ?? '🔥'),
+      seed: String(r.seed ?? r.id),
+      startsAt: String(r.starts_at ?? ''),
+      endsAt: String(r.ends_at ?? ''),
+    };
+  },
+
+  // ── Remote Question Packs ─────────────────────────────────────────────────
+
+  /**
+   * Fetch all questions from active packs.
+   * Returns null when not configured / offline (caller keeps its cache).
+   * Table: question_packs (id, name, version, questions_json, active, created_at)
+   */
+  async fetchQuestionPacks(): Promise<unknown[] | null> {
+    if (!isConfigured()) return null;
+    const token = await CloudService.getValidToken();
+    const rows = await supaFetch<Record<string, unknown>[]>(
+      'question_packs?active=eq.true&select=questions_json&order=created_at.asc',
+      { method: 'GET' },
+      token
+    );
+    if (!rows || !Array.isArray(rows)) return null;
+    const all: unknown[] = [];
+    rows.forEach((r) => {
+      try {
+        const parsed = JSON.parse(String(r.questions_json ?? '[]'));
+        if (Array.isArray(parsed)) all.push(...parsed);
+      } catch {}
+    });
+    return all;
+  },
+
+  /** Fetch the ranked results for a challenge. */
+  async fetchChallengeAttempts(code: string): Promise<ChallengeAttempt[]> {
+    if (!isConfigured()) return [];
+    const token = await CloudService.getValidToken();
+    const rows = await supaFetch<Record<string, unknown>[]>(
+      `challenge_attempts?code=eq.${encodeURIComponent(code.trim().toUpperCase())}&select=*&order=score.desc&limit=100`,
+      { method: 'GET' },
+      token
+    );
+    if (!rows || !Array.isArray(rows)) return [];
+    return rows.map((r) => ({
+      id: String(r.id),
+      code: String(r.code),
+      userId: String(r.user_id ?? ''),
+      playerName: String(r.player_name ?? 'Player'),
+      score: Number(r.score ?? 0),
+      correctAnswers: Number(r.correct_answers ?? 0),
+      totalQuestions: Number(r.total_questions ?? 10),
+      createdAt: String(r.created_at ?? ''),
+    }));
   },
 };
 
