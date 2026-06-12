@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StorageService } from '../src/storage/storage';
+import packageJson from '../package.json';
 import { GameSettings } from '../src/types';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
@@ -397,7 +398,7 @@ export default function SettingsScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <View style={styles.aboutRow}>
               <Text style={[styles.aboutMeta, { color: colors.textSecondary }]}>📱 {language === 'sw' ? 'Toleo' : 'Version'}</Text>
-              <Text style={[styles.aboutMetaVal, { color: colors.text }]}>v1.0.0</Text>
+              <Text style={[styles.aboutMetaVal, { color: colors.text }]}>v{packageJson.version}</Text>
             </View>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <Text style={[styles.madeWith, { color: colors.textMuted }]}>🤍 {language === 'sw' ? 'Imetengenezwa kwa Tanzania' : 'Made with ❤️ in Tanzania'}</Text>
