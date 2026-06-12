@@ -3,6 +3,10 @@
 A **Swahili-first Tanzanian trivia game** built with React Native + Expo.
 Test your knowledge of Tanzania — music, football, geography, history, food, language, and more.
 
+[![CI](https://github.com/kadioko/mtaa-quiz-battle/actions/workflows/ci.yml/badge.svg)](https://github.com/kadioko/mtaa-quiz-battle/actions/workflows/ci.yml)
+[![Keep Supabase Alive](https://github.com/kadioko/mtaa-quiz-battle/actions/workflows/keepalive-supabase.yml/badge.svg)](https://github.com/kadioko/mtaa-quiz-battle/actions/workflows/keepalive-supabase.yml)
+[![Daily Push Blast](https://github.com/kadioko/mtaa-quiz-battle/actions/workflows/daily-push.yml/badge.svg)](https://github.com/kadioko/mtaa-quiz-battle/actions/workflows/daily-push.yml)
+
 ---
 
 ## Screens
