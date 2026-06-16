@@ -118,8 +118,12 @@ describe('getPlayerRank', () => {
     expect(getPlayerRank(50).level).toBe(2);
   });
 
-  test('5000 coins → max level 9 (Hadithi)', () => {
+  test('5000 coins → level 9 (Hadithi)', () => {
     expect(getPlayerRank(5000).level).toBe(9);
+  });
+
+  test('8000 coins → max level 10 (Gwiji wa Bongo)', () => {
+    expect(getPlayerRank(8000).level).toBe(10);
   });
 
   test('coins just below next threshold stay on current level', () => {
@@ -140,7 +144,7 @@ describe('getNextRank', () => {
   });
 
   test('returns null at max rank', () => {
-    expect(getNextRank(5000)).toBeNull();
+    expect(getNextRank(8000)).toBeNull();
   });
 });
 
