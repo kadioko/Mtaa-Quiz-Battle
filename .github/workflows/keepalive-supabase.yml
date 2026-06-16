@@ -18,13 +18,28 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
-      - name: Ping Supabase REST API
+      - name: Ping Supabase health endpoint
         run: |
-          curl -sSf "$SUPABASE_URL/rest/v1/leaderboard_entries?limit=1" \
+          curl -sSf "$SUPABASE_URL/auth/v1/health" \
             -H "apikey: $SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
             -o /dev/null \
             -w "HTTP %{http_code}\n"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Probe leaderboard table
+        run: |
+          status="$(curl -sS "$SUPABASE_URL/rest/v1/leaderboard_entries?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -o /dev/null \
+            -w "%{http_code}")"
+          echo "leaderboard_entries HTTP $status"
+          if [ "$status" != "200" ]; then
+            echo "The keepalive health check passed, but leaderboard_entries is not reachable yet. Run docs/CLOUD_SETUP.md SQL to enable cloud leaderboards."
+          fi
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
