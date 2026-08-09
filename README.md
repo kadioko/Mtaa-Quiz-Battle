@@ -14,10 +14,10 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 | Screen | File | Description |
 | --- | --- | --- |
 | **Splash** | `index.tsx` | Animated logo + pulsing dots, bilingual tagline, theme-aware gradient |
-| **Home** | `home.tsx` | Personalised greeting, stats, daily challenge banner, daily reward |
+| **Home** | `home.tsx` | Personalised greeting, stats, Daily Challenge, training focus, and claimable daily missions |
 | **Categories** | `categories.tsx` | 10 category cards, live search, difficulty filter chips, play-count badges |
 | **Quiz** | `quiz.tsx` | 10 questions, timer, dot stepper, floating score gain, collapsible explanation, adaptive difficulty |
-| **Result** | `result.tsx` | Animated score counter, new-record banner, per-question answer breakdown, share card |
+| **Result** | `result.tsx` | Animated score counter, new-record banner, newly unlocked achievements, answer review, and share card |
 | **Leaderboard** | `leaderboard.tsx` | All / Daily / Best filter tabs, top-50 scores |
 | **Profile** | `profile.tsx` | Rank banner, achievements grid, category mastery bars, recent game history, avatar picker, stats |
 | **Settings** | `settings.tsx` | Sound, music, vibration, light/dark mode, language toggle, notifications, premium |
@@ -154,7 +154,7 @@ Profile shows an accuracy bar per category (sorted by accuracy), with games play
 ### Technical
 
 - **Offline-first** — all state in AsyncStorage; optional Supabase REST backend for cloud features (no SDK dependency)
-- **Expo Router v3** file-based navigation
+- **Expo Router** file-based navigation
 - **TypeScript** strict mode throughout
 - **Theme system** — light/dark tokens via `useThemeColors()`, all screens themed
 - Adaptive difficulty using per-category accuracy history
@@ -167,7 +167,7 @@ Profile shows an accuracy bar per category (sorted by accuracy), with games play
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20 LTS recommended
 - `npx expo` (no global install needed)
 - Android device / emulator, iOS simulator, or Expo Go
 
@@ -193,7 +193,7 @@ npm run web              # Web preview
 npm run typecheck        # TypeScript strict check
 npm run validate:data    # Question data integrity
 npm run check:contrast   # WCAG contrast ratios
-npm test                 # 87 Jest tests (5 suites)
+npm test                 # 95 Jest tests (6 suites)
 npm run check            # All four checks in one command (CI gate)
 ```
 
@@ -216,13 +216,13 @@ eas build --platform all --profile production
 eas submit --platform android --profile production
 ```
 
-See `docs/RELEASE_CHECKLIST.md` for the full pre-release process.
+See `docs/RELEASE_CHECKLIST.md` for the full pre-release process and `docs/ANDROID_RELEASE_BUILD.md` for the Android build and Play Console runbook.
 
 ---
 
 ## 🧪 Tests
 
-87 tests across 5 suites in `__tests__/`:
+95 tests across 6 suites in `__tests__/`:
 
 | Suite | What it tests |
 | --- | --- |
@@ -230,6 +230,7 @@ See `docs/RELEASE_CHECKLIST.md` for the full pre-release process.
 | `dailyChallenge.test.ts` | Determinism, uniqueness, category spread, required fields |
 | `storageMigration.test.ts` | Profile defaults, partial-save migration, `dailyCompleted` reset, corrupted JSON fallback |
 | `leaderboard.test.ts` | Sort, 50-entry cap, invalid-score filter, add/sort, client-side filters |
+| `recommendations.test.ts` | Personalised practice, weak-category, and exploration recommendations |
 | `webRoutes.smoke.test.ts` | Every route file, every core source file, all asset files exist |
 
 ---
@@ -262,7 +263,7 @@ Mtaa Quiz Battle/
 │   │   └── regions.ts            # 31 Tanzanian regions for the regional league
 │   ├── services/
 │   │   ├── CloudService.ts       # Supabase REST: leaderboard, sync, auth, challenges
-│   │   ├── SoundService.ts       # Preloaded sound effects (single swap point for expo-audio)
+│   │   ├── SoundService.ts       # Preloaded sound effects (expo-audio)
 │   │   ├── MusicService.ts       # Background music
 │   │   ├── NotificationService.ts# Daily reminders + deep links
 │   │   ├── AdService.ts          # Rewarded ads (AdMob)
@@ -334,7 +335,7 @@ npm run validate:data
 
 ```typescript
 {
-  id: 'q503',                              # next available ID
+  id: 'q627',                              # next available ID
   category: 'General Knowledge TZ',        # must match categories.ts exactly
   question: 'Swali lako hapa?',
   question_en: 'Your question here?',
@@ -387,7 +388,7 @@ accuracyBonus:         ≥80% correct → +10  |  ≥60% → +5  |  <60% → 0
 
 ## 📝 Notes
 
-- All data is stored locally — no internet required after install
+- Core play and progress are local-first; internet is only needed for optional cloud, ads, purchases, and notifications
 - Roadmap lives in `docs/ROADMAP.md`; release process in `docs/RELEASE_CHECKLIST.md`
 - Daily challenge questions are date-seeded — same set for every player on a given day
 - `dailyCompleted` flag auto-resets at midnight inside `getUserProfile()`

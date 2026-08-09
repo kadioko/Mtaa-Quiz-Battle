@@ -5,6 +5,8 @@ import {
   GameSettings,
   QuizResult,
   DailyReward,
+  DailyMissionId,
+  DailyMissionState,
   AchievementId,
   SprintResult,
   StreakFreeze,
@@ -30,6 +32,7 @@ const KEYS = {
   LAST_SYNC: '@mtaa_last_sync',
   WEEKLY: '@mtaa_weekly',
   EVENTS_DONE: '@mtaa_events_done',
+  DAILY_MISSIONS: '@mtaa_daily_missions',
 };
 
 export interface WeeklyStatus {
@@ -63,6 +66,15 @@ const DEFAULT_SETTINGS: GameSettings = {
   notifications: true,
   themeMode: 'dark',
 };
+
+const createDailyMissions = (date: string): DailyMissionState => ({
+  date,
+  missions: [
+    { id: 'rounds', progress: 0, target: 2, reward: 20, claimed: false },
+    { id: 'correct_answers', progress: 0, target: 12, reward: 30, claimed: false },
+    { id: 'answer_streak', progress: 0, target: 5, reward: 25, claimed: false },
+  ],
+});
 
 const parseStoredValue = <T>(data: string | null, fallback: T): T => {
   if (!data) return fallback;
@@ -162,6 +174,67 @@ export const StorageService = {
 
   async saveDailyReward(reward: DailyReward): Promise<void> {
     await AsyncStorage.setItem(KEYS.DAILY_REWARD, JSON.stringify(reward));
+  },
+
+  async getDailyMissions(): Promise<DailyMissionState> {
+    const today = new Date().toDateString();
+    try {
+      const data = await AsyncStorage.getItem(KEYS.DAILY_MISSIONS);
+      const stored = parseStoredValue<DailyMissionState | null>(data, null);
+      if (
+        stored?.date === today &&
+        Array.isArray(stored.missions) &&
+        stored.missions.length === 3
+      ) {
+        return stored;
+      }
+    } catch {
+      // Fall through to a fresh mission set.
+    }
+
+    const fresh = createDailyMissions(today);
+    await AsyncStorage.setItem(KEYS.DAILY_MISSIONS, JSON.stringify(fresh));
+    return fresh;
+  },
+
+  async recordDailyMissionProgress(result: QuizResult): Promise<DailyMissionState> {
+    const state = await StorageService.getDailyMissions();
+    const missions = state.missions.map((mission) => {
+      if (mission.claimed) return mission;
+      if (mission.id === 'rounds') {
+        return { ...mission, progress: Math.min(mission.target, mission.progress + 1) };
+      }
+      if (mission.id === 'correct_answers') {
+        return { ...mission, progress: Math.min(mission.target, mission.progress + result.correctAnswers) };
+      }
+      return { ...mission, progress: Math.max(mission.progress, Math.min(mission.target, result.maxStreak)) };
+    });
+    const updated = { ...state, missions };
+    await AsyncStorage.setItem(KEYS.DAILY_MISSIONS, JSON.stringify(updated));
+    return updated;
+  },
+
+  async claimDailyMission(id: DailyMissionId): Promise<{
+    success: boolean;
+    reward: number;
+    profile: UserProfile;
+    missions: DailyMissionState;
+  }> {
+    const state = await StorageService.getDailyMissions();
+    const mission = state.missions.find((item) => item.id === id);
+    const profile = await StorageService.getUserProfile();
+    if (!mission || mission.claimed || mission.progress < mission.target) {
+      return { success: false, reward: 0, profile, missions: state };
+    }
+
+    const missions = {
+      ...state,
+      missions: state.missions.map((item) => item.id === id ? { ...item, claimed: true } : item),
+    };
+    const updatedProfile = { ...profile, totalCoins: profile.totalCoins + mission.reward };
+    await AsyncStorage.setItem(KEYS.DAILY_MISSIONS, JSON.stringify(missions));
+    await StorageService.saveUserProfile(updatedProfile);
+    return { success: true, reward: mission.reward, profile: updatedProfile, missions };
   },
 
   async getCategoryStats(): Promise<Record<string, number>> {
@@ -297,7 +370,11 @@ export const StorageService = {
     await AsyncStorage.setItem(KEYS.VERSUS_HISTORY, JSON.stringify(updated));
   },
 
-  async updateProfileAfterGame(result: QuizResult): Promise<{ profile: UserProfile; achievementsUnlocked: number }> {
+  async updateProfileAfterGame(result: QuizResult): Promise<{
+    profile: UserProfile;
+    achievementsUnlocked: number;
+    newAchievementIds: AchievementId[];
+  }> {
     const profile = await StorageService.getUserProfile();
     const today = new Date().toDateString();
     const lastPlayed = profile.lastPlayedDate;
@@ -342,6 +419,7 @@ export const StorageService = {
     };
 
     await StorageService.saveUserProfile(updatedProfile);
+    await StorageService.recordDailyMissionProgress(result);
 
     const history = await StorageService.getQuizHistory();
     const existingAchievements = await StorageService.getUnlockedAchievements();
@@ -351,12 +429,13 @@ export const StorageService = {
       existingAchievements,
       freezeUsedNow ? { freezeEverUsed: true } : undefined
     );
-    const achievementsUnlocked = newAchievements.length - existingAchievements.length;
+    const newAchievementIds = newAchievements.filter((achievementId) => !existingAchievements.includes(achievementId));
+    const achievementsUnlocked = newAchievementIds.length;
     if (achievementsUnlocked > 0) {
       await StorageService.saveUnlockedAchievements(newAchievements);
     }
 
-    return { profile: updatedProfile, achievementsUnlocked };
+    return { profile: updatedProfile, achievementsUnlocked, newAchievementIds };
   },
 
   // ── Weekly Challenge ────────────────────────────────────────────────────────

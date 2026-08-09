@@ -18,7 +18,7 @@
  *   sprint / daily       → sprint.mp3
  *   default              → default.mp3
  */
-import { Audio, AVPlaybackStatus } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import { Platform } from 'react-native';
 
 type TrackKey =
@@ -55,7 +55,7 @@ const FADE_STEPS = 10;
 const FADE_INTERVAL_MS = 50;
 const MAX_VOLUME = 0.45;
 
-let currentSound: Audio.Sound | null = null;
+let currentSound: AudioPlayer | null = null;
 let fadeTimer: ReturnType<typeof setInterval> | null = null;
 let _enabled = true;
 
@@ -82,15 +82,15 @@ export const MusicService = {
       // Stop existing track
       await MusicService.stop(false);
 
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: false,
-        staysActiveInBackground: false,
+      await setAudioModeAsync({
+        playsInSilentMode: false,
+        shouldPlayInBackground: false,
       });
 
-      const { sound } = await Audio.Sound.createAsync(
-        source as number,
-        { isLooping: true, volume: 0, shouldPlay: true }
-      );
+      const sound = createAudioPlayer(source);
+      sound.loop = true;
+      sound.volume = 0;
+      sound.play();
       currentSound = sound;
 
       // Fade in
@@ -99,7 +99,7 @@ export const MusicService = {
       fadeTimer = setInterval(async () => {
         step++;
         const vol = Math.min((step / FADE_STEPS) * MAX_VOLUME, MAX_VOLUME);
-        try { await sound.setVolumeAsync(vol); } catch {}
+        try { sound.volume = vol; } catch {}
         if (step >= FADE_STEPS) clearFade();
       }, FADE_INTERVAL_MS);
     } catch {
@@ -114,7 +114,7 @@ export const MusicService = {
     currentSound = null;
 
     if (!fade) {
-      try { await s.stopAsync(); await s.unloadAsync(); } catch {}
+      try { s.pause(); s.remove(); } catch {}
       return;
     }
 
@@ -123,20 +123,20 @@ export const MusicService = {
     fadeTimer = setInterval(async () => {
       step--;
       const vol = Math.max((step / FADE_STEPS) * MAX_VOLUME, 0);
-      try { await s.setVolumeAsync(vol); } catch {}
+      try { s.volume = vol; } catch {}
       if (step <= 0) {
         clearFade();
-        try { await s.stopAsync(); await s.unloadAsync(); } catch {}
+        try { s.pause(); s.remove(); } catch {}
       }
     }, FADE_INTERVAL_MS);
   },
 
   async pause() {
-    try { await currentSound?.pauseAsync(); } catch {}
+    try { currentSound?.pause(); } catch {}
   },
 
   async resume() {
     if (!_enabled) return;
-    try { await currentSound?.playAsync(); } catch {}
+    try { currentSound?.play(); } catch {}
   },
 };

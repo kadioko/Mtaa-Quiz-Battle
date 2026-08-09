@@ -1,36 +1,20 @@
 # Question Authoring Guide
 
-Use this guide when adding or editing Mtaa Quiz Battle questions.
-For the full field reference, difficulty guidelines, apostrophe rules, and per-category examples see `docs/AUTHORING_GUIDE.md`.
+Use this quick guide for every question added to Mtaa Quiz Battle. The complete examples and editorial standards live in `docs/AUTHORING_GUIDE.md`.
 
-## Current state
+## Current Bank
 
-- **502 questions** across 10 categories (IDs `q001`–`q502`)
-- **Next available ID: `q503`**
-- Target of 50 questions per category **reached ✅** (~50 average)
+- 626 bundled bilingual questions across 10 categories.
+- Bundled IDs run from `q001` through `q626`.
+- The next bundled question ID is `q627`.
+- Remote packs must use `r###` IDs to avoid collisions with bundled questions.
 
-## Adding questions
-
-**For multiple questions (recommended):** use the batch injector.
-
-```bash
-# 1. Create scripts/q-<slug>.mjs exporting an array of question objects
-# 2. Import that array in scripts/inject-questions.mjs
-# 3. Run:
-node scripts/inject-batch5.mjs  # or create inject-batch6.mjs for the next round
-npm run validate:data
-```
-
-**For one or two questions:** append directly to `src/data/questions.ts` before the closing `];`.
-
-## Required fields
-
-Every question must have all of these:
+## Required Shape
 
 ```ts
 {
-  id: 'q503',
-  category: 'General Knowledge TZ',   // must match categories.ts exactly
+  id: 'q627',
+  category: 'General Knowledge TZ',
   question: 'Swali la Kiswahili?',
   question_en: 'English question?',
   options: ['A', 'B', 'C', 'D'],
@@ -39,62 +23,49 @@ Every question must have all of these:
   answer_en: 'B',
   explanation: 'Maelezo mafupi ya Kiswahili.',
   explanation_en: 'Short English explanation.',
-  difficulty: 'medium',               // 'easy' | 'medium' | 'hard'
+  difficulty: 'medium',
 }
 ```
 
 Rules:
 
-- `id` must be unique and follow `q###` format.
-- `options` / `options_en` must each have exactly 4 unique choices.
-- `answer` must appear in `options`; `answer_en` must appear in `options_en`.
-- All `_en` fields are required.
+- Use a unique `q###` or `r###` ID.
+- Use an exact category name from `src/data/categories.ts`.
+- Provide four unique options in both languages.
+- Ensure `answer` and `answer_en` are present in their corresponding options.
+- Supply a genuine translation, not a copied Swahili value.
+- Keep explanations useful: explain why the answer is right or add short context.
 
-## Optional source metadata
+## Fact-Sensitive Questions
 
-Recommended for any question relying on a fact, statistic, or official record:
+Add a source note and source URL for factual, historical, statistical, official, or record-based questions:
 
 ```ts
-sourceNote: 'Official Ikulu profile identifies Samia Suluhu Hassan as President.',
-sourceUrl: 'https://www.ikulu.go.tz/president',
+sourceNote: 'Official source that supports the fact.',
+sourceUrl: 'https://example.org/source',
 ```
 
-## Time-sensitive questions
-
-If the answer can change (current leaders, records, active counts), add all three fields:
+For facts that can change, add all fields below and select a realistic review date:
 
 ```ts
 timeSensitive: true,
-reviewAfter: '2026-12-31',
-reviewReason: 'Office holder may change after elections.',
+reviewAfter: '2027-01-01',
+reviewReason: 'Office holder, record, or statistic can change.',
 ```
 
-`sourceNote` and `sourceUrl` are **required** when `timeSensitive: true`.
+`sourceNote` and `sourceUrl` are mandatory when `timeSensitive` is true.
 
-## Writing style
+## Workflow
 
-- Short, direct questions. Avoid trick wording.
-- Use local Tanzanian phrasing — understandable across regions.
-- Explanations should be educational, not just restate the answer.
-- Aim for ~40% easy / 40% medium / 20% hard per category.
+1. Draft in a `scripts/q-<category-slug>.mjs` batch file for more than two questions.
+2. Add the batch to `scripts/inject-questions.mjs` and run `node scripts/inject-questions.mjs`.
+3. Run `npm run validate:data`.
+4. Run `npm run typecheck`.
+5. Run `npm run check` before merging.
 
-## Apostrophes
+## Editorial Standard
 
-All strings in `questions.ts` use single quotes. Escape apostrophes:
-
-```ts
-explanation_en: 'Tanzania\'s capital is Dodoma.',
-```
-
-Or use a double-quote string when the value contains many apostrophes.
-
-## Validation
-
-After every content change:
-
-```bash
-npm run validate:data   # fast check
-npm run check           # full CI gate (typecheck + validate + contrast + tests)
-```
-
-The validator catches: duplicate IDs, category mismatches, missing translations, invalid difficulty, duplicate options, answers not in options, bad source URL shape, missing time-sensitive metadata, daily challenge regressions.
+- Prefer one unambiguous answer over clever wording.
+- Use Tanzanian context and familiar language without assuming one region's slang.
+- Avoid price, ranking, office-holder, and active-record questions unless they are marked time-sensitive.
+- Keep a healthy category mix around 40% easy, 40% medium, and 20% hard.

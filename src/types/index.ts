@@ -57,6 +57,8 @@ export interface QuizResult {
   date: string;
   isDaily: boolean;
   mode?: 'standard' | 'sprint' | 'versus';
+  /** Achievement IDs earned by this completed round, for the result celebration. */
+  newAchievementIds?: AchievementId[];
 }
 
 export interface SprintResult {
@@ -269,6 +271,21 @@ export interface DailyReward {
   lastClaimedDate: string;
   consecutiveDays: number;
   totalClaimed: number;
+}
+
+export type DailyMissionId = 'rounds' | 'correct_answers' | 'answer_streak';
+
+export interface DailyMission {
+  id: DailyMissionId;
+  progress: number;
+  target: number;
+  reward: number;
+  claimed: boolean;
+}
+
+export interface DailyMissionState {
+  date: string;
+  missions: DailyMission[];
 }
 
 export type RootStackParamList = {

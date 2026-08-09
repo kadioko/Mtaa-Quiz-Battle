@@ -1,63 +1,43 @@
-# Mtaa Quiz Battle — Maelezo ya Duka (Kiswahili)
+# Mtaa Quiz Battle Maelezo ya Duka (Kiswahili)
 
 ## Jina la App
-**Mtaa Quiz Battle**
 
-## Maelezo Mafupi (≤ 80 herufi — kwa Play Store)
-Jaribu ujuzi wako wa Tanzania! Maswali 600+ kutoka makundi 10.
+Mtaa Quiz Battle
+
+## Maelezo Mafupi (herufi 80 au chini)
+
+Jaribu ujuzi wa Tanzania kwa maswali 626 ya lugha mbili na misheni za kila siku.
 
 ## Maelezo Marefu
 
-**Mtaa Quiz Battle** ni mchezo wa maswali unaolenga utamaduni, historia, na maisha ya Tanzania. Piga vita ya akili kupitia maswali 600+ yenye ubora wa hali ya juu katika makundi 10 maarufu.
+Mtaa Quiz Battle ni mchezo wa maswali wa Kiswahili unaosherehekea Tanzania. Jaribu maarifa yako ya muziki, soka, historia, mikoa, vyakula, lugha, wanyama, biashara, na maisha ya kila siku kupitia maswali 626 yaliyotengenezwa kwa Kiswahili na Kiingereza.
 
-### Sehemu Kuu
+### Cheza Kwa Njia Yako
 
-🏆 **Changamoto ya Kila Siku** — Swali tofauti kila siku inayokusaidia kudumisha mfululizo wako.
+- Cheza Classic, Changamoto ya Kila Siku, Changamoto ya Wiki, Sprint, Versus, Friend Challenge, na Practice Mistakes.
+- Kamilisha misheni za kila siku na upate sarafu kwa kucheza raundi, kujibu kwa usahihi, na kufikisha mfululizo wa majibu.
+- Pata pendekezo la sehemu ya kuboresha: makosa yaliyobaki, kundi lenye changamoto, au kundi jipya.
+- Pitia kila jibu baada ya raundi, soma maelezo, na fanya mazoezi ya makosa yako.
 
-🎯 **Makundi 10** — Simba na Yanga, Bongo Fleva, Historia ya Tanzania, Mikoa, Vyakula, Methali, Mitaa ya Dar, Wanyama na Hifadhi, Biashara, na General Knowledge.
+### Jenga Wasifu Wako
 
-📈 **Maendeleo ya Mchezaji** — Panda vyeo 9 (Mgeni → Hadithi), fungua mafanikio 17, na ufuatilie ustadi wako kwa kila mkundo.
+- Pata sarafu, zawadi za kila siku, na panda vyeo 10 vya mchezaji.
+- Fungua mafanikio 27 na uyaone mara tu baada ya raundi.
+- Fuatilia ustadi wa makundi, usahihi, mfululizo, alama bora, na historia yako.
+- Chagua mandhari ya giza au mwanga, na cheza kwa Kiswahili au Kiingereza.
 
-🌍 **Ubao wa Washindi** — Linganisha alama zako na wachezaji wengine duniani kupitia ubao wa washindi wa ulimwengu.
+### Tanzania Iko Katikati
 
-⚡ **Michezo Mingi** — Maswali ya kawaida, Changamoto ya Kila Siku, Sprint ya haraka, na hali ya Versus.
+Cheza makundi 10: Simba na Yanga, Bongo Fleva, Historia ya Tanzania, Mikoa ya Tanzania, Vyakula vya Bongo, Lugha ya Kiswahili, Mitaa ya Dar, Wanyama na Hifadhi, Biashara na Hustle, na General Knowledge TZ.
 
-🔔 **Vikumbusho vya Kila Siku** — Pumzika na vikumbusho vya upole ili usikose changamoto yako ya siku.
+### Vipengele vya Mtandaoni ni Hiari
 
-🌐 **Lugha Mbili** — Maswali na majibu yote yanapatikana kwa Kiswahili na Kiingereza.
+Mchezo unafanya kazi bila mtandao. Vipengele vya cloud vikisanidiwa, unaweza kulinganisha alama kwenye leaderboard za dunia na mikoa, kuchagua mkoa wako, kusawazisha maendeleo, kuingia kwa magic link, na kuwapa marafiki challenge kwa code.
 
-🌙 **Mandhari ya Giza/Mwanga** — Chagua mandhari inayokufurahisha.
+Mtaa Quiz Battle imeundwa kwa kucheza, kujifunza, na kuwakilisha mtaa wako.
 
-📡 **Inafanya Kazi Bila Mtandao** — Furahia bila kutegemea muunganisho wa intaneti.
+## Maelezo ya Duka Yanayopendekezwa
 
-### Makundi ya Maswali
-
-| Mkundo | Mada |
-|--------|------|
-| ⚽ Simba na Yanga | Soka ya Tanzania, vilabu, Taifa Stars |
-| 🎵 Bongo Fleva | Muziki wa Tanzania, wasanii, wimbo maarufu |
-| 📜 Historia ya Tanzania | Uhuru, viongozi, matukio makubwa |
-| 🗺️ Mikoa ya Tanzania | Jiografia, makao makuu, utofauti |
-| 🍛 Vyakula vya Bongo | Chakula cha Tanzania, mapishi, ladha |
-| 💬 Methali za Kiswahili | Lugha, methali, tamaduni ya Kiswahili |
-| 🏙️ Mitaa ya Dar | Mitaa, maeneo, sehemu za Dar es Salaam |
-| 🦁 Wanyama na Hifadhi | Mbuga za wanyama, hifadhi, wanyamapori |
-| 💰 Biashara na Hustle | Uchumi, biashara, ujasiriamali |
-| 🇹🇿 General Knowledge TZ | Maarifa ya jumla ya Tanzania na Afrika |
-
-### Je, Una Ujuzi wa Tanzania?
-
-Kabla ya kucheza, fikiria:
-- Je, unajua mkoa mkubwa zaidi Tanzania kwa eneo?
-- Msanii wa Bongo Fleva aliyeshinda BET Award ni nani?
-- Taifa Stars ilipofuzu AFCON kwa mara ya kwanza ilikuwa mwaka gani?
-
-Pakua sasa na ujaribu ujuzi wako! 🇹🇿
-
----
-
-## Kiwango cha Umri
-Kila mtu (4+)
-
-## Kategoria
-Maswali / Elimu
+- Kategoria: Trivia / Education
+- Kiwango cha umri: Everyone / 4+
+- Sera ya faragha: https://kadioko.github.io/Mtaa-Quiz-Battle/privacy.html

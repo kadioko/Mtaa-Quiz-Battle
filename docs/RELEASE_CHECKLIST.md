@@ -1,150 +1,77 @@
-# Mtaa Quiz Battle — Release Checklist
+# Mtaa Quiz Battle Release Checklist
 
-Use this checklist before every public release (Play Store / App Store / web).
-Check off each item in order. Do not submit until all boxes are ticked.
+Use this checklist before every Play Store, App Store, or web release. Release only when every applicable item is complete.
 
----
+For the exact Android build and Google Play submission commands, use `docs/ANDROID_RELEASE_BUILD.md`.
 
-## 1. Code Quality
+## 1. Quality Gate
 
-- [ ] `npm run typecheck` exits with 0 errors
-- [ ] `npm run validate:data` exits with 0 errors (no missing fields, no bad IDs)
-- [ ] `npm run check:contrast` exits with 0 contrast violations
-- [ ] `npm test -- --forceExit` — all tests pass (87 tests, 5 suites)
-- [ ] No `console.log` / `console.warn` left in production code (grep: `console\.log`)
-- [ ] No hardcoded TODO/FIXME in source files shipped to users
-
----
+- [ ] `npm run check` exits with code 0.
+- [ ] `npm run release:check` exits with code 0.
+- [ ] 95 or more Jest tests pass across all suites.
+- [ ] No production `console.log`, `console.warn`, TODO, or FIXME remains without an owner.
+- [ ] New UI is checked in light and dark mode at mobile and desktop web widths.
+- [ ] Quiz, result review, daily missions, achievement celebration, settings, and offline startup are smoke-tested on a native preview build.
 
 ## 2. Versioning
 
-- [ ] `app.json` → `expo.version` bumped (semver: major.minor.patch)
-- [ ] `app.json` → `expo.android.versionCode` incremented by 1 from previous release
-- [ ] `package.json` → `version` matches `app.json` version
-- [ ] Git tag created: `git tag v<version>` and pushed: `git push --tags`
-- [ ] Commit message follows convention: `release: v<version>`
+- [ ] `app.json` version is bumped using semantic versioning.
+- [ ] Android `versionCode` is incremented.
+- [ ] `package.json` version matches `app.json`.
+- [ ] `CHANGELOG.md` has an entry for the release.
+- [ ] Release commit and annotated Git tag are created and pushed.
 
----
+## 3. Store Assets and Configuration
 
-## 3. Assets
+- [ ] `assets/icon.png` is final 1024x1024 artwork with no rounded corners or transparency.
+- [ ] `assets/splash.png`, `assets/adaptive-icon.png`, and `assets/favicon.png` are final artwork, not Expo placeholders.
+- [ ] `app.json` name, slug, Android package, iOS bundle ID, scheme, permissions, and plugins are correct.
+- [ ] AdMob uses real Android and iOS app IDs plus real rewarded ad-unit IDs; development test IDs are never shipped.
+- [ ] `expo-audio` playback works on Android and iOS without a microphone permission prompt.
 
-- [ ] `assets/icon.png` — 1024×1024 px, no transparency, no rounded corners (stores add them)
-- [ ] `assets/splash.png` — 1242×2436 px (portrait), background `#1A1A2E`, centered logo
-- [ ] `assets/adaptive-icon.png` — 1024×1024 px foreground layer with safe-zone padding
-- [ ] `assets/favicon.png` — 196×196 px, used for web PWA
-- [ ] All asset files are ≤ 1 MB uncompressed
-- [ ] No placeholder/default Expo assets remain (icon, splash must be custom)
+## 4. Purchases and Ads
 
----
+- [ ] Play Console product `mtaa_remove_ads` is active and matches the Android client configuration.
+- [ ] App Store Connect product `com.mtaaquiz.battle.removeads` is active and matches the iOS client configuration.
+- [ ] Coin-bundle products are either active and tested or hidden from the production build.
+- [ ] Purchase, restore, and ad reward paths are tested with store sandbox accounts.
 
-## 4. App Configuration (`app.json`)
+## 5. Cloud and Notifications
 
-- [ ] `expo.name` = "Mtaa Quiz Battle" (exactly as shown in stores)
-- [ ] `expo.slug` = "mtaa-quiz-battle" (never change after first publish)
-- [ ] `expo.ios.bundleIdentifier` = `com.mtaaquiz.battle`
-- [ ] `expo.android.package` = `com.mtaaquiz.battle`
-- [ ] `expo.orientation` = `"portrait"` (locked)
-- [ ] `expo.userInterfaceStyle` = `"dark"`
-- [ ] `expo.scheme` = `"mtaaquiz"` (deep-link scheme)
-- [ ] `expo.plugins` list is complete: `["expo-router","expo-font","expo-sharing"]`
+- [ ] All tables and RLS policies in `docs/CLOUD_SETUP.md` are applied.
+- [ ] `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` are set in EAS.
+- [ ] GitHub secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY` are set for the keepalive workflow.
+- [ ] A manual keepalive run returns HTTP 200.
+- [ ] A REST probe for `leaderboard_entries` returns HTTP 200; a health check alone does not prove schema setup.
+- [ ] Global, Mikoa, sync, friend challenge, and offline fallback paths are smoke-tested.
+- [ ] Push notifications and their deep links are tested on a physical device.
 
----
+## 6. EAS Credentials and Builds
 
-## 5. Permissions
+- [ ] `eas.json` has correct Apple `appleId`, `ascAppId`, and `appleTeamId` values.
+- [ ] `google-play-key.json` is stored locally, excluded from Git, and accepted by EAS submit.
+- [ ] Preview Android and iOS builds install successfully.
+- [ ] Production AAB and IPA build successfully with auto-incremented versions.
+- [ ] All 15 routes are smoke-tested, including sprint, versus, challenge, shop, sign-in, and onboarding.
 
-- [ ] No unnecessary permissions declared in `app.json` or native manifests
-- [ ] Android: no `READ_EXTERNAL_STORAGE` or `WRITE_EXTERNAL_STORAGE` unless required
-- [ ] iOS: `NSMicrophoneUsageDescription` and `NSCameraUsageDescription` **not** present (app does not use them)
-- [ ] `expo-av` audio permissions: only `AUDIO_PLAYBACK` needed (no recording)
-- [ ] `expo-sharing` does not require additional manifest entries
+## 7. Content
 
----
+- [ ] `npm run validate:data` reports no errors across `q001` through `q626` and any remote-pack fixtures.
+- [ ] All time-sensitive questions have source notes, source URLs, review dates, and review reasons.
+- [ ] `npm run admin:review -- --stale` has no unresolved stale facts.
+- [ ] New questions are bilingual, have four unique options per language, and keep category difficulty balance healthy.
 
-## 6. EAS Build
+## 8. Store Submission
 
-### Preview Build (internal testers)
-```
-eas build --platform all --profile preview
-```
-- [ ] Android APK builds without errors
-- [ ] iOS IPA builds without errors (or simulator build passes)
-- [ ] Install APK on a physical Android device and smoke-test all 15 screens (incl. sprint, versus, challenge, shop, signin)
-- [ ] Versus: complete a 3-player match end-to-end (handover + podium)
-- [ ] Friend Challenge: create on one device, join with the code on another, verify standings
-- [ ] Verify adaptive difficulty activates after required game count
-- [ ] Verify daily challenge changes date at midnight
-- [ ] Verify profile shows rank, achievements, mastery, history cards
+- [ ] English and Swahili listings are current in `store-metadata/`.
+- [ ] Privacy policy is hosted publicly and the exact URL is in both listings.
+- [ ] Data safety and age-rating answers match enabled ads, purchases, notifications, and cloud features.
+- [ ] Native screenshots follow `store-metadata/screenshots-spec.md` and use the latest preview build.
+- [ ] Google Play launch path is Internal, Closed testing, then Production.
+- [ ] App Store privacy, age rating, and IAP metadata are complete.
 
-### Production Build
-```
-eas build --platform all --profile production
-```
-- [ ] Build completes with `autoIncrement` applied
-- [ ] Android: `.aab` bundle generated
-- [ ] iOS: `.ipa` archive generated
-- [ ] Bundle size within store limits (Android ≤ 150 MB, iOS ≤ 4 GB)
-- [ ] No debug symbols or dev-mode code in production bundle
+## 9. After Release
 
----
-
-## 7. Store Metadata
-
-### Both Stores
-- [ ] App name: **Mtaa Quiz Battle**
-- [ ] Short description (≤ 80 chars): "Jaribu ujuzi wako wa Tanzania! Maswali 222+ kutoka makundi 10."
-- [ ] Long description written in both Swahili and English
-- [ ] Category: **Trivia / Education**
-- [ ] Content rating: **Everyone** (no violence, no adult content)
-- [ ] Privacy Policy URL provided (required by both stores)
-- [ ] At least 4 screenshots per platform (portrait, 1080×1920 or better)
-- [ ] Feature graphic (Play Store): 1024×500 px
-
-### Google Play
-- [ ] App signed with upload key (not debug keystore)
-- [ ] Release track: **Internal** → **Closed Testing** → **Production**
-- [ ] Data safety form completed (AsyncStorage: no data sent off-device)
-- [ ] Target SDK ≥ 34 (required from Aug 2024)
-
-### Apple App Store
-- [ ] Bundle ID registered in App Store Connect
-- [ ] Provisioning profile valid and not expired
-- [ ] Age rating questionnaire completed (4+)
-- [ ] In-app purchases declared (Remove Ads; coin bundles if enabled) with localized descriptions
-
----
-
-## 7b. Cloud Backend (if cloud features enabled)
-
-- [ ] All tables from `docs/CLOUD_SETUP.md` created, including `challenges`, `challenge_attempts`, and the `leaderboard_entries.region` column
-- [ ] RLS policies applied to every table
-- [ ] `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` set as EAS secrets
-- [ ] Push worker cron configured (GitHub Actions or equivalent)
-- [ ] Smoke-test: submit a score, fetch global + Mikoa leaderboards, create/join a challenge
-
----
-
-## 8. Question Bank
-
-- [ ] `npm run validate:data` reports 0 errors across all questions
-- [ ] All `timeSensitive: true` questions have `sourceNote` and `sourceUrl`
-- [ ] No duplicate question IDs (`q001`–`q626`)
-- [ ] Each category has ≥ 10 questions (validator enforces this)
-- [ ] `reviewAfter` dates checked — remove or update any past-due reviews
-
----
-
-## 9. Localisation
-
-- [ ] All new UI strings added to both `sw` and `en` in `src/utils/i18n.ts`
-- [ ] No English text hard-coded in JSX outside of `i18n.ts`
-- [ ] Default language is `sw` (Swahili)
-- [ ] Language switcher tested: full app re-renders correctly in English
-
----
-
-## 10. Post-Release
-
-- [ ] Tag pushed to GitHub: `git push --tags`
-- [ ] `CHANGELOG.md` (or release notes in GitHub) updated with this version's changes
-- [ ] Monitor Play Store / TestFlight crash reports for 48 hours after rollout
-- [ ] Increment `versionCode` in `app.json` committed for next release cycle
+- [ ] Verify purchase, ad, notification, global leaderboard, and crash-reporting telemetry.
+- [ ] Monitor store reviews and crash reports for 48 hours.
+- [ ] Record the production build number and release date in the changelog.

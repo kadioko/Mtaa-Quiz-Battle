@@ -264,3 +264,28 @@ Deploy the worker as a cron service. Set env vars in the platform dashboard.
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY` is safe to expose (it's the public anon key, protected by RLS).
 - The leaderboard `anon insert` policy allows anyone to post scores. If you see abuse, add rate-limiting via a Supabase Edge Function.
 - Anonymous user IDs (`anon-xxxx`) are not validated server-side. For anti-cheat, add a score sanity check Edge Function.
+
+---
+
+## 7. Keepalive and Verification
+
+The repository includes `.github/workflows/keepalive-supabase.yml`. It makes a public health request on Sunday, Tuesday, and Thursday to reduce Free-tier inactivity risk.
+
+Set these GitHub Actions secrets:
+
+```text
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-public-key
+```
+
+After merging the workflow to the default branch, use **Actions -> Keep Supabase Alive -> Run workflow** once. A successful run must report HTTP 200.
+
+The health endpoint confirms that the Supabase project is reachable; it does not prove the game schema exists. After running the SQL in this document, verify the API table separately:
+
+```bash
+curl "https://your-project.supabase.co/rest/v1/leaderboard_entries?select=id&limit=1" \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_ANON_KEY"
+```
+
+Expect HTTP 200. An HTTP 404 usually means the SQL schema has not been applied to that project yet.

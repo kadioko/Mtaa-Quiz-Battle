@@ -272,7 +272,8 @@ export default function QuizScreen() {
         })
       );
 
-      const { profile: updatedProfile, achievementsUnlocked } = await StorageService.updateProfileAfterGame(result);
+      const { profile: updatedProfile, achievementsUnlocked, newAchievementIds } = await StorageService.updateProfileAfterGame(result);
+      result.newAchievementIds = newAchievementIds;
       if (achievementsUnlocked > 0) HapticService.achievementUnlock(settings.current.vibration);
       await StorageService.addQuizResult(result);
       // Practice rounds don't compete on leaderboards

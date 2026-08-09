@@ -8,7 +8,7 @@
  * NOTE: expo-av is deprecated. When migrating to expo-audio
  * (`npx expo install expo-audio`), this is the ONLY file that needs to change.
  */
-import { Audio } from 'expo-av';
+import { createAudioPlayer, type AudioPlayer } from 'expo-audio';
 
 export type SfxType = 'correct' | 'wrong' | 'timeup';
 
@@ -18,27 +18,27 @@ const SOURCES: Record<SfxType, number> = {
   timeup: require('../../assets/sounds/timeup.mp3'),
 };
 
-const players: Partial<Record<SfxType, Audio.Sound>> = {};
+const players: Partial<Record<SfxType, AudioPlayer>> = {};
 let preloaded = false;
+
+function createPlayer(type: SfxType): AudioPlayer {
+  const player = createAudioPlayer(SOURCES[type]);
+  player.volume = 0.7;
+  return player;
+}
 
 export const SoundService = {
   /** Load all sound effects into memory. Safe to call multiple times. */
   async preload(): Promise<void> {
     if (preloaded) return;
     preloaded = true;
-    await Promise.all(
-      (Object.keys(SOURCES) as SfxType[]).map(async (type) => {
-        try {
-          const { sound } = await Audio.Sound.createAsync(SOURCES[type], {
-            shouldPlay: false,
-            volume: 0.7,
-          });
-          players[type] = sound;
-        } catch {
-          // Sound files optional — silently skip if missing
-        }
-      })
-    );
+    (Object.keys(SOURCES) as SfxType[]).forEach((type) => {
+      try {
+        players[type] = createPlayer(type);
+      } catch {
+        // Sound files are optional.
+      }
+    });
   },
 
   /** Play a sound effect (no-op when disabled or unavailable). */
@@ -47,17 +47,14 @@ export const SoundService = {
     try {
       const player = players[type];
       if (player) {
-        await player.replayAsync();
+        await player.seekTo(0);
+        player.play();
         return;
       }
-      // Fallback: not preloaded — fire-and-forget one-shot
-      const { sound } = await Audio.Sound.createAsync(SOURCES[type], {
-        shouldPlay: true,
-        volume: 0.7,
-      });
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if ('didJustFinish' in status && status.didJustFinish) sound.unloadAsync();
-      });
+      // Fallback: create and retain the player for future answers.
+      const fallback = createPlayer(type);
+      players[type] = fallback;
+      fallback.play();
     } catch {
       // Silently fail — sound is non-critical
     }
@@ -68,7 +65,7 @@ export const SoundService = {
     await Promise.all(
       (Object.keys(players) as SfxType[]).map(async (type) => {
         try {
-          await players[type]?.unloadAsync();
+          players[type]?.remove();
         } catch {}
         delete players[type];
       })

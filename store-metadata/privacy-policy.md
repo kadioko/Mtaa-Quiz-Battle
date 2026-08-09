@@ -1,6 +1,6 @@
 # Mtaa Quiz Battle Privacy Policy
 
-Effective date: May 10, 2026
+Effective date: August 9, 2026
 
 Mtaa Quiz Battle is a trivia game about Tanzania. This policy explains what data the app uses and how players can contact us.
 

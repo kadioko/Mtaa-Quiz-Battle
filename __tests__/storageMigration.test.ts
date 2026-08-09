@@ -136,4 +136,71 @@ describe('StorageService – achievements', () => {
     expect(ids).toContain('first_game');
     expect(ids).toContain('coins_100');
   });
+
+  test('returns the achievement IDs earned by the completed round', async () => {
+    const result = {
+      id: 'achievement-result',
+      categoryId: 'bongo-fleva',
+      categoryName: 'Bongo Fleva',
+      score: 100,
+      correctAnswers: 5,
+      totalQuestions: 10,
+      coinsEarned: 7,
+      maxStreak: 1,
+      accuracy: 50,
+      date: new Date().toISOString(),
+      isDaily: false,
+    } as any;
+
+    const updated = await StorageService.updateProfileAfterGame(result);
+
+    expect(updated.achievementsUnlocked).toBe(1);
+    expect(updated.newAchievementIds).toEqual(['first_game']);
+    expect(await StorageService.getUnlockedAchievements()).toEqual(['first_game']);
+  });
+});
+
+describe('StorageService – daily missions', () => {
+  const quizResult = (overrides: Record<string, unknown> = {}) => ({
+    id: 'mission-result',
+    categoryId: 'bongo-fleva',
+    categoryName: 'Bongo Fleva',
+    score: 100,
+    correctAnswers: 6,
+    totalQuestions: 10,
+    coinsEarned: 10,
+    maxStreak: 5,
+    accuracy: 60,
+    date: new Date().toISOString(),
+    isDaily: false,
+    ...overrides,
+  });
+
+  test('creates a fresh mission set and tracks quiz progress', async () => {
+    const initial = await StorageService.getDailyMissions();
+    expect(initial.missions.map((mission) => mission.id)).toEqual([
+      'rounds',
+      'correct_answers',
+      'answer_streak',
+    ]);
+
+    const updated = await StorageService.recordDailyMissionProgress(quizResult() as any);
+    expect(updated.missions.find((mission) => mission.id === 'rounds')?.progress).toBe(1);
+    expect(updated.missions.find((mission) => mission.id === 'correct_answers')?.progress).toBe(6);
+    expect(updated.missions.find((mission) => mission.id === 'answer_streak')?.progress).toBe(5);
+  });
+
+  test('claims a completed mission once and awards its coins', async () => {
+    await StorageService.recordDailyMissionProgress(quizResult({ correctAnswers: 10 }) as any);
+    await StorageService.recordDailyMissionProgress(quizResult({ id: 'mission-result-2', correctAnswers: 10 }) as any);
+
+    const claimed = await StorageService.claimDailyMission('rounds');
+    expect(claimed.success).toBe(true);
+    expect(claimed.reward).toBe(20);
+    expect(claimed.profile.totalCoins).toBe(20);
+
+    const duplicateClaim = await StorageService.claimDailyMission('rounds');
+    expect(duplicateClaim.success).toBe(false);
+    expect((await StorageService.getUserProfile()).totalCoins).toBe(20);
+  });
 });

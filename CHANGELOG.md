@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Player Experience
+- Home now provides a personalised focus: practice unresolved mistakes, train a weak category, or explore a new one.
+- Added three claimable daily missions for rounds played, correct answers, and answer streaks.
+- Results now celebrate each achievement unlocked by the completed round with its name and explanation.
+
+### Platform and Quality
+- Upgraded the Expo SDK 55 dependency set and migrated sound and music playback to `expo-audio`.
+- Added recommendation, mission, and achievement-result coverage; the suite now has 95 tests across 6 suites.
+
+### Documentation
+- Updated the roadmap, release checklist, Android release-build runbook, content authoring standards, cloud setup, store descriptions, privacy notes, and screenshot plan to match v1.1.0.
+
 ## [1.1.0] — Unreleased (June 2026)
 
 ### New Game Modes

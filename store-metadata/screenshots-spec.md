@@ -1,111 +1,73 @@
-# Mtaa Quiz Battle — Screenshots Specification
+# Mtaa Quiz Battle Screenshot Specification
 
-Minimum 4 screenshots required per platform. Suggested 6–8 for best conversion.
+Capture final store imagery from the current native preview build. Do not use web screenshots for submission.
 
----
+## Required Formats
 
-## Android (Google Play)
+### Google Play
 
-**Required size:** 1080 × 1920 px portrait (or 1080 × 2400 px for modern phones)
-**Format:** PNG or JPEG, max 8 MB each
+- Portrait PNG or JPEG, 1080x1920 or 1080x2400.
+- Keep each file under 8 MB.
+- Provide at least four screenshots and one 1024x500 feature graphic.
 
-### Recommended Screens to Capture
+### Apple App Store
 
-| # | Screen | What to Show |
-|---|--------|-------------|
-| 1 | **Splash / Home** | Animated logo, "Chagua Mkundo" button, dark gradient background |
-| 2 | **Category Select** | All 10 category cards with emoji, colours, coin cost |
-| 3 | **Quiz in Progress** | Question text (Swahili), 4 answer buttons, timer bar, score, streak |
-| 4 | **Answer Revealed** | Correct answer highlighted green, explanation text expanded |
-| 5 | **Results Screen** | Score card: percentage, coins earned, XP, "Share" and "Review" buttons |
-| 6 | **Leaderboard** | Top 10 list with player names, scores, ranks; local/global toggle |
-| 7 | **Profile / Progression** | Player rank banner (e.g. "Jasiri"), achievement badges, mastery bars |
-| 8 | **Daily Challenge** | Special header, streak counter, daily question UI |
+- iPhone 6.9 inch: 1320x2868.
+- iPhone 6.7 inch: 1290x2796.
+- PNG, no marketing-only mockups that misrepresent the app.
 
-**Feature Graphic (Play Store only):**
-- Size: 1024 × 500 px
-- Show the app logo + "Tanzania's #1 Trivia Game" tagline + Tanzanian flag colours
-- Format: PNG or JPEG
+## Recommended Sequence
 
----
+| # | File | Screen and proof point |
+| --- | --- | --- |
+| 1 | `01-home.png` | Home showing Daily Challenge, personal focus, and daily missions |
+| 2 | `02-categories.png` | All 10 category cards with search and difficulty filters |
+| 3 | `03-quiz.png` | Swahili quiz question with timer, streak, score, and answer choices |
+| 4 | `04-answer.png` | Answer reveal with explanation, category colour, and difficulty context |
+| 5 | `05-results.png` | Result card with a newly unlocked achievement or answer-review control |
+| 6 | `06-leaderboard.png` | Local, Global, or Mikoa leaderboard with real-looking test content |
+| 7 | `07-profile.png` | Rank progress, achievements, and category mastery |
+| 8 | `08-daily.png` | Daily Challenge streak and completion state |
 
-## iOS (App Store)
+## Capture Rules
 
-**Required sizes:**
-- iPhone 6.9" (iPhone 16 Pro Max): 1320 × 2868 px
-- iPhone 6.7" (iPhone 15 Plus): 1290 × 2796 px
-- iPad 13" (optional): 2048 × 2732 px
+- Use one consistent language per screenshot set. Capture a second language set only when a store asks for it.
+- Use light or dark mode intentionally; make text, buttons, badges, and answer states readable.
+- Hide personal email, test tokens, empty loading states, placeholder AdMob IDs, and debug UI.
+- Use a fresh profile for the achievement screenshot so the result screen has a visible unlock.
+- Use a realistic filled profile for leaderboard and profile screenshots.
+- Re-capture any image after a UI, asset, ad, or IAP change that affects the pictured screen.
 
-**Format:** PNG, max 500 MB
+## Directory Layout
 
-### Recommended Screens (same content as Android)
+```text
+store-metadata/screenshots/
+  android/
+    01-home.png
+    02-categories.png
+    03-quiz.png
+    04-answer.png
+    05-results.png
+    06-leaderboard.png
+    07-profile.png
+    08-daily.png
+    feature-graphic.png
+  ios/
+    01-home.png
+    02-categories.png
+    03-quiz.png
+    04-answer.png
+    05-results.png
+    06-leaderboard.png
+    07-profile.png
+    08-daily.png
+```
 
-Capture the same 6–8 screens listed above at iOS dimensions.
+## Capture Workflow
 
-iOS allows **App Preview videos** (15–30 sec MP4). Consider recording:
-- Quiz gameplay showing a correct + wrong answer
-- Achievement unlock animation
-- Category select to question flow
-
----
-
-## Screenshot Capture Workflow
-
-### Option A: Expo Go / Simulator
 ```bash
-# Run app on Android emulator
-npm run android
-
-# Take screenshot from emulator
-# Android: Press Ctrl+S in emulator window
-# Save to store-metadata/screenshots/android/
+eas build --platform android --profile preview
+eas build --platform ios --profile preview
 ```
 
-### Option B: Physical Device
-- Install the preview build: `eas build --platform android --profile preview`
-- Screenshot each screen manually
-- Transfer files to `store-metadata/screenshots/`
-
-### Option C: Design Tool
-- Use Figma / Canva with device frames
-- Import actual screenshots and overlay on device mockups
-- Export at required resolution
-
----
-
-## Text Overlay Tips (Optional)
-
-Add short captions in both Swahili and English:
-- Screen 1: "Cheza na Ujifunze / Play & Learn"
-- Screen 2: "Makundi 10 / 10 Categories"
-- Screen 3: "Swali la Kila Siku / Daily Challenge"
-- Screen 4: "Chunguza Majibu / Explore Answers"
-- Screen 5: "Fuatilia Maendeleo / Track Progress"
-
----
-
-## Output Directory Structure
-
-```
-store-metadata/
-  screenshots/
-    android/
-      01-home.png
-      02-categories.png
-      03-quiz.png
-      04-answer.png
-      05-results.png
-      06-leaderboard.png
-      07-profile.png
-      08-daily.png
-      feature-graphic.png
-    ios/
-      01-home.png
-      02-categories.png
-      03-quiz.png
-      04-answer.png
-      05-results.png
-      06-leaderboard.png
-      07-profile.png
-      08-daily.png
-```
+Install each preview build on its target device or simulator, walk through the sequence above, and save files using the specified names.

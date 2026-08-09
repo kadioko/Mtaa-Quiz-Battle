@@ -18,7 +18,7 @@ import { QuizResult } from '../src/types';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
-import { getRating, formatDate } from '../src/utils/gameLogic';
+import { ACHIEVEMENT_CATALOG, getRating, formatDate } from '../src/utils/gameLogic';
 import { StorageService } from '../src/storage/storage';
 import PrimaryButton from '../src/components/PrimaryButton';
 import StatCard from '../src/components/StatCard';
@@ -38,6 +38,10 @@ export default function ResultScreen() {
       return null;
     }
   }, [resultJson]);
+  const newAchievements = useMemo(() => {
+    if (!result?.newAchievementIds?.length) return [];
+    return ACHIEVEMENT_CATALOG.filter((achievement) => result.newAchievementIds?.includes(achievement.id));
+  }, [result]);
 
   const scoreAnim = useRef(new Animated.Value(0)).current;
   const cardAnim = useRef(new Animated.Value(0)).current;
@@ -247,6 +251,39 @@ export default function ResultScreen() {
             />
           </Animated.View>
 
+          {newAchievements.length > 0 && (
+            <Animated.View
+              style={[
+                styles.achievementCard,
+                {
+                  backgroundColor: colors.backgroundCard,
+                  borderColor: colors.gold,
+                  opacity: cardAnim,
+                },
+              ]}
+            >
+              <Text style={[styles.achievementHeading, { color: colors.gold }]}>
+                {language === 'sw' ? 'Mafanikio Mapya' : 'New Achievement'}
+              </Text>
+              {newAchievements.map((achievement) => (
+                <View
+                  key={achievement.id}
+                  style={[styles.achievementItem, { backgroundColor: colors.gold + '18' }]}
+                >
+                  <Text style={styles.achievementEmoji}>{achievement.emoji}</Text>
+                  <View style={styles.achievementCopy}>
+                    <Text style={[styles.achievementTitle, { color: colors.text }]}>
+                      {language === 'sw' ? achievement.title : achievement.title_en}
+                    </Text>
+                    <Text style={[styles.achievementDescription, { color: colors.textSecondary }]}>
+                      {language === 'sw' ? achievement.description : achievement.description_en}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </Animated.View>
+          )}
+
           {/* Details card */}
           <Animated.View style={[styles.detailCard, { backgroundColor: colors.backgroundCard, borderColor: colors.border, opacity: cardAnim }]}>
             <View style={styles.detailRow}>
@@ -368,6 +405,17 @@ export default function ResultScreen() {
 
           {/* Action buttons */}
           <View style={styles.buttonsCol}>
+            {missedItems.length > 0 && (
+              <PrimaryButton
+                label={language === 'sw'
+                  ? `Rudia makosa ${missedItems.length}`
+                  : `Practice ${missedItems.length} missed`}
+                onPress={() => router.replace({ pathname: '/quiz', params: { mode: 'practice' } })}
+                color={colors.accent}
+                textColor={colors.white}
+                style={{ marginBottom: Spacing.sm }}
+              />
+            )}
             <PrimaryButton
               label={t('playAgain')}
               onPress={() =>
@@ -503,6 +551,40 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     marginBottom: Spacing.base,
+  },
+  achievementCard: {
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    padding: Spacing.base,
+    marginBottom: Spacing.base,
+  },
+  achievementHeading: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: Typography.fontWeights.black,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.sm,
+  },
+  achievementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    borderRadius: Radius.md,
+    padding: Spacing.sm,
+  },
+  achievementEmoji: {
+    fontSize: 28,
+  },
+  achievementCopy: {
+    flex: 1,
+  },
+  achievementTitle: {
+    fontSize: Typography.fontSizes.md,
+    fontWeight: Typography.fontWeights.bold,
+  },
+  achievementDescription: {
+    fontSize: Typography.fontSizes.sm,
+    marginTop: 2,
   },
 
   detailCard: {

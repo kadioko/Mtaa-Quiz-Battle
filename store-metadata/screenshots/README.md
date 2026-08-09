@@ -1,5 +1,7 @@
 # Screenshot Capture Status
 
+Capture from the final native preview build. The Home image must show the personal focus and daily missions; the Results image should show the achievement celebration or answer review.
+
 Follow `store-metadata/screenshots-spec.md` for dimensions, required scenes, and naming.
 
 Required before store submission:
