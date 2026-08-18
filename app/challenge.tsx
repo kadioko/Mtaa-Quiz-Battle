@@ -78,6 +78,7 @@ export default function ChallengeScreen() {
   const streakRef = useRef(0);
   const usernameRef = useRef('Mchezaji');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isFinishingRef = useRef(false);
   const settings = useRef({ sound: true, vibration: true });
 
   useEffect(() => {
@@ -157,6 +158,7 @@ export default function ChallengeScreen() {
   };
 
   const resetPlayState = () => {
+    isFinishingRef.current = false;
     scoreRef.current = 0;
     correctRef.current = 0;
     streakRef.current = 0;
@@ -218,7 +220,7 @@ export default function ChallengeScreen() {
     const qs = challenge.questionIds
       .map((id) => byId.get(id))
       .filter((q): q is Question => Boolean(q));
-    if (qs.length === 0) {
+    if (qs.length !== challenge.questionIds.length || qs.length < CHALLENGE_QUESTIONS) {
       fail(sw
         ? 'Maswali ya changamoto hii hayapo kwenye toleo lako la programu. Sasisha programu.'
         : 'This challenge uses questions your app version does not have. Please update the app.');
@@ -236,6 +238,8 @@ export default function ChallengeScreen() {
 
   // ── Finish: submit + load results ───────────────────────────────────────
   const finishChallenge = async () => {
+    if (isFinishingRef.current) return;
+    isFinishingRef.current = true;
     setMyScore(scoreRef.current);
     setMyCorrect(correctRef.current);
     setPhase('results');

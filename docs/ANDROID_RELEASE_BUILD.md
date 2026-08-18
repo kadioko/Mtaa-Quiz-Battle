@@ -23,8 +23,9 @@ Complete these items before the first production submission:
 2. Create a Google service account in Play Console API access, grant the required app access, and download its JSON key as `google-play-key.json` in the repository root. This file is already ignored by Git.
 3. Upload the service-account key in EAS credentials, or keep the local path configured in `eas.json` for interactive submission.
 4. Replace the placeholder Android AdMob app ID and rewarded ad-unit IDs before building for public testing.
-5. Confirm `mtaa_remove_ads` is registered in Play Console if the Remove Ads purchase is enabled.
-6. Add the public privacy-policy URL, store listing, Data Safety answers, and required screenshots in Play Console.
+5. Confirm `mtaa_remove_ads` is registered in Play Console if the Remove Ads purchase is enabled, and that it is configured as a non-consumable entitlement.
+6. Do not enable paid coin bundles until a trusted backend verifies purchase receipts before coins are granted.
+7. Add the public privacy-policy URL, store listing, Data Safety answers, and required screenshots in Play Console.
 7. Sign in to EAS:
 
 ```bash
@@ -59,7 +60,7 @@ Use this for testers and final native screenshot capture. Do not upload this APK
 eas build --platform android --profile preview
 ```
 
-Install the generated APK and test onboarding, a quiz round, result review, achievement celebration, daily missions, theme switching, purchases, ads, notifications, and offline launch.
+Install the generated APK and test onboarding, a quiz round, result review, achievement celebration, daily missions, theme switching, direct-link replay protection, purchases, ads, notifications, and offline launch.
 
 ## Build the Production AAB
 

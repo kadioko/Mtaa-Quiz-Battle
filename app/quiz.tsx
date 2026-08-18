@@ -87,6 +87,8 @@ export default function QuizScreen() {
   const [hintUsedThisQ, setHintUsedThisQ] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isFinishingRef = useRef(false);
+  const hintActionInFlightRef = useRef(false);
   const answerMapRef = useRef<(boolean | null)[]>(Array(TOTAL_QUESTIONS).fill(null));
   const selectedAnswersRef = useRef<(string | null)[]>(Array(TOTAL_QUESTIONS).fill(null));
   const scoreRef = useRef(0);
@@ -102,6 +104,8 @@ export default function QuizScreen() {
 
   const resetQuizState = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    isFinishingRef.current = false;
+    hintActionInFlightRef.current = false;
     const freshAnswerMap: (boolean | null)[] = Array(TOTAL_QUESTIONS).fill(null);
     const freshSelectedAnswers: (string | null)[] = Array(TOTAL_QUESTIONS).fill(null);
     answerMapRef.current = freshAnswerMap;
@@ -181,10 +185,25 @@ export default function QuizScreen() {
         const pool = getQuestionsByIds(missedIds.slice(0, 40));
         qs = pool.sort(() => Math.random() - 0.5).slice(0, TOTAL_QUESTIONS);
       } else if (isEvent) {
+        const completedEventIds = await StorageService.getCompletedEventIds();
+        if (completedEventIds.includes(eventId ?? '')) {
+          router.replace('/home');
+          return;
+        }
         qs = getEventQuestions(eventSeed ?? '', TOTAL_QUESTIONS);
       } else if (isWeekly) {
+        const weekly = await StorageService.getWeeklyStatus();
+        if (weekly.completed && weekly.weekKey === getWeekKey()) {
+          router.replace('/home');
+          return;
+        }
         qs = getWeeklyQuestions(TOTAL_QUESTIONS);
       } else if (isDaily === 'true') {
+        const profile = await StorageService.getUserProfile();
+        if (profile.dailyCompleted && profile.lastDailyDate === new Date().toDateString()) {
+          router.replace('/daily');
+          return;
+        }
         qs = getDailyQuestions(TOTAL_QUESTIONS);
       } else {
         const category = getCategoryById(categoryId ?? '');
@@ -205,7 +224,7 @@ export default function QuizScreen() {
     };
     load();
     return () => { MusicService.stop(); };
-  }, [categoryId, isDaily, isPractice, isWeekly, isEvent, eventSeed, resetQuizState]);
+  }, [categoryId, isDaily, isPractice, isWeekly, isEvent, eventId, eventSeed, resetQuizState, router]);
 
   useEffect(() => {
     if (questions.length > 0) {
@@ -221,6 +240,8 @@ export default function QuizScreen() {
       finalMaxStreak: number,
       finalAnswerMap: (boolean | null)[]
     ) => {
+      if (isFinishingRef.current) return;
+      isFinishingRef.current = true;
       const cat = isEvent
         ? { id: 'event', name: (language === 'en' ? eventNameEn : eventName) ?? eventName ?? 'Live Event' }
         : isPractice
@@ -272,8 +293,14 @@ export default function QuizScreen() {
         })
       );
 
-      const { profile: updatedProfile, achievementsUnlocked, newAchievementIds } = await StorageService.updateProfileAfterGame(result);
+      const {
+        profile: updatedProfile,
+        achievementsUnlocked,
+        newAchievementIds,
+        dailyMissions,
+      } = await StorageService.updateProfileAfterGame(result);
       result.newAchievementIds = newAchievementIds;
+      result.dailyMissions = dailyMissions;
       if (achievementsUnlocked > 0) HapticService.achievementUnlock(settings.current.vibration);
       await StorageService.addQuizResult(result);
       // Practice rounds don't compete on leaderboards
@@ -493,7 +520,8 @@ export default function QuizScreen() {
   };
 
   const handleHintEliminate = async () => {
-    if (answered || hintUsedThisQ || coins < HINT_ELIMINATE_COST) return;
+    if (answered || hintUsedThisQ || coins < HINT_ELIMINATE_COST || hintActionInFlightRef.current) return;
+    hintActionInFlightRef.current = true;
     const current = questions[currentIndex];
     const correctAnswer = language === 'en' && current.answer_en ? current.answer_en : current.answer;
     const wrongIndices = shuffledOptions
@@ -505,40 +533,57 @@ export default function QuizScreen() {
     for (const idx of shuffledWrong) {
       if (toEliminate.length < 2) toEliminate.push(idx);
     }
-    setHintEliminated(toEliminate);
-    setHintUsedThisQ(true);
-    const profile = await StorageService.getUserProfile();
-    const newCoins = profile.totalCoins - HINT_ELIMINATE_COST;
-    await StorageService.saveUserProfile({ ...profile, totalCoins: newCoins });
-    setCoins(newCoins);
-    await StorageService.incrementHintsUsed();
+    try {
+      const profile = await StorageService.getUserProfile();
+      if (profile.totalCoins < HINT_ELIMINATE_COST) {
+        setCoins(profile.totalCoins);
+        return;
+      }
+      const newCoins = profile.totalCoins - HINT_ELIMINATE_COST;
+      await StorageService.saveUserProfile({ ...profile, totalCoins: newCoins });
+      setHintEliminated(toEliminate);
+      setHintUsedThisQ(true);
+      setCoins(newCoins);
+      await StorageService.incrementHintsUsed();
+    } finally {
+      hintActionInFlightRef.current = false;
+    }
   };
 
   const handleHintSkip = async () => {
-    if (answered || coins < HINT_SKIP_COST) return;
-    if (timerRef.current) clearInterval(timerRef.current);
-    markAnswer(currentIndex, false);
-    markSelectedAnswer(currentIndex, null);
-    const profile = await StorageService.getUserProfile();
-    const newCoins = profile.totalCoins - HINT_SKIP_COST;
-    await StorageService.saveUserProfile({ ...profile, totalCoins: newCoins });
-    setCoins(newCoins);
-    await StorageService.incrementHintsUsed();
-    const nextIndex = currentIndex + 1;
-    if (nextIndex >= questions.length) {
-      finishQuiz(scoreRef.current, correctCountRef.current, maxStreakRef.current, answerMapRef.current);
-      return;
+    if (answered || coins < HINT_SKIP_COST || hintActionInFlightRef.current) return;
+    hintActionInFlightRef.current = true;
+    try {
+      const profile = await StorageService.getUserProfile();
+      if (profile.totalCoins < HINT_SKIP_COST) {
+        setCoins(profile.totalCoins);
+        return;
+      }
+      if (timerRef.current) clearInterval(timerRef.current);
+      const newCoins = profile.totalCoins - HINT_SKIP_COST;
+      await StorageService.saveUserProfile({ ...profile, totalCoins: newCoins });
+      setCoins(newCoins);
+      await StorageService.incrementHintsUsed();
+      markAnswer(currentIndex, false);
+      markSelectedAnswer(currentIndex, null);
+      const nextIndex = currentIndex + 1;
+      if (nextIndex >= questions.length) {
+        finishQuiz(scoreRef.current, correctCountRef.current, maxStreakRef.current, answerMapRef.current);
+        return;
+      }
+      setCurrentIndex(nextIndex);
+      setAnswered(false);
+      setSelectedAnswer(null);
+      setAnswerStates(['default', 'default', 'default', 'default']);
+      setShowExplanation(false);
+      setExplanationExpanded(true);
+      setAnswerOutcome(null);
+      setTimeLeft(QUESTION_TIME);
+      setHintEliminated([]);
+      setHintUsedThisQ(false);
+    } finally {
+      hintActionInFlightRef.current = false;
     }
-    setCurrentIndex(nextIndex);
-    setAnswered(false);
-    setSelectedAnswer(null);
-    setAnswerStates(['default', 'default', 'default', 'default']);
-    setShowExplanation(false);
-    setExplanationExpanded(true);
-    setAnswerOutcome(null);
-    setTimeLeft(QUESTION_TIME);
-    setHintEliminated([]);
-    setHintUsedThisQ(false);
   };
 
   useEffect(() => {
@@ -716,7 +761,7 @@ export default function QuizScreen() {
               <AnswerButton
                 key={`${currentIndex}-${idx}`}
                 label={opt}
-                state={hintEliminated.includes(idx) ? 'wrong' : answerStates[idx]}
+                state={hintEliminated.includes(idx) ? 'eliminated' : answerStates[idx]}
                 onPress={() => handleAnswer(opt)}
                 disabled={answered || hintEliminated.includes(idx)}
                 index={idx}

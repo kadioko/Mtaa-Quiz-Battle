@@ -11,6 +11,7 @@ import {
   Dimensions,
   TouchableOpacity,
   ScrollView,
+  Modal,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
@@ -31,6 +32,7 @@ import { useLanguage } from '../src/utils/LanguageContext';
 import { t } from '../src/utils/i18n';
 import { Typography, Spacing, Radius } from '../src/theme';
 import { HapticService } from '../src/utils/haptics';
+import { REGIONS } from '../src/data/regions';
 
 const { width } = Dimensions.get('window');
 
@@ -86,6 +88,8 @@ export default function OnboardingScreen() {
   const colors = useThemeColors();
   const { language } = useLanguage();
   const [activeSlide, setActiveSlide] = useState(0);
+  const [regionPickerVisible, setRegionPickerVisible] = useState(false);
+  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const scrollX = useSharedValue(0);
 
@@ -104,7 +108,11 @@ export default function OnboardingScreen() {
     HapticService.selection(true);
   };
 
-  const finish = async () => {
+  const finish = async (regionId?: string) => {
+    if (regionId) {
+      const profile = await StorageService.getUserProfile();
+      await StorageService.saveUserProfile({ ...profile, region: regionId });
+    }
     await StorageService.markOnboardingDone();
     HapticService.levelUp(true);
     router.replace('/home');
@@ -179,15 +187,81 @@ export default function OnboardingScreen() {
           ) : (
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: SLIDES[activeSlide].accentColor }]}
-              onPress={finish}
+              onPress={() => setRegionPickerVisible(true)}
               activeOpacity={0.85}
             >
               <Text style={[styles.actionBtnText, { color: '#000' }]}>
-                🎮 {t('onboardingDone')}
+                🗺️ {t('onboardingRegionStart')}
               </Text>
             </TouchableOpacity>
           )}
         </View>
+
+        <Modal
+          visible={regionPickerVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setRegionPickerVisible(false)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={[styles.regionModal, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+              <Text style={[styles.regionModalTitle, { color: colors.text }]}>{t('onboardingRegionTitle')}</Text>
+              <Text style={[styles.regionModalBody, { color: colors.textSecondary }]}>{t('onboardingRegionBody')}</Text>
+              <ScrollView
+                style={styles.regionScroll}
+                contentContainerStyle={styles.regionGrid}
+                showsVerticalScrollIndicator={false}
+              >
+                {REGIONS.map((region) => {
+                  const selected = region.id === selectedRegionId;
+                  return (
+                    <TouchableOpacity
+                      key={region.id}
+                      style={[
+                        styles.regionOption,
+                        { backgroundColor: selected ? colors.primary + '20' : colors.background },
+                        selected && { borderColor: colors.primary },
+                      ]}
+                      onPress={() => {
+                        setSelectedRegionId(region.id);
+                        HapticService.selection(true);
+                      }}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={region.name}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.regionEmoji}>{region.emoji}</Text>
+                      <Text numberOfLines={1} style={[styles.regionName, { color: colors.text }]}>{region.name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+              <TouchableOpacity
+                style={[
+                  styles.regionConfirmButton,
+                  { backgroundColor: colors.primary },
+                  !selectedRegionId && styles.regionConfirmButtonDisabled,
+                ]}
+                onPress={() => finish(selectedRegionId ?? undefined)}
+                disabled={!selectedRegionId}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !selectedRegionId }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.regionConfirmText}>{t('onboardingRegionConfirm')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.regionSkipButton}
+                onPress={() => finish()}
+                accessibilityRole="button"
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.regionSkipText, { color: colors.textMuted }]}>{t('onboardingRegionSkip')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -324,4 +398,61 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.lg,
     fontWeight: Typography.fontWeights.bold,
   },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+  },
+  regionModal: {
+    maxHeight: '84%',
+    borderTopWidth: 1,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    paddingHorizontal: Spacing.base,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
+  },
+  regionModalTitle: {
+    fontSize: Typography.fontSizes.xl,
+    fontWeight: Typography.fontWeights.extraBold,
+    textAlign: 'center',
+  },
+  regionModalBody: {
+    fontSize: Typography.fontSizes.sm,
+    lineHeight: Typography.fontSizes.sm * 1.5,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
+  },
+  regionScroll: { maxHeight: 360, marginTop: Spacing.base },
+  regionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    paddingBottom: Spacing.sm,
+  },
+  regionOption: {
+    flexBasis: '47%',
+    flexGrow: 1,
+    minHeight: 62,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  regionEmoji: { fontSize: 20 },
+  regionName: { flex: 1, fontSize: Typography.fontSizes.sm, fontWeight: Typography.fontWeights.semiBold },
+  regionConfirmButton: {
+    minHeight: 48,
+    borderRadius: Radius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: Spacing.base,
+  },
+  regionConfirmButtonDisabled: { opacity: 0.45 },
+  regionConfirmText: { color: '#000', fontSize: Typography.fontSizes.md, fontWeight: Typography.fontWeights.bold },
+  regionSkipButton: { alignItems: 'center', paddingTop: Spacing.base, paddingBottom: Spacing.xs },
+  regionSkipText: { fontSize: Typography.fontSizes.sm, fontWeight: Typography.fontWeights.semiBold },
 });

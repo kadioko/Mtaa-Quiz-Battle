@@ -13,6 +13,7 @@ The goal is not to add features at random. The next releases should deepen repea
 - 626 bilingual questions across 10 categories (`q001` through `q626`).
 - Classic, Daily Challenge, Weekly Challenge, Sprint, Versus, Friend Challenge, and Practice Mistakes modes.
 - Three difficulty tiers, timed scoring, streak and speed bonuses, adaptive difficulty, answer explanations, pause/quit confirmation, and result review.
+- Completed Daily, Weekly, and Live Event rounds are protected from direct-link replay; result and reward writes reject duplicate in-flight actions.
 - Light and dark themes using shared theme tokens in screens and reusable controls.
 
 ### Player loop
@@ -20,20 +21,21 @@ The goal is not to add features at random. The next releases should deepen repea
 - Coins, daily login rewards, rank progress, category mastery, history, and 27 achievements.
 - A Home focus card that recommends practice mistakes, a weak category, or an unplayed category from local history.
 - Three daily missions: complete two rounds, answer 12 correctly, and reach a five-answer streak. Rewards can be claimed once per day.
+- Result screens show the mission progress created by the finished round and allow completed rewards to be claimed immediately.
 - New achievements are shown with their title and explanation immediately after the game that earned them.
 
 ### Social and cloud
 
 - Local leaderboard plus optional Supabase global and regional leaderboards.
-- Regional league support for all 31 Tanzanian regions.
+- Regional league support for all 31 Tanzanian regions, with an optional region choice at onboarding, weekly and all-time tables, and later editing in Profile.
 - Magic-link sign-in, optional progress sync, friend challenges, remote question packs, and live event windows.
 - GitHub Actions keepalive checks Supabase health three times weekly. It keeps a configured project active but does not replace schema verification.
 
 ### Quality and delivery
 
-- Expo SDK 55, React 19, React Native 0.83, TypeScript strict mode, and `expo-audio`.
+- Expo SDK 57, React 19.2.3, React Native 0.86.2, TypeScript 6 strict mode, and `expo-audio`.
 - `npm run check` runs typecheck, question validation, contrast checks, and Jest coverage tests.
-- 95 Jest tests across 6 suites.
+- 103 Jest tests across 8 suites.
 - Question authoring rules, release checklist, cloud setup, store text, privacy policy, and screenshot guidance are maintained in this repository.
 
 ## Next Release Priorities
@@ -41,7 +43,7 @@ The goal is not to add features at random. The next releases should deepen repea
 ### 1. Store release blockers
 
 1. Replace placeholder AdMob app and rewarded-unit IDs in `app.json` and `src/services/AdService.ts`.
-2. Register and test the Play Store and App Store IAP products.
+2. Register and test the Play Store and App Store IAP products, then add trusted server-side receipt verification before selling coin bundles.
 3. Apply the Supabase schema from `docs/CLOUD_SETUP.md`, then verify the leaderboard REST endpoint returns HTTP 200.
 4. Replace the four placeholder artwork assets and capture final native screenshots from preview builds.
 5. Fill Apple submit fields in `eas.json`, add the Google service account key locally, and publish the privacy-policy URL.
@@ -56,9 +58,9 @@ The goal is not to add features at random. The next releases should deepen repea
 ### 3. Retention and competition
 
 1. Launch calendar-based event packs for Ramadan, Uhuru Day, CHAN, and AFCON.
-2. Add weekly regional league summaries and a shareable region-progress card.
+2. Add a shareable region-progress card to the weekly regional league.
 3. Add scheduled challenge windows with a common leaderboard before building real-time multiplayer.
-4. Validate airtime or bundle rewards with a compliant Tanzania provider before announcing prizes.
+4. Validate airtime or bundle rewards with a compliant Tanzania provider and server-verified score handling before announcing prizes.
 
 ### 4. Observability and resilience
 

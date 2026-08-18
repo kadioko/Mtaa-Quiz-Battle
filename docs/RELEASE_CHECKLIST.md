@@ -8,7 +8,7 @@ For the exact Android build and Google Play submission commands, use `docs/ANDRO
 
 - [ ] `npm run check` exits with code 0.
 - [ ] `npm run release:check` exits with code 0.
-- [ ] 95 or more Jest tests pass across all suites.
+- [ ] 103 or more Jest tests pass across all suites.
 - [ ] No production `console.log`, `console.warn`, TODO, or FIXME remains without an owner.
 - [ ] New UI is checked in light and dark mode at mobile and desktop web widths.
 - [ ] Quiz, result review, daily missions, achievement celebration, settings, and offline startup are smoke-tested on a native preview build.
@@ -35,6 +35,8 @@ For the exact Android build and Google Play submission commands, use `docs/ANDRO
 - [ ] App Store Connect product `com.mtaaquiz.battle.removeads` is active and matches the iOS client configuration.
 - [ ] Coin-bundle products are either active and tested or hidden from the production build.
 - [ ] Purchase, restore, and ad reward paths are tested with store sandbox accounts.
+- [ ] Remove Ads is finalized as a non-consumable entitlement; coin bundles are finalized as consumables.
+- [ ] Production coin bundles use trusted server-side receipt verification before granting coins.
 
 ## 5. Cloud and Notifications
 
@@ -44,6 +46,7 @@ For the exact Android build and Google Play submission commands, use `docs/ANDRO
 - [ ] A manual keepalive run returns HTTP 200.
 - [ ] A REST probe for `leaderboard_entries` returns HTTP 200; a health check alone does not prove schema setup.
 - [ ] Global, Mikoa, sync, friend challenge, and offline fallback paths are smoke-tested.
+- [ ] Prize, paid, or public-competition score submissions are server-validated; client-originated scores alone are not used for rewards.
 - [ ] Push notifications and their deep links are tested on a physical device.
 
 ## 6. EAS Credentials and Builds

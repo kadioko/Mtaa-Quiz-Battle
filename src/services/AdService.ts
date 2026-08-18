@@ -72,43 +72,59 @@ export function showRewardedAd(type: AdRewardType): Promise<AdReward | null> {
       keywords: ['game', 'trivia', 'education'],
     });
 
-    let earned = false;
+    let settled = false;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    let unsubscribeReward = () => {};
+    let unsubscribeClose = () => {};
+    let unsubscribeError = () => {};
+    let unsubscribeLoaded = () => {};
 
-    const unsubscribeReward = rewarded.addAdEventListener(
+    const settle = (reward: AdReward | null) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      unsubscribeReward();
+      unsubscribeClose();
+      unsubscribeError();
+      unsubscribeLoaded();
+      resolve(reward);
+    };
+
+    unsubscribeReward = rewarded.addAdEventListener(
       RewardedAdEventType.EARNED_REWARD,
       (reward) => {
-        earned = true;
-        resolve(reward as AdReward);
+        settle(reward as AdReward);
       }
     );
 
-    const unsubscribeClose = rewarded.addAdEventListener(
+    unsubscribeClose = rewarded.addAdEventListener(
       AdEventType.CLOSED,
       () => {
-        unsubscribeReward();
-        unsubscribeClose();
-        if (!earned) resolve(null);
+        settle(null);
       }
     );
 
-    const unsubscribeError = rewarded.addAdEventListener(
+    unsubscribeError = rewarded.addAdEventListener(
       AdEventType.ERROR,
       () => {
-        unsubscribeReward();
-        unsubscribeClose();
-        unsubscribeError();
-        resolve(null);
+        settle(null);
       }
     );
 
-    const unsubscribeLoaded = rewarded.addAdEventListener(
+    unsubscribeLoaded = rewarded.addAdEventListener(
       RewardedAdEventType.LOADED,
       () => {
         unsubscribeLoaded();
-        rewarded.show();
+        try {
+          rewarded.show();
+        } catch {
+          settle(null);
+        }
       }
     );
 
+    // Avoid leaving the Shop button in a loading state when an SDK callback is lost.
+    timeout = setTimeout(() => settle(null), 30_000);
     rewarded.load();
   });
 }

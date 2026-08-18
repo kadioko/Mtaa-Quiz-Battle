@@ -249,12 +249,14 @@ export const CloudService = {
     limit?: number;
     categoryName?: string;
     dailyOnly?: boolean;
+    createdAfter?: string;
   } = {}): Promise<CloudLeaderboardEntry[]> {
     if (!isConfigured()) return [];
-    const { limit = 50, categoryName, dailyOnly } = opts;
+    const { limit = 50, categoryName, dailyOnly, createdAfter } = opts;
     let query = `leaderboard_entries?select=*&order=score.desc&limit=${limit}`;
     if (categoryName) query += `&category_name=eq.${encodeURIComponent(categoryName)}`;
     if (dailyOnly) query += `&is_daily=eq.true`;
+    if (createdAfter) query += `&created_at=gte.${encodeURIComponent(createdAfter)}`;
 
     const token = await CloudService.getValidToken();
     const rows = await supaFetch<Record<string, unknown>[]>(query, { method: 'GET' }, token);

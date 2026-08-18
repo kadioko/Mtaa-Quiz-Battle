@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
   ViewStyle,
@@ -20,6 +20,8 @@ interface Props {
   disabled?: boolean;
   loading?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  icon?: string;
+  accessibilityHint?: string;
 }
 
 const PrimaryButton: React.FC<Props> = ({
@@ -32,69 +34,69 @@ const PrimaryButton: React.FC<Props> = ({
   disabled = false,
   loading = false,
   size = 'lg',
+  icon,
+  accessibilityHint,
 }) => {
   const colors = useThemeColors();
   const sizeStyle = sizeMap[size as keyof typeof sizeMap];
   const resolvedColor = color ?? colors.primary;
   const resolvedTextColor = textColor ?? colors.black;
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       disabled={disabled || loading}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
-      style={[
+      style={({ pressed }) => [
         styles.button,
         sizeStyle.button,
         {
           backgroundColor: disabled ? colors.borderLight : resolvedColor,
-          shadowColor: colors.black,
+          borderColor: disabled ? colors.border : resolvedColor,
           opacity: disabled ? 0.72 : 1,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
         },
         style,
       ]}
-      activeOpacity={0.82}
     >
       {loading ? (
         <ActivityIndicator color={resolvedTextColor} />
       ) : (
         <Text style={[styles.label, sizeStyle.label, { color: disabled ? colors.text : resolvedTextColor }, textStyle]}>
-          {label}
+          {icon ? `${icon}  ` : ''}{label}
         </Text>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
 const sizeMap = {
   sm: {
-    button: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.base },
+    button: { minHeight: 36, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.base },
     label: { fontSize: Typography.fontSizes.sm },
   },
   md: {
-    button: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl },
+    button: { minHeight: 44, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl },
     label: { fontSize: Typography.fontSizes.md },
   },
   lg: {
-    button: { paddingVertical: Spacing.base, paddingHorizontal: Spacing.xxl },
+    button: { minHeight: 52, paddingVertical: Spacing.base, paddingHorizontal: Spacing.xxl },
     label: { fontSize: Typography.fontSizes.lg },
   },
 };
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: Radius.xl,
+    borderRadius: Radius.md,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
   },
   label: {
     fontWeight: Typography.fontWeights.bold,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   },
 });
 

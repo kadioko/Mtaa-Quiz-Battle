@@ -83,6 +83,13 @@ describe('StorageService.getUserProfile – migration / defaults', () => {
     const p = await StorageService.getUserProfile();
     expect(p.username).toBe('Mchezaji');
   });
+
+  test('persists an optional regional league choice', async () => {
+    const profile = await StorageService.getUserProfile();
+    await StorageService.saveUserProfile({ ...profile, region: 'mwanza' });
+
+    expect((await StorageService.getUserProfile()).region).toBe('mwanza');
+  });
 });
 
 describe('StorageService – settings defaults', () => {
@@ -156,6 +163,7 @@ describe('StorageService – achievements', () => {
 
     expect(updated.achievementsUnlocked).toBe(1);
     expect(updated.newAchievementIds).toEqual(['first_game']);
+    expect(updated.dailyMissions.missions.find((mission) => mission.id === 'rounds')?.progress).toBe(1);
     expect(await StorageService.getUnlockedAchievements()).toEqual(['first_game']);
   });
 });

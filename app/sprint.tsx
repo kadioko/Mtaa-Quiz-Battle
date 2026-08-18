@@ -64,6 +64,7 @@ export default function SprintScreen() {
   const [bestScore, setBestScore] = useState(0);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isFinishingRef = useRef(false);
   const scoreRef = useRef(0);
   const correctRef = useRef(0);
   const maxStreakRef = useRef(0);
@@ -121,6 +122,8 @@ export default function SprintScreen() {
   }, [phase]);
 
   const finishSprint = useCallback(async () => {
+    if (isFinishingRef.current) return;
+    isFinishingRef.current = true;
     setPhase('finished');
     const coins = calculateSprintCoins(scoreRef.current, correctRef.current);
     const sprintResult: SprintResult = {
@@ -248,6 +251,7 @@ export default function SprintScreen() {
             <PrimaryButton
               label={language === 'sw' ? '🔁 Cheza Tena' : '🔁 Play Again'}
               onPress={() => {
+                isFinishingRef.current = false;
                 setPhase('countdown');
                 setCountdown(3);
                 setTimeLeft(SPRINT_DURATION);

@@ -23,7 +23,7 @@ Players can limit ad tracking through their device settings.
 
 ## In-App Purchases
 
-The app offers a Remove Ads purchase. Purchase processing is handled by Google Play or Apple App Store. Mtaa Quiz Battle does not receive full payment card details.
+The app offers a Remove Ads purchase and may offer coin bundles. Purchase processing is handled by Google Play or Apple App Store. Mtaa Quiz Battle does not receive full payment card details.
 
 ## Notifications
 

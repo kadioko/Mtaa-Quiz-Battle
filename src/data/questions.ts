@@ -8543,7 +8543,8 @@ export const getWeeklyQuestions = (count: number = 10, date: Date = new Date()):
 };
 
 export const getDailyQuestions = (count: number = 10, date: Date = new Date()): Question[] => {
-  const seed = date.toDateString();
+  // UTC makes the daily set consistent across player devices and leaderboards.
+  const seed = date.toISOString().slice(0, 10);
   const random = createSeededRandom(seed);
   const categoryNames = Array.from(new Set(questions.map((q) => q.category)));
   const dailySet: Question[] = [];

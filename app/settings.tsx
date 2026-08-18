@@ -164,6 +164,9 @@ export default function SettingsScreen() {
                     themeMode === mode && { backgroundColor: colors.primary + '22', borderColor: colors.primary },
                   ]}
                   onPress={() => updateSetting('themeMode', mode)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: themeMode === mode }}
+                  accessibilityLabel={mode === 'dark' ? t('darkMode') : t('lightMode')}
                 >
                   <Text style={styles.langFlag}>{mode === 'dark' ? '🌙' : '☀️'}</Text>
                   <Text
@@ -194,6 +197,9 @@ export default function SettingsScreen() {
                   language === 'sw' && { backgroundColor: colors.primary + '22', borderColor: colors.primary },
                 ]}
                 onPress={() => updateSetting('language', 'sw')}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: language === 'sw' }}
+                accessibilityLabel={t('swahili')}
               >
                 <Text style={styles.langFlag}>🇹🇿</Text>
                 <Text
@@ -217,6 +223,9 @@ export default function SettingsScreen() {
                   language === 'en' && { backgroundColor: colors.primary + '22', borderColor: colors.primary },
                 ]}
                 onPress={() => updateSetting('language', 'en')}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: language === 'en' }}
+                accessibilityLabel={t('english')}
               >
                 <Text style={styles.langFlag}>🇬🇧</Text>
                 <Text
@@ -449,7 +458,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeights.bold,
     color: Colors.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0,
     marginTop: Spacing.lg,
     marginBottom: Spacing.sm,
   },
@@ -512,7 +521,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.base,
     gap: Spacing.md,
-    opacity: 0.6,
   },
   comingSoon: {
     fontSize: Typography.fontSizes.xs,

@@ -3,13 +3,24 @@
 ## Unreleased
 
 ### Player Experience
+- Guarded completed daily, weekly, and live-event rounds against replay through direct links; result finalization, friend-challenge submission, Versus history, Sprint rewards, and hint spending now reject duplicate in-flight actions.
+- Rewarded ads now fail closed after a bounded wait instead of leaving Shop actions indefinitely loading when an ad SDK callback is lost.
+- Store processing now ignores incomplete purchase states and acknowledges the non-consumable Remove Ads entitlement correctly instead of consuming it on Android.
+- Refreshed shared buttons, answer choices, stat cards, and timer bars with stable sizing, clearer press and disabled states, theme-aware surfaces, and improved accessibility semantics.
+- Rebuilt Categories for responsive phone and desktop grids, useful search/filter feedback, clear reset behavior, and accessible category selection; Settings now exposes radio semantics for language and appearance choices.
+- Centered the Home dashboard into a readable desktop column, made its menus resize with the viewport, and preserved compact two-column layouts on phones.
+- Hint-removed answers now look intentionally unavailable instead of being styled as an incorrect response before the player answers.
 - Home now provides a personalised focus: practice unresolved mistakes, train a weak category, or explore a new one.
 - Added three claimable daily missions for rounds played, correct answers, and answer streaks.
+- Results now show the post-round daily mission update and allow completed mission rewards to be claimed immediately.
 - Results now celebrate each achievement unlocked by the completed round with its name and explanation.
+- Onboarding now lets new players choose a mkoa for the regional league, with a clear skip path and later editing in Profile.
+- Regional League now has a server-filtered weekly season, all-time comparison, and a highlighted view of the player's selected mkoa and position.
 
 ### Platform and Quality
-- Upgraded the Expo SDK 55 dependency set and migrated sound and music playback to `expo-audio`.
-- Added recommendation, mission, and achievement-result coverage; the suite now has 95 tests across 6 suites.
+- Upgraded the managed Expo stack through SDK 57 with React Native 0.86.2, React 19.2.3, TypeScript 6, aligned native modules, current Jest Expo preset, and the Hermes regression fix identified by Expo Doctor.
+- Updated `react-native-google-mobile-ads` to 16.5.0, added its required Expo config-plugin helper, and migrated splash configuration to the supported `expo-splash-screen` plugin.
+- Added recommendation, mission, achievement-result, regional-preference, league-aggregation, and UTC daily-set coverage; the suite now has 103 tests across 8 suites.
 
 ### Documentation
 - Updated the roadmap, release checklist, Android release-build runbook, content authoring standards, cloud setup, store descriptions, privacy notes, and screenshot plan to match v1.1.0.

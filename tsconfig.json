@@ -7,6 +7,8 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
+    "types": ["jest", "node"],
     "lib": ["ES2017", "DOM"],
     "baseUrl": ".",
     "paths": {

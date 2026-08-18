@@ -12,9 +12,9 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ViewShot from 'react-native-view-shot';
+import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import { QuizResult } from '../src/types';
+import { DailyMission, DailyMissionId, DailyMissionState, QuizResult } from '../src/types';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
@@ -23,6 +23,7 @@ import { StorageService } from '../src/storage/storage';
 import PrimaryButton from '../src/components/PrimaryButton';
 import StatCard from '../src/components/StatCard';
 import { useThemeColors } from '../src/utils/ThemeContext';
+import { getDailyMissionCopy } from '../src/utils/dailyMissions';
 
 export default function ResultScreen() {
   const router = useRouter();
@@ -47,12 +48,18 @@ export default function ResultScreen() {
   const cardAnim = useRef(new Animated.Value(0)).current;
   const recordAnim = useRef(new Animated.Value(0)).current;
   const countAnim = useRef(new Animated.Value(0)).current;
-  const viewShotRef = useRef<ViewShot>(null);
+  const viewShotRef = useRef<ViewShotRef>(null);
   const [displayScore, setDisplayScore] = useState(0);
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [bestScore, setBestScore] = useState(0);
   const [showReview, setShowReview] = useState(false);
   const [sharingCard, setSharingCard] = useState(false);
+  const [missions, setMissions] = useState<DailyMissionState | null>(() => result?.dailyMissions ?? null);
+  const [claimingMission, setClaimingMission] = useState<DailyMissionId | null>(null);
+
+  useEffect(() => {
+    setMissions(result?.dailyMissions ?? null);
+  }, [result?.id]);
 
   useEffect(() => {
     if (!result) return;
@@ -149,6 +156,23 @@ export default function ResultScreen() {
       await handleShare();
     } finally {
       setSharingCard(false);
+    }
+  };
+
+  const claimMission = async (mission: DailyMission) => {
+    setClaimingMission(mission.id);
+    try {
+      const claimed = await StorageService.claimDailyMission(mission.id);
+      if (!claimed.success) return;
+      setMissions(claimed.missions);
+      Alert.alert(
+        language === 'sw' ? 'Hongera!' : 'Nice work!',
+        language === 'sw'
+          ? `Umepata sarafu ${claimed.reward}.`
+          : `You earned ${claimed.reward} coins.`
+      );
+    } finally {
+      setClaimingMission(null);
     }
   };
 
@@ -281,6 +305,74 @@ export default function ResultScreen() {
                   </View>
                 </View>
               ))}
+            </Animated.View>
+          )}
+
+          {missions && (
+            <Animated.View
+              style={[
+                styles.missionsCard,
+                {
+                  backgroundColor: colors.backgroundCard,
+                  borderColor: colors.border,
+                  opacity: cardAnim,
+                },
+              ]}
+            >
+              <View style={styles.missionsHeader}>
+                <View>
+                  <Text style={[styles.missionsHeading, { color: colors.text }]}>
+                    {language === 'sw' ? 'Maendeleo ya Leo' : "Today's Progress"}
+                  </Text>
+                  <Text style={[styles.missionsSubheading, { color: colors.textMuted }]}>
+                    {language === 'sw' ? 'Misheni zako zimesasishwa' : 'Your missions were updated'}
+                  </Text>
+                </View>
+                <Text style={styles.missionsEmoji}>🏅</Text>
+              </View>
+              {missions.missions.map((mission) => {
+                const copy = getDailyMissionCopy(mission, language);
+                const complete = mission.progress >= mission.target;
+                const progress = Math.min(mission.progress / mission.target, 1);
+                return (
+                  <View key={mission.id} style={styles.missionRow}>
+                    <Text style={styles.missionEmoji}>{copy.emoji}</Text>
+                    <View style={styles.missionContent}>
+                      <View style={styles.missionTextRow}>
+                        <Text style={[styles.missionTitle, { color: colors.text }]}>{copy.title}</Text>
+                        <Text style={[styles.missionReward, { color: colors.gold }]}>+{mission.reward} 🪙</Text>
+                      </View>
+                      <View style={[styles.missionTrack, { backgroundColor: colors.backgroundCardLight }]}>
+                        <View style={[styles.missionFill, { width: `${progress * 100}%`, backgroundColor: copy.color }]} />
+                      </View>
+                      <View style={styles.missionFooter}>
+                        <Text style={[styles.missionProgress, { color: colors.textMuted }]}>
+                          {Math.min(mission.progress, mission.target)}/{mission.target}
+                        </Text>
+                        {mission.claimed ? (
+                          <Text style={[styles.missionClaimed, { color: colors.secondary }]}>
+                            {language === 'sw' ? 'IMECHUKULIWA' : 'CLAIMED'}
+                          </Text>
+                        ) : complete ? (
+                          <TouchableOpacity
+                            onPress={() => claimMission(mission)}
+                            disabled={claimingMission === mission.id}
+                            style={[styles.claimButton, { backgroundColor: copy.color }]}
+                            accessibilityRole="button"
+                            accessibilityLabel={language === 'sw' ? `Chukua sarafu ${mission.reward}` : `Claim ${mission.reward} coins`}
+                          >
+                            <Text style={styles.claimButtonText}>
+                              {claimingMission === mission.id
+                                ? '...'
+                                : language === 'sw' ? 'CHUKUA' : 'CLAIM'}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : null}
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
             </Animated.View>
           )}
 
@@ -585,6 +677,88 @@ const styles = StyleSheet.create({
   achievementDescription: {
     fontSize: Typography.fontSizes.sm,
     marginTop: 2,
+  },
+  missionsCard: {
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    padding: Spacing.base,
+    marginBottom: Spacing.base,
+  },
+  missionsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  missionsHeading: {
+    fontSize: Typography.fontSizes.base,
+    fontWeight: Typography.fontWeights.extraBold,
+  },
+  missionsSubheading: {
+    fontSize: Typography.fontSizes.sm,
+    marginTop: 2,
+  },
+  missionsEmoji: { fontSize: 28 },
+  missionRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+  },
+  missionEmoji: { fontSize: 21, marginTop: 1 },
+  missionContent: { flex: 1 },
+  missionTextRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  missionTitle: {
+    flex: 1,
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: Typography.fontWeights.semiBold,
+  },
+  missionReward: {
+    fontSize: Typography.fontSizes.xs,
+    fontWeight: Typography.fontWeights.bold,
+  },
+  missionTrack: {
+    height: 6,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+    marginTop: 6,
+  },
+  missionFill: {
+    height: '100%',
+    borderRadius: Radius.full,
+  },
+  missionFooter: {
+    minHeight: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  missionProgress: {
+    fontSize: Typography.fontSizes.xs,
+    fontWeight: Typography.fontWeights.medium,
+  },
+  missionClaimed: {
+    fontSize: Typography.fontSizes.xs,
+    fontWeight: Typography.fontWeights.bold,
+    letterSpacing: 0.4,
+  },
+  claimButton: {
+    minWidth: 72,
+    alignItems: 'center',
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 5,
+  },
+  claimButtonText: {
+    color: Colors.white,
+    fontSize: Typography.fontSizes.xs,
+    fontWeight: Typography.fontWeights.black,
+    letterSpacing: 0.4,
   },
 
   detailCard: {

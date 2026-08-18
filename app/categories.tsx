@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
-  Dimensions,
+  Pressable,
   TextInput,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -30,16 +30,17 @@ import { useThemeColors } from '../src/utils/ThemeContext';
 
 type DiffFilter = 'all' | 'easy' | 'medium' | 'hard';
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - Spacing.base * 2 - Spacing.sm) / 2;
-
 export default function CategoriesScreen() {
   const router = useRouter();
   const { language } = useLanguage();
   const colors = useThemeColors();
+  const { width } = useWindowDimensions();
   const [search, setSearch] = useState('');
   const [diffFilter, setDiffFilter] = useState<DiffFilter>('all');
   const [playCounts, setPlayCounts] = useState<Record<string, number>>({});
+  const columns = width >= 720 ? 3 : 2;
+  const gridWidth = Math.min(width, 760);
+  const cardWidth = (gridWidth - Spacing.base * 2 - Spacing.sm * (columns - 1)) / columns;
 
   useEffect(() => {
     StorageService.getCategoryStats().then(setPlayCounts);
@@ -63,6 +64,7 @@ export default function CategoriesScreen() {
         playCount={playCount}
         language={language}
         colors={colors}
+        cardWidth={cardWidth}
         onPress={() => router.push({ pathname: '/quiz', params: { categoryId: item.id } })}
       />
     );
@@ -74,9 +76,9 @@ export default function CategoriesScreen() {
       <SafeAreaView style={styles.safe}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.backgroundCardLight }]}>
+          <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.backgroundCardLight }]} accessibilityRole="button" accessibilityLabel={t('backHome')}>
             <Text style={styles.backIcon}>‹</Text>
-          </TouchableOpacity>
+          </Pressable>
           <View style={styles.headerCenter}>
             <Text style={[styles.headerTitle, { color: colors.text }]}>{t('selectCategory')}</Text>
           </View>
@@ -85,6 +87,7 @@ export default function CategoriesScreen() {
 
         {/* Search bar */}
         <View style={styles.searchRow}>
+          <Text style={[styles.searchIcon, { color: colors.textMuted }]}>⌕</Text>
           <TextInput
             style={[styles.searchInput, { backgroundColor: colors.backgroundCardLight, borderColor: colors.border, color: colors.text }]}
             value={search}
@@ -92,7 +95,13 @@ export default function CategoriesScreen() {
             placeholder={language === 'sw' ? 'Tafuta kundi...' : 'Search category...'}
             placeholderTextColor={colors.textMuted}
             clearButtonMode="while-editing"
+            accessibilityLabel={language === 'sw' ? 'Tafuta kundi' : 'Search category'}
           />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch('')} style={styles.clearSearch} accessibilityRole="button" accessibilityLabel={language === 'sw' ? 'Futa utafutaji' : 'Clear search'}>
+              <Text style={[styles.clearSearchText, { color: colors.textMuted }]}>×</Text>
+            </Pressable>
+          )}
         </View>
 
         {/* Difficulty chips */}
@@ -102,7 +111,7 @@ export default function CategoriesScreen() {
           contentContainerStyle={styles.chipsRow}
         >
           {(['all', 'easy', 'medium', 'hard'] as DiffFilter[]).map((d) => (
-            <TouchableOpacity
+            <Pressable
               key={d}
               style={[
                 styles.chip,
@@ -122,6 +131,8 @@ export default function CategoriesScreen() {
                 },
               ]}
               onPress={() => setDiffFilter(d)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: diffFilter === d }}
             >
               <Text style={[
                 styles.chipText,
@@ -140,7 +151,7 @@ export default function CategoriesScreen() {
                   : d === 'medium' ? t('mediumLevel')
                   : t('hardLevel')}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </ScrollView>
 
@@ -148,11 +159,30 @@ export default function CategoriesScreen() {
           data={filtered}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          numColumns={2}
-          contentContainerStyle={styles.list}
+          key={columns}
+          numColumns={columns}
+          contentContainerStyle={[styles.list, { width: gridWidth }]}
+          style={styles.listContainer}
           columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
           extraData={playCounts}
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              <Text style={[styles.listMeta, { color: colors.textMuted }]}>{t('categoriesAvailable', { count: filtered.length })}</Text>
+              {search || diffFilter !== 'all' ? (
+                <Text style={[styles.listMeta, { color: colors.primary }]}>{language === 'sw' ? 'Imechujwa' : 'Filtered'}</Text>
+              ) : null}
+            </View>
+          }
+          ListEmptyComponent={
+            <View style={[styles.emptyState, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
+              <Text style={styles.emptyEmoji}>⌕</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('noCategoriesFound')}</Text>
+              <Pressable onPress={() => { setSearch(''); setDiffFilter('all'); }} accessibilityRole="button">
+                <Text style={[styles.emptyReset, { color: colors.primary }]}>{language === 'sw' ? 'Onyesha yote' : 'Show all'}</Text>
+              </Pressable>
+            </View>
+          }
         />
       </SafeAreaView>
     </LinearGradient>
@@ -161,13 +191,14 @@ export default function CategoriesScreen() {
 
 // ── AnimatedCategoryCard ─────────────────────────────────────────────────────
 function AnimatedCategoryCard({
-  item, index, playCount, language, colors, onPress,
+  item, index, playCount, language, colors, cardWidth, onPress,
 }: {
   item: Category;
   index: number;
   playCount: number;
   language: string;
   colors: any;
+  cardWidth: number;
   onPress: () => void;
 }) {
   const opacity = useSharedValue(0);
@@ -192,10 +223,19 @@ function AnimatedCategoryCard({
 
   return (
     <Animated.View style={animStyle}>
-      <TouchableOpacity
-        style={[styles.card, { backgroundColor: colors.backgroundCard, borderColor: item.color }]}
+      <Pressable
+        style={({ pressed }) => [
+          styles.card,
+          {
+            width: cardWidth,
+            backgroundColor: colors.backgroundCard,
+            borderColor: item.color + '88',
+            transform: [{ scale: pressed ? 0.98 : 1 }],
+          },
+        ]}
         onPress={onPress}
-        activeOpacity={0.82}
+        accessibilityRole="button"
+        accessibilityLabel={`${language === 'en' ? item.name_en : item.name}. ${item.questionCount} ${t('questions')}`}
       >
         <View style={[styles.emojiCircle, { backgroundColor: item.color + '22' }]}>
           <Text style={styles.emoji}>{item.emoji}</Text>
@@ -218,7 +258,7 @@ function AnimatedCategoryCard({
             </View>
           )}
         </View>
-      </TouchableOpacity>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -255,32 +295,42 @@ const styles = StyleSheet.create({
   searchRow: {
     paddingHorizontal: Spacing.base,
     paddingBottom: Spacing.sm,
+    position: 'relative',
+    justifyContent: 'center',
   },
+  searchIcon: { position: 'absolute', left: Spacing.xl, fontSize: 22, zIndex: 1 },
   searchInput: {
     backgroundColor: Colors.backgroundCardLight,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.border,
     color: Colors.text,
     fontSize: Typography.fontSizes.md,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    paddingLeft: Spacing.xxl,
+    paddingRight: Spacing.xl,
+    minHeight: 46,
   },
+  clearSearch: { position: 'absolute', right: Spacing.xl, padding: Spacing.sm, zIndex: 1 },
+  clearSearchText: { fontSize: 24, lineHeight: 24 },
+  listContainer: { alignSelf: 'center', width: '100%' },
   list: {
     paddingHorizontal: Spacing.base,
     paddingBottom: Spacing.xxxl,
+    alignSelf: 'center',
   },
+  listHeader: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: Spacing.sm },
+  listMeta: { fontSize: Typography.fontSizes.xs, fontWeight: Typography.fontWeights.semiBold },
   row: {
     justifyContent: 'space-between',
     marginBottom: Spacing.sm,
   },
   card: {
-    width: CARD_WIDTH,
     backgroundColor: Colors.backgroundCard,
-    borderRadius: Radius.xl,
+    borderRadius: Radius.md,
     borderWidth: 1.5,
     padding: Spacing.base,
     alignItems: 'center',
+    minHeight: 196,
   },
   emojiCircle: {
     width: 56,
@@ -336,7 +386,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 5,
-    borderRadius: Radius.full,
+    borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.backgroundCardLight,
@@ -349,4 +399,15 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeights.semiBold,
     color: Colors.textMuted,
   },
+  emptyState: {
+    marginTop: Spacing.lg,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  emptyEmoji: { fontSize: 30 },
+  emptyText: { fontSize: Typography.fontSizes.md, textAlign: 'center' },
+  emptyReset: { fontSize: Typography.fontSizes.sm, fontWeight: Typography.fontWeights.bold, paddingTop: Spacing.xs },
 });

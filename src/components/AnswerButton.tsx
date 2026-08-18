@@ -1,9 +1,9 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
+import { Pressable, Text, StyleSheet } from 'react-native';
 import { Typography, Spacing, Radius } from '../theme';
 import { useThemeColors } from '../utils/ThemeContext';
 
-export type AnswerState = 'default' | 'correct' | 'wrong' | 'reveal';
+export type AnswerState = 'default' | 'correct' | 'wrong' | 'reveal' | 'eliminated';
 
 interface Props {
   label: string;
@@ -22,6 +22,7 @@ const AnswerButton: React.FC<Props> = ({ label, state, onPress, disabled, index 
       case 'correct': return colors.correct;
       case 'wrong':   return colors.wrong;
       case 'reveal':  return colors.correct;
+      case 'eliminated': return colors.backgroundCardLight;
       default:        return colors.backgroundCardLight;
     }
   };
@@ -31,39 +32,41 @@ const AnswerButton: React.FC<Props> = ({ label, state, onPress, disabled, index 
       case 'correct': return colors.correct;
       case 'wrong':   return colors.wrong;
       case 'reveal':  return colors.correct;
+      case 'eliminated': return colors.border;
       default:        return colors.border;
     }
   };
 
   const getTextColor = () => {
     if (state === 'default') return colors.text;
+    if (state === 'eliminated') return colors.textMuted;
     return '#000000';
   };
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       disabled={disabled}
-      activeOpacity={0.8}
       accessibilityRole="button"
       accessibilityLabel={`${OPTION_LABELS[index]}. ${label}`}
-      accessibilityState={{ disabled, selected: state === 'correct' || state === 'wrong' }}
-      style={[
+      accessibilityState={{ disabled, selected: state === 'correct' || state === 'wrong' || state === 'reveal' }}
+      style={({ pressed }) => [
         styles.button,
         {
           backgroundColor: getBgColor(),
           borderColor: getBorderColor(),
-          opacity: disabled && state === 'default' ? 0.82 : 1,
+          opacity: state === 'eliminated' ? 0.45 : disabled && state === 'default' ? 0.82 : 1,
+          transform: [{ scale: pressed && !disabled ? 0.985 : 1 }],
         },
       ]}
     >
-      <Text style={[styles.optionLabel, { backgroundColor: getBorderColor(), color: state === 'default' ? colors.white : '#000000' }]}>
+      <Text style={[styles.optionLabel, { backgroundColor: getBorderColor(), color: state === 'default' ? colors.white : state === 'eliminated' ? colors.textMuted : '#000000' }]}>
         {OPTION_LABELS[index]}
       </Text>
       <Text style={[styles.text, { color: getTextColor() }]} numberOfLines={3}>
         {label}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -71,12 +74,12 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     borderWidth: 1.5,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.base,
     marginBottom: Spacing.sm,
-    minHeight: 56,
+    minHeight: 64,
   },
   optionLabel: {
     width: 28,
@@ -93,6 +96,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.md,
     fontWeight: Typography.fontWeights.medium,
     flex: 1,
+    lineHeight: Typography.fontSizes.md * 1.45,
   },
 });
 

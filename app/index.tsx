@@ -135,11 +135,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.base,
-    shadowColor: DarkColors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-    elevation: 10,
+    boxShadow: `0px 0px 20px ${DarkColors.primary}99`,
   },
   logoEmoji: {
     fontSize: 52,
@@ -148,13 +144,13 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.xxxl,
     fontWeight: Typography.fontWeights.extraBold,
     color: DarkColors.text,
-    letterSpacing: 1,
+    letterSpacing: 0,
   },
   titleAccent: {
     fontSize: Typography.fontSizes.display,
     fontWeight: Typography.fontWeights.black,
     color: DarkColors.primary,
-    letterSpacing: 2,
+    letterSpacing: 0,
     marginTop: -8,
   },
   tagline: {

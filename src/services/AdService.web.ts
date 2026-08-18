@@ -1,4 +1,4 @@
-export type AdRewardType = 'extra-life' | 'double-coins';
+export type AdRewardType = 'extra-life' | 'double-coins' | 'free-coins';
 
 export interface AdReward {
   type: 'currency' | string;

@@ -59,6 +59,8 @@ export interface QuizResult {
   mode?: 'standard' | 'sprint' | 'versus';
   /** Achievement IDs earned by this completed round, for the result celebration. */
   newAchievementIds?: AchievementId[];
+  /** Daily mission state immediately after this completed round. */
+  dailyMissions?: DailyMissionState;
 }
 
 export interface SprintResult {

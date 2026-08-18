@@ -6,8 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-  Dimensions,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,9 +23,10 @@ import { useLanguage } from '../src/utils/LanguageContext';
 import { useThemeColors } from '../src/utils/ThemeContext';
 import { isToday, isYesterday } from '../src/utils/gameLogic';
 import { getTrainingRecommendation, TrainingRecommendation } from '../src/utils/recommendations';
+import { getDailyMissionCopy } from '../src/utils/dailyMissions';
 import PrimaryButton from '../src/components/PrimaryButton';
 
-const { width } = Dimensions.get('window');
+const MAX_CONTENT_WIDTH = 760;
 
 const getGreeting = (lang: 'sw' | 'en'): string => {
   const h = new Date().getHours();
@@ -39,33 +40,16 @@ const getGreeting = (lang: 'sw' | 'en'): string => {
   return 'Good evening';
 };
 
-const getMissionCopy = (mission: DailyMission, language: 'sw' | 'en') => {
-  const sw = language === 'sw';
-  if (mission.id === 'rounds') {
-    return {
-      emoji: '🎮',
-      title: sw ? 'Cheza raundi 2' : 'Play 2 rounds',
-      color: Colors.primary,
-    };
-  }
-  if (mission.id === 'correct_answers') {
-    return {
-      emoji: '🎯',
-      title: sw ? 'Pata majibu 12 sahihi' : 'Get 12 correct answers',
-      color: Colors.secondary,
-    };
-  }
-  return {
-    emoji: '🔥',
-    title: sw ? 'Fikia mfululizo wa 5' : 'Reach a 5-answer streak',
-    color: Colors.gold,
-  };
-};
-
 export default function HomeScreen() {
   const router = useRouter();
   const { language } = useLanguage();
   const colors = useThemeColors();
+  const { width } = useWindowDimensions();
+  const contentWidth = Math.min(width, MAX_CONTENT_WIDTH);
+  const navCardWidth = (contentWidth - Spacing.base * 2 - Spacing.sm) / 2;
+  const modeCardWidth = contentWidth >= 640
+    ? (contentWidth - Spacing.base * 2 - Spacing.sm * 3) / 4
+    : navCardWidth;
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dailyDone, setDailyDone] = useState(false);
   const [rewardModal, setRewardModal] = useState(false);
@@ -225,7 +209,10 @@ export default function HomeScreen() {
     <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[
+            styles.scroll,
+            { width: contentWidth, alignSelf: 'center' },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
@@ -239,6 +226,8 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={[styles.settingsBtn, { backgroundColor: colors.backgroundCardLight }]}
               onPress={() => router.push('/settings')}
+              accessibilityRole="button"
+              accessibilityLabel={language === 'sw' ? 'Mipangilio' : 'Settings'}
             >
               <Text style={styles.settingsIcon}>⚙️</Text>
             </TouchableOpacity>
@@ -276,7 +265,7 @@ export default function HomeScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <View>
+            <View style={styles.heroCopy}>
               <Text style={styles.heroTitle}>{t('readyToPlay')} 🎮</Text>
               <Text style={styles.heroSub}>
                 {profile?.totalGamesPlayed
@@ -290,6 +279,7 @@ export default function HomeScreen() {
               color={colors.backgroundCard}
               textColor={colors.primary}
               size="md"
+              icon="▶"
             />
           </LinearGradient>
 
@@ -318,7 +308,7 @@ export default function HomeScreen() {
           {missions && (
             <View style={[styles.missionsCard, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}>
               <View style={styles.missionsHeader}>
-                <View>
+                <View style={styles.dailyText}>
                   <Text style={[styles.missionsTitle, { color: colors.text }]}>
                     {language === 'sw' ? 'Misheni za Leo' : "Today's Missions"}
                   </Text>
@@ -329,7 +319,7 @@ export default function HomeScreen() {
                 <Text style={styles.missionsEmoji}>🏅</Text>
               </View>
               {missions.missions.map((mission) => {
-                const copy = getMissionCopy(mission, language);
+                const copy = getDailyMissionCopy(mission, language);
                 const complete = mission.progress >= mission.target;
                 const progress = Math.min(mission.progress / mission.target, 1);
                 return (
@@ -380,7 +370,10 @@ export default function HomeScreen() {
             {navItems.map((item) => (
               <TouchableOpacity
                 key={item.route}
-                style={[styles.navCard, { backgroundColor: colors.backgroundCard, borderColor: item.color }]}
+                style={[
+                  styles.navCard,
+                  { width: navCardWidth, backgroundColor: colors.backgroundCard, borderColor: item.color },
+                ]}
                 onPress={() => router.push(item.route as any)}
                 activeOpacity={0.8}
                 accessibilityRole="button"
@@ -395,7 +388,10 @@ export default function HomeScreen() {
           {/* New modes row */}
           <View style={styles.modesRow}>
             <TouchableOpacity
-              style={[styles.modeCard, { backgroundColor: colors.backgroundCard, borderColor: colors.primary }]}
+              style={[
+                styles.modeCard,
+                { width: modeCardWidth, backgroundColor: colors.backgroundCard, borderColor: colors.primary },
+              ]}
               onPress={() => router.push('/sprint')}
               activeOpacity={0.8}
             >
@@ -408,7 +404,10 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.modeCard, { backgroundColor: colors.backgroundCard, borderColor: colors.accent }]}
+              style={[
+                styles.modeCard,
+                { width: modeCardWidth, backgroundColor: colors.backgroundCard, borderColor: colors.accent },
+              ]}
               onPress={() => router.push('/versus')}
               activeOpacity={0.8}
             >
@@ -421,7 +420,10 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.modeCard, { backgroundColor: colors.backgroundCard, borderColor: colors.secondary }]}
+              style={[
+                styles.modeCard,
+                { width: modeCardWidth, backgroundColor: colors.backgroundCard, borderColor: colors.secondary },
+              ]}
               onPress={() => router.push('/challenge')}
               activeOpacity={0.8}
             >
@@ -434,7 +436,10 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.modeCard, { backgroundColor: colors.backgroundCard, borderColor: colors.gold }]}
+              style={[
+                styles.modeCard,
+                { width: modeCardWidth, backgroundColor: colors.backgroundCard, borderColor: colors.gold },
+              ]}
               onPress={() => router.push('/shop')}
               activeOpacity={0.8}
             >
@@ -462,7 +467,7 @@ export default function HomeScreen() {
             >
               <View style={styles.dailyLeft}>
                 <Text style={styles.dailyIcon}>{dailyDone ? '✅' : '⚡'}</Text>
-                <View>
+                <View style={styles.dailyText}>
                   <Text style={[styles.dailyTitle, dailyDone && { color: colors.textSecondary }]}>
                     {t('dailyChallenge')}
                   </Text>
@@ -510,7 +515,7 @@ export default function HomeScreen() {
               >
                 <View style={styles.dailyLeft}>
                   <Text style={styles.dailyIcon}>{eventDone ? '✅' : liveEvent.emoji}</Text>
-                  <View>
+                  <View style={styles.dailyText}>
                     <Text style={[styles.dailyTitle, eventDone && { color: colors.textSecondary }]}>
                       {!eventDone && '🔴 LIVE · '}{language === 'en' ? liveEvent.name_en : liveEvent.name}
                     </Text>
@@ -535,7 +540,7 @@ export default function HomeScreen() {
           >
             <View style={styles.dailyLeft}>
               <Text style={styles.dailyIcon}>{weeklyDone ? '✅' : '🗓️'}</Text>
-              <View>
+              <View style={styles.dailyText}>
                 <Text style={[styles.practiceTitle, { color: colors.text }]}>
                   {language === 'sw' ? 'Changamoto ya Wiki' : 'Weekly Challenge'}
                 </Text>
@@ -558,7 +563,7 @@ export default function HomeScreen() {
             >
               <View style={styles.dailyLeft}>
                 <Text style={styles.dailyIcon}>🔁</Text>
-                <View>
+              <View style={styles.dailyText}>
                   <Text style={[styles.practiceTitle, { color: colors.text }]}>{t('practiceMistakes')}</Text>
                   <Text style={[styles.practiceSub, { color: colors.textMuted }]}>
                     {t('practiceMistakesDesc')} · {mistakeCount}
@@ -663,8 +668,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: Spacing.md,
     marginBottom: Spacing.lg,
   },
+  heroCopy: { flex: 1, flexShrink: 1 },
   heroTitle: {
     fontSize: Typography.fontSizes.lg,
     fontWeight: Typography.fontWeights.bold,
@@ -808,7 +815,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   navCard: {
-    width: (width - Spacing.base * 2 - Spacing.sm) / 2,
     backgroundColor: Colors.backgroundCard,
     borderRadius: Radius.xl,
     borderWidth: 1.5,
@@ -830,8 +836,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.base,
   },
   modeCard: {
-    flexGrow: 1,
-    flexBasis: '46%',
     borderRadius: Radius.xl,
     borderWidth: 1,
     padding: Spacing.base,
@@ -860,7 +864,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  dailyLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  dailyLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  dailyText: { flex: 1, flexShrink: 1 },
   dailyIcon: { fontSize: 28 },
   dailyTitle: {
     fontSize: Typography.fontSizes.base,

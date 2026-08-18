@@ -374,6 +374,7 @@ export const StorageService = {
     profile: UserProfile;
     achievementsUnlocked: number;
     newAchievementIds: AchievementId[];
+    dailyMissions: DailyMissionState;
   }> {
     const profile = await StorageService.getUserProfile();
     const today = new Date().toDateString();
@@ -419,7 +420,7 @@ export const StorageService = {
     };
 
     await StorageService.saveUserProfile(updatedProfile);
-    await StorageService.recordDailyMissionProgress(result);
+    const dailyMissions = await StorageService.recordDailyMissionProgress(result);
 
     const history = await StorageService.getQuizHistory();
     const existingAchievements = await StorageService.getUnlockedAchievements();
@@ -435,7 +436,7 @@ export const StorageService = {
       await StorageService.saveUnlockedAchievements(newAchievements);
     }
 
-    return { profile: updatedProfile, achievementsUnlocked, newAchievementIds };
+    return { profile: updatedProfile, achievementsUnlocked, newAchievementIds, dailyMissions };
   },
 
   // ── Weekly Challenge ────────────────────────────────────────────────────────

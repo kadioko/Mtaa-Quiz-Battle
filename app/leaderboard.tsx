@@ -14,12 +14,17 @@ import { StorageService } from '../src/storage/storage';
 import { CloudService } from '../src/services/CloudService';
 import { LeaderboardEntry, CloudLeaderboardEntry } from '../src/types';
 import { getCategoryByName } from '../src/data/categories';
-import { getRegionById } from '../src/data/regions';
 import { Colors, Typography, Spacing, Radius } from '../src/theme';
 import { t } from '../src/utils/i18n';
 import { useLanguage } from '../src/utils/LanguageContext';
 import { formatDate } from '../src/utils/gameLogic';
 import { useThemeColors } from '../src/utils/ThemeContext';
+import {
+  buildRegionalStandings,
+  getRegionalRank,
+  getWeekStartIso,
+  RegionalLeaguePeriod,
+} from '../src/utils/regionLeague';
 
 type FilterTab = 'all' | 'daily' | 'best';
 type SourceTab = 'local' | 'global' | 'mikoa';
@@ -30,9 +35,13 @@ export default function LeaderboardScreen() {
   const colors = useThemeColors();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [cloudEntries, setCloudEntries] = useState<CloudLeaderboardEntry[]>([]);
+  const [regionalEntries, setRegionalEntries] = useState<CloudLeaderboardEntry[]>([]);
   const [tab, setTab] = useState<FilterTab>('all');
   const [source, setSource] = useState<SourceTab>('local');
+  const [regionalPeriod, setRegionalPeriod] = useState<RegionalLeaguePeriod>('week');
+  const [playerRegionId, setPlayerRegionId] = useState<string | undefined>();
   const [cloudLoading, setCloudLoading] = useState(false);
+  const [regionalLoading, setRegionalLoading] = useState(false);
   const cloudAvailable = CloudService.isAvailable();
 
   const loadCloud = useCallback(async () => {
@@ -42,35 +51,35 @@ export default function LeaderboardScreen() {
     setCloudLoading(false);
   }, []);
 
+  const loadRegional = useCallback(async () => {
+    setRegionalLoading(true);
+    const rows = await CloudService.fetchLeaderboard({
+      limit: 1000,
+      createdAfter: regionalPeriod === 'week' ? getWeekStartIso() : undefined,
+    });
+    setRegionalEntries(rows);
+    setRegionalLoading(false);
+  }, [regionalPeriod]);
+
   useEffect(() => {
     StorageService.getLeaderboard().then(setEntries);
+    StorageService.getUserProfile().then((profile) => setPlayerRegionId(profile.region));
     if (cloudAvailable) loadCloud();
   }, [language, cloudAvailable, loadCloud]);
 
   useEffect(() => {
-    if ((source === 'global' || source === 'mikoa') && cloudAvailable) loadCloud();
+    if (source === 'global' && cloudAvailable) loadCloud();
   }, [source, cloudAvailable, loadCloud]);
 
-  // Regional league: aggregate cloud scores by region
-  const regionStandings = (() => {
-    const byRegion = new Map<string, { total: number; players: Set<string>; entries: number }>();
-    cloudEntries.forEach((e) => {
-      if (!e.region) return;
-      const bucket = byRegion.get(e.region) ?? { total: 0, players: new Set<string>(), entries: 0 };
-      bucket.total += e.score;
-      bucket.players.add(e.userId || e.displayName);
-      bucket.entries += 1;
-      byRegion.set(e.region, bucket);
-    });
-    return Array.from(byRegion.entries())
-      .map(([regionId, stats]) => ({
-        regionId,
-        region: getRegionById(regionId),
-        total: stats.total,
-        players: stats.players.size,
-      }))
-      .sort((a, b) => b.total - a.total);
-  })();
+  useEffect(() => {
+    if (source === 'mikoa' && cloudAvailable) loadRegional();
+  }, [source, cloudAvailable, loadRegional]);
+
+  const regionStandings = buildRegionalStandings(regionalEntries);
+  const playerRegionalRank = getRegionalRank(regionStandings, playerRegionId);
+  const playerStanding = playerRegionId
+    ? regionStandings.find((standing) => standing.regionId === playerRegionId)
+    : undefined;
 
   const displayed = (() => {
     if (source === 'global') return [];
@@ -186,7 +195,25 @@ export default function LeaderboardScreen() {
                 onPress={() => setSource(s)}
               >
                 <Text style={[styles.sourceTabText, { color: colors.textMuted }, source === s && { color: colors.black, fontWeight: Typography.fontWeights.bold }]}>
-                  {s === 'local' ? `📱 ${t('cloudLocal')}` : s === 'global' ? `🌐 ${t('cloudGlobal')}` : '🗺️ Mikoa'}
+                  {s === 'local' ? `📱 ${t('cloudLocal')}` : s === 'global' ? `🌐 ${t('cloudGlobal')}` : `🗺️ ${t('regionalLeague')}`}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {source === 'mikoa' && (
+          <View style={[styles.tabs, { backgroundColor: colors.backgroundCardLight }]}>
+            {(['week', 'allTime'] as RegionalLeaguePeriod[]).map((period) => (
+              <TouchableOpacity
+                key={period}
+                style={[styles.tab, regionalPeriod === period && { backgroundColor: colors.primary }]}
+                onPress={() => setRegionalPeriod(period)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: regionalPeriod === period }}
+              >
+                <Text style={[styles.tabText, { color: colors.textMuted }, regionalPeriod === period && { color: colors.black, fontWeight: Typography.fontWeights.bold }]}>
+                  {period === 'week' ? t('regionalThisWeek') : t('regionalAllTime')}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -211,7 +238,7 @@ export default function LeaderboardScreen() {
         )}
 
         {source === 'mikoa' ? (
-          cloudLoading ? (
+          regionalLoading ? (
             <View style={styles.empty}>
               <ActivityIndicator color={colors.primary} size="large" />
             </View>
@@ -219,10 +246,16 @@ export default function LeaderboardScreen() {
             <View style={styles.empty}>
               <Text style={styles.emptyEmoji}>🗺️</Text>
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                {language === 'sw'
-                  ? 'Hakuna alama za mikoa bado. Chagua mkoa wako kwenye Profaili kisha cheza!'
-                  : 'No regional scores yet. Pick your region in Profile, then play!'}
+                {t('regionalNoScores')}
               </Text>
+              {!playerRegionId && (
+                <TouchableOpacity
+                  style={[styles.signInBtnLarge, { borderColor: colors.primary }]}
+                  onPress={() => router.push('/profile')}
+                >
+                  <Text style={[styles.signInBtnLargeText, { color: colors.primary }]}>{t('regionalPick')}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <FlatList
@@ -230,21 +263,65 @@ export default function LeaderboardScreen() {
               keyExtractor={(item) => item.regionId}
               contentContainerStyle={styles.list}
               showsVerticalScrollIndicator={false}
+              ListHeaderComponent={
+                playerRegionId ? (
+                  <TouchableOpacity
+                    style={[styles.regionInsight, { backgroundColor: colors.backgroundCard, borderColor: colors.primary }]}
+                    onPress={() => router.push('/profile')}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('regionalYourRegion')}
+                  >
+                    <Text style={styles.regionInsightEmoji}>{playerStanding?.region?.emoji ?? '📍'}</Text>
+                    <View style={styles.regionInsightText}>
+                      <Text style={[styles.regionInsightLabel, { color: colors.textMuted }]}>{t('regionalYourRegion')}</Text>
+                      <Text style={[styles.regionInsightName, { color: colors.text }]}>
+                        {playerStanding?.region?.name ?? playerRegionId}
+                      </Text>
+                      <Text style={[styles.regionInsightSub, { color: colors.textSecondary }]}>
+                        {playerRegionalRank
+                          ? t('regionalRank', { rank: playerRegionalRank, count: regionStandings.length })
+                          : t('regionalNoScores')}
+                      </Text>
+                    </View>
+                    {playerStanding && (
+                      <Text style={[styles.regionInsightScore, { color: colors.primary }]}>{playerStanding.total}</Text>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.regionPickCard, { backgroundColor: colors.backgroundCard, borderColor: colors.border }]}
+                    onPress={() => router.push('/profile')}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.regionPickEmoji}>📍</Text>
+                    <View style={styles.regionInsightText}>
+                      <Text style={[styles.regionInsightName, { color: colors.text }]}>{t('regionalPick')}</Text>
+                      <Text style={[styles.regionInsightSub, { color: colors.textSecondary }]}>{t('onboardingRegionBody')}</Text>
+                    </View>
+                    <Text style={[styles.regionPickArrow, { color: colors.primary }]}>›</Text>
+                  </TouchableOpacity>
+                )
+              }
               renderItem={({ item, index }) => (
-                <View style={[styles.row, { backgroundColor: colors.backgroundCard, borderColor: colors.border }, index < 3 && { borderColor: rankColor(index) }]}>
+                <View style={[
+                  styles.row,
+                  { backgroundColor: colors.backgroundCard, borderColor: colors.border },
+                  index < 3 && { borderColor: rankColor(index) },
+                  item.regionId === playerRegionId && { borderColor: colors.primary, borderWidth: 2 },
+                ]}>
                   <Text style={[styles.rank, { color: rankColor(index) }]}>{rankEmoji(index)}</Text>
                   <View style={styles.rowInfo}>
                     <Text style={[styles.rowName, { color: colors.text }]}>
                       {item.region?.emoji ?? '📍'} {item.region?.name ?? item.regionId}
                     </Text>
                     <Text style={[styles.rowCat, { color: colors.textMuted }]}>
-                      {item.players} {language === 'sw' ? 'wachezaji' : 'players'}
+                      {t('regionalPlayers', { count: item.players })}
                     </Text>
                   </View>
                   <View style={styles.rowRight}>
                     <Text style={[styles.rowScore, { color: rankColor(index) }]}>{item.total}</Text>
                     <Text style={[styles.rowDate, { color: colors.textMuted }]}>
-                      {language === 'sw' ? 'jumla' : 'total pts'}
+                      {t('score')}
                     </Text>
                   </View>
                 </View>
@@ -351,6 +428,34 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeights.bold,
   },
   list: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
+  regionInsight: {
+    minHeight: 92,
+    borderWidth: 1.5,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.base,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  regionPickCard: {
+    minHeight: 82,
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.base,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  regionInsightEmoji: { fontSize: 34 },
+  regionPickEmoji: { fontSize: 26 },
+  regionInsightText: { flex: 1 },
+  regionInsightLabel: { fontSize: Typography.fontSizes.xs, fontWeight: Typography.fontWeights.semiBold },
+  regionInsightName: { fontSize: Typography.fontSizes.md, fontWeight: Typography.fontWeights.bold },
+  regionInsightSub: { fontSize: Typography.fontSizes.xs, lineHeight: Typography.fontSizes.xs * 1.45, marginTop: 2 },
+  regionInsightScore: { fontSize: Typography.fontSizes.xl, fontWeight: Typography.fontWeights.extraBold },
+  regionPickArrow: { fontSize: 32, lineHeight: 32 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

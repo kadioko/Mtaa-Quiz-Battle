@@ -25,6 +25,14 @@ describe('getDailyQuestions', () => {
     expect(set1).toEqual(set2);
   });
 
+  test('uses the UTC calendar day for a cross-device daily set', () => {
+    const utcMoment = new Date('2025-01-15T00:30:00.000Z');
+    const sameUtcDay = new Date('2025-01-15T23:30:00.000Z');
+
+    expect(getDailyQuestions(DAILY_COUNT, utcMoment).map((q) => q.id))
+      .toEqual(getDailyQuestions(DAILY_COUNT, sameUtcDay).map((q) => q.id));
+  });
+
   test('different dates produce different question sets', () => {
     const d1 = new Date('2025-01-15');
     const d2 = new Date('2025-01-16');

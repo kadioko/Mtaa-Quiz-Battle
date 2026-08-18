@@ -15,9 +15,9 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 | --- | --- | --- |
 | **Splash** | `index.tsx` | Animated logo + pulsing dots, bilingual tagline, theme-aware gradient |
 | **Home** | `home.tsx` | Personalised greeting, stats, Daily Challenge, training focus, and claimable daily missions |
-| **Categories** | `categories.tsx` | 10 category cards, live search, difficulty filter chips, play-count badges |
+| **Categories** | `categories.tsx` | Responsive 2-3 column category grid, live search, difficulty filters, play-count badges, and a recoverable empty state |
 | **Quiz** | `quiz.tsx` | 10 questions, timer, dot stepper, floating score gain, collapsible explanation, adaptive difficulty |
-| **Result** | `result.tsx` | Animated score counter, new-record banner, newly unlocked achievements, answer review, and share card |
+| **Result** | `result.tsx` | Animated score counter, new-record banner, newly unlocked achievements, daily-mission claims, answer review, and share card |
 | **Leaderboard** | `leaderboard.tsx` | All / Daily / Best filter tabs, top-50 scores |
 | **Profile** | `profile.tsx` | Rank banner, achievements grid, category mastery bars, recent game history, avatar picker, stats |
 | **Settings** | `settings.tsx` | Sound, music, vibration, light/dark mode, language toggle, notifications, premium |
@@ -27,7 +27,7 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 | **Friend Challenge** | `challenge.tsx` | **Cross-device async multiplayer** — create/join by 6-char code, ranked standings (Supabase) |
 | **Shop** | `shop.tsx` | Coin-powered shop (streak freezes), premium options |
 | **Sign In** | `signin.tsx` | Magic-link email sign-in for cloud sync |
-| **Onboarding** | `onboarding.tsx` | First-launch tutorial |
+| **Onboarding** | `onboarding.tsx` | First-launch tutorial and optional regional-league selection |
 
 ---
 
@@ -43,6 +43,7 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 - **Floating score gain** animation (`+150`) on every correct answer
 - **Question dot stepper** — green = correct, red = wrong, orange = current
 - **Timer bar** with colour shift (green → orange → red at ≤ 5s)
+- **Responsive game controls** — theme-aware buttons, answer states, stat cards, and an accessible animated timer with stable touch targets
 - **Timeout feedback** — clear visual and haptic cue when time expires
 - **Collapsible explanation** card after each answer with category colour context
 - **Pause / quit confirmation** modal during a quiz
@@ -55,6 +56,7 @@ Test your knowledge of Tanzania — music, football, geography, history, food, l
 - New set of 10 mixed-category questions every day (date-seeded, one per category when possible)
 - Deterministic: same question set for all players on a given day, regardless of device
 - **Daily streak** tracking across consecutive days
+- **Replay protection** — completed Daily, Weekly, and Live Event rounds cannot be replayed through a direct quiz link
 - **Live countdown timer** (HH:MM:SS) to next challenge when already played
 - ✅ DONE badge on home screen banner when already played
 
@@ -128,7 +130,7 @@ Profile shows an accuracy bar per category (sorted by accuracy), with games play
 
 - Source tabs: **📱 Local** / **🌐 Global** (Supabase) / **🗺️ Mikoa** (regional league)
 - Filter tabs: **All** / **Daily** / **Best** (one entry per player) — applied to local and global
-- Regional league aggregates every player's cloud scores by their chosen mkoa (all 31 regions supported)
+- Regional league has **This week** and **All time** tables, aggregates every player's cloud scores by their chosen mkoa, and highlights the player's regional rank (all 31 regions supported)
 - Local top-50 entries sorted by score
 
 ### Cloud Features (optional, Supabase REST)
@@ -154,6 +156,7 @@ Profile shows an accuracy bar per category (sorted by accuracy), with games play
 ### Technical
 
 - **Offline-first** — all state in AsyncStorage; optional Supabase REST backend for cloud features (no SDK dependency)
+- **Integrity guards** — duplicate result finalization, reward claims, hint spending, and friend-challenge submission are rejected while their writes are in flight
 - **Expo Router** file-based navigation
 - **TypeScript** strict mode throughout
 - **Theme system** — light/dark tokens via `useThemeColors()`, all screens themed
@@ -167,7 +170,7 @@ Profile shows an accuracy bar per category (sorted by accuracy), with games play
 
 ### Prerequisites
 
-- Node.js 20 LTS recommended
+- Node.js 22.13 or later
 - `npx expo` (no global install needed)
 - Android device / emulator, iOS simulator, or Expo Go
 
@@ -193,7 +196,7 @@ npm run web              # Web preview
 npm run typecheck        # TypeScript strict check
 npm run validate:data    # Question data integrity
 npm run check:contrast   # WCAG contrast ratios
-npm test                 # 95 Jest tests (6 suites)
+npm test                 # 103 Jest tests (8 suites)
 npm run check            # All four checks in one command (CI gate)
 ```
 
@@ -222,15 +225,17 @@ See `docs/RELEASE_CHECKLIST.md` for the full pre-release process and `docs/ANDRO
 
 ## 🧪 Tests
 
-95 tests across 6 suites in `__tests__/`:
+103 tests across 8 suites in `__tests__/`:
 
 | Suite | What it tests |
 | --- | --- |
 | `scoring.test.ts` | `calculateScore`, `calculateCoins`, `buildQuizResult`, ranks, achievements |
-| `dailyChallenge.test.ts` | Determinism, uniqueness, category spread, required fields |
+| `dailyChallenge.test.ts` | UTC determinism, uniqueness, category spread, required fields |
 | `storageMigration.test.ts` | Profile defaults, partial-save migration, `dailyCompleted` reset, corrupted JSON fallback |
 | `leaderboard.test.ts` | Sort, 50-entry cap, invalid-score filter, add/sort, client-side filters |
 | `recommendations.test.ts` | Personalised practice, weak-category, and exploration recommendations |
+| `dailyMissions.test.ts` | Localised mission copy for each progress goal |
+| `regionLeague.test.ts` | Weekly league boundary, regional aggregation, player counts, and ranks |
 | `webRoutes.smoke.test.ts` | Every route file, every core source file, all asset files exist |
 
 ---
@@ -390,12 +395,13 @@ accuracyBonus:         ≥80% correct → +10  |  ≥60% → +5  |  <60% → 0
 
 - Core play and progress are local-first; internet is only needed for optional cloud, ads, purchases, and notifications
 - Roadmap lives in `docs/ROADMAP.md`; release process in `docs/RELEASE_CHECKLIST.md`
-- Daily challenge questions are date-seeded — same set for every player on a given day
+- Daily challenge questions use the UTC calendar day — same set for every player on a given day
 - `dailyCompleted` flag auto-resets at midnight inside `getUserProfile()`
 - Achievement evaluation runs inside `updateProfileAfterGame()` — no extra call needed
 - Adaptive difficulty is inactive until ≥30 games and ≥200 answered questions (prevents bias on new accounts)
 - Leaderboard capped at 50 entries; quiz history capped at 100 results
 - Category play counts exclude daily challenge results so favourite category reflects regular play
+- Before monetised coin bundles, cash prizes, or competitive rewards are enabled, verify store receipts and scores on a trusted backend; client-originated values alone are not prize-safe.
 
 ---
 

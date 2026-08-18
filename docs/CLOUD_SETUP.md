@@ -146,6 +146,12 @@ insert into public.question_packs (name, version, active, questions_json) values
 ```
 Questions are validated client-side; invalid entries are skipped silently. Use `r###` IDs to avoid clashing with bundled `q###` IDs. Remote questions appear in classic, sprint, versus, and challenge modes — daily/weekly stay bundled-only for cross-device determinism.
 
+## Competitive Integrity
+
+The starter RLS policies permit anonymous score and challenge-attempt inserts so the offline-first app can operate without a custom server. That is appropriate for casual social features only. Do not use client-originated scores to award money, airtime, prizes, or paid entitlements.
+
+Before enabling prizes or paid coin bundles, move score submission and purchase receipt verification behind a Supabase Edge Function or another trusted server. The server must verify the Play/App Store receipt, compute or validate the score against the served question set, apply rate limits, and write the final leaderboard or reward record with service-role access.
+
 **Creating a live event** (SQL editor):
 ```sql
 insert into public.events (name, name_en, emoji, seed, starts_at, ends_at) values (

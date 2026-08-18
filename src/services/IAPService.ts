@@ -69,10 +69,13 @@ export const IAPService = {
       InAppPurchases.setPurchaseListener(({ responseCode, results }) => {
         if (responseCode !== InAppPurchases.IAPResponseCode.OK || !results) return;
         for (const purchase of results) {
-          if (purchase.acknowledged) continue;
+          if (
+            purchase.acknowledged ||
+            purchase.purchaseState !== InAppPurchases.InAppPurchaseState.PURCHASED
+          ) continue;
           if (purchase.productId === PRODUCT_ID) {
             // Non-consumable: Remove Ads
-            InAppPurchases.finishTransactionAsync(purchase, true).catch(() => {});
+            InAppPurchases.finishTransactionAsync(purchase, false).catch(() => {});
             IAPService._setPurchased(true).catch(() => {});
           } else {
             const bundle = coinBundleByProductId(purchase.productId);
@@ -105,7 +108,8 @@ export const IAPService = {
   async getProducts(): Promise<IAPItemDetails[]> {
     if (Platform.OS === 'web') return [];
     try {
-      const { responseCode, results } = await InAppPurchases.getProductsAsync([PRODUCT_ID]);
+      const productIds = [PRODUCT_ID, ...COIN_BUNDLES.map((bundle) => bundle.productId)];
+      const { responseCode, results } = await InAppPurchases.getProductsAsync(productIds);
       if (responseCode === InAppPurchases.IAPResponseCode.OK && results) return results;
     } catch {}
     return [];

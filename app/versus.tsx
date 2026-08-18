@@ -65,6 +65,7 @@ export default function VersusScreen() {
   const [displayStreak, setDisplayStreak] = useState(0);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isFinishingRef = useRef(false);
   const settings = useRef({ sound: true, vibration: true });
 
   useEffect(() => {
@@ -190,6 +191,7 @@ export default function VersusScreen() {
   };
 
   const startMatch = () => {
+    isFinishingRef.current = false;
     loadQuestions();
     scoresRef.current = [0, 0, 0, 0];
     correctsRef.current = [0, 0, 0, 0];
@@ -213,6 +215,8 @@ export default function VersusScreen() {
     })).sort((a, b) => b.score - a.score);
 
   const finishVersus = async () => {
+    if (isFinishingRef.current) return;
+    isFinishingRef.current = true;
     setPhase('results');
     const ranked = ranking();
     const isDraw = ranked.length >= 2 && ranked[0].score === ranked[1].score;
